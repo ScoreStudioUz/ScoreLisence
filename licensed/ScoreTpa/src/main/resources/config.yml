@@ -1,0 +1,40 @@
+# ============================================
+#          ScoreTpa Configuration v1.1.0
+# ============================================
+
+# General Settings
+settings:
+  # Language: en / ru / uz
+  language: "en"
+
+  # Teleport request expire time (seconds)
+  expire-time: 120
+
+  # Cooldown between teleport requests (seconds)
+  cooldown: 10
+
+  # Prefix for all messages (supports HEX colors: #ffffff)
+  prefix: "&8[&bScoreTpa&8] "
+
+  # BossBar during teleportation countdown (1.9+)
+  bossbar:
+    enabled: true
+    color: "BLUE"     # BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW
+    style: "SOLID"    # SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+
+# Group-based teleport delays (seconds)
+# Uses LuckPerms groups. First match wins (top to bottom)
+group-delays:
+  homiy: 0
+  default: 7
+
+# Cancellation settings
+cancellation:
+  # Cancel teleport if player moves
+  movement: false
+
+  # Cancel teleport if player takes/deals real damage (>0) from/to another player
+  combat: true
+
+# Debug mode
+debug: false

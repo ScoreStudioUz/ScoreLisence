@@ -1,0 +1,54 @@
+# ScoreTpa — Русские сообщения
+
+messages:
+  # Запросы TPA
+  request-sent: "&aВы отправили запрос на телепортацию к &f%player%&a."
+  request-received: "&e%player% &7хочет телепортироваться к вам."
+  request-expired: "&cЗапрос на телепортацию истёк."
+  request-cancelled: "&cВы отменили запрос к &f%target%&c."
+
+  # Принять / Отклонить
+  accepted-request: "&aВы приняли запрос от &f%player%&a."
+  request-accepted: "&a%target% принял ваш запрос на телепортацию!"
+  denied-request: "&cВы отклонили запрос от &f%player%&c."
+  request-denied: "&c%target% отклонил ваш запрос."
+
+  # Телепортация
+  teleporting: "&eТелепортация через &b%time% &eсекунд..."
+  teleport-success: "&aТелепортация успешна!"
+  teleport-cancelled: "&cТелепортация отменена!"
+  teleport-cancelled-combat: "&cТелепортация отменена — вы в бою!"
+  teleport-cancelled-movement: "&cТелепортация отменена — вы двигались!"
+
+  # Использование
+  usage-tpa: "&cИспользование: /tpa <игрок>"
+
+  # Ошибки
+  player-not-found: "&cИгрок не найден или не в сети."
+  no-pending-request: "&cУ вас нет ожидающих запросов."
+  cannot-send-self: "&cВы не можете отправить запрос самому себе."
+  already-sent-request: "&cВы уже отправили запрос этому игроку."
+  already-have-request: "&cУ вас уже есть запрос от этого игрока."
+  cooldown-wait: "&cПодождите &e%cooldown%с &cперед повторным запросом."
+  no-permission: "&cУ вас нет прав на это."
+
+  # Переключатель
+  tptoggle-enabled: "&aЗапросы на телепортацию &2включены&a."
+  tptoggle-disabled: "&cЗапросы на телепортацию &4отключены&c."
+  teleports-disabled: "&c%player% отключил запросы на телепортацию."
+
+  # Админ
+  config-reloaded: "&aКонфигурация перезагружена!"
+
+  # BossBar
+  bossbar-title: "&fТелепортация через &b%time% &fсекунд"
+
+  # Кнопки
+  button-accept: "&a[ПРИНЯТЬ]"
+  button-deny: "&c[ОТКЛОНИТЬ]"
+  button-cancel: "&e[ОТМЕНИТЬ]"
+
+  # Подсказки при наведении
+  hover-accept: "&aНажмите чтобы принять"
+  hover-deny: "&cНажмите чтобы отклонить"
+  hover-cancel: "&eНажмите чтобы отменить"

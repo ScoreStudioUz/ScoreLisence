@@ -1,0 +1,87 @@
+# Explosion AirDrop - items explode out of the chest when the timer ends
+# The chest CANNOT be opened by players - items are thrown in all directions automatically
+air-name: '&c&lExplosion Chest'
+inv-name: '&c&lExplosion Chest'
+chest-inventory-size: 27
+air-id: 'explosion'
+air-spawn-world: world
+air-spawn-radius-min: -2000
+air-spawn-radius-max: 2000
+air-radius-protect: 20
+spawn-chance: 50
+timeToStart: 2
+use-pre-generated-locations: false
+search-before-start: 2
+stop-when-empty: false
+use-only-static-loc: false
+# Flatness check enabled - ensures airdrop spawns in open, flat areas (not inside caves/buildings)
+flatness-check: true
+use-static-loc: false
+static-location:
+  world: world
+  x: 0
+  y: 0
+  z: 0
+generator-settings: default
+
+# Holograms
+air-holo-to-start:
+  - '{air-name}'
+  - '&aTime to start: &f{time-to-start} sec'
+air-holo:
+  - '{air-name}'
+  - '&c&lLOCKED'
+  - '&eExplosion in: &f{time-to-open} sec'
+  - '&7Items will fly out!'
+air-holo-open:
+  - '{air-name}'
+  - '&a&lEXPLODED!'
+  - '&7Collect the items!'
+air-holo-click-wait:
+  - '{air-name}'
+  - '&7Click to activate'
+  - '&c&lDO NOT OPEN - WILL EXPLODE!'
+
+holo-offsets:
+  x: 0.5
+  y: 2.5
+  z: 0.5
+
+# Timer: 1 minute to unlock (explode)
+openingTime: 1
+start-countdown-after-click: false
+time-stop-event-must-go: false
+# Time after explosion before airdrop ends (3 minutes to collect scattered items)
+time-stop-event: 3
+# Locked material - TNT to show it will explode
+chest-material-locked: TNT
+# Unlocked material - AIR (chest disappears after explosion)
+chest-material-unlocked: AIR
+min-online-players: 1
+random-slot: true
+break-event: false
+protect-cheats: false
+protect-cheats-materials:
+  - GOLD_INGOT
+  - IRON_INGOT
+protect-speed: false
+protect-speed-delay: 1.0
+vulcan-item-hologram: false
+
+# Registered listeners for this airdrop
+signed-events:
+  - explosion-alert-start
+  - explosion-spawn-particle
+  - explosion-alert
+  - explosion-alert-timer
+  - explosion-alert-5
+  - explosion-throw
+  - explosion-block-open
+  - explosion-end
+  - explosion-anim
+  - explosion-bossbar-erupting
+  - explosion-bossbar-disappear
+  - explosion-bossbar-cleanup
+  - explosion-volcano-rumble
+  - explosion-volcano-intense
+  - explosion-volcano-erupt

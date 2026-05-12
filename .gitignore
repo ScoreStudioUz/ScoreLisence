@@ -1,0 +1,25 @@
+# Maven
+target/
+*.class
+**/dependency-reduced-pom.xml
+
+# Pipeline output directories (regenerable)
+obfuscated-final*/
+dist/
+tmp-skid-*/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs from local builds
+build.log
+mvn.log

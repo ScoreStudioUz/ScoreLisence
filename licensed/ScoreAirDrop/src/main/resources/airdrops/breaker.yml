@@ -1,0 +1,85 @@
+# Breaker AirDrop - players must BREAK the obsidian block to reduce its XP
+# Each block break removes 1 XP. Block is instantly replaced after each break.
+# When XP reaches 0 the chest opens (unlocks).
+# If nobody breaks it, it auto-opens after openingTime.
+air-name: '&6&lBreaker Chest'
+inv-name: '&6&lBreaker Chest'
+chest-inventory-size: 27
+air-id: 'breaker'
+air-spawn-world: world
+air-spawn-radius-min: -2000
+air-spawn-radius-max: 2000
+air-radius-protect: 15
+spawn-chance: 50
+timeToStart: 2
+use-pre-generated-locations: false
+search-before-start: 1
+stop-when-empty: false
+use-only-static-loc: false
+flatness-check: false
+use-static-loc: false
+static-location:
+  world: world
+  x: 0
+  y: 0
+  z: 0
+generator-settings: default
+
+# Holograms
+air-holo-to-start:
+  - '{air-name}'
+  - '&aTime to start: &f{time-to-start} sec'
+air-holo:
+  - '{air-name}'
+  - '&c&lLOCKED'
+  - '&eXP: &c{break-event-hearts}&7/&c{break-event-hearts-max}'
+  - '&7Break the block!'
+  - '&7Auto-open in: &f{time-to-open} sec'
+air-holo-open:
+  - '{air-name}'
+  - '&a&lBROKEN OPEN!'
+  - '&7Grab the loot!'
+air-holo-click-wait:
+  - '{air-name}'
+  - '&7Break the block to start'
+
+holo-offsets:
+  x: 0.5
+  y: 2.5
+  z: 0.5
+
+# Auto-open after 1 minute if nobody breaks it
+openingTime: 1
+start-countdown-after-click: false
+time-stop-event-must-go: false
+# Time after opening before airdrop ends (2 minutes to collect)
+time-stop-event: 2
+chest-material-locked: OBSIDIAN
+chest-material-unlocked: CHEST
+min-online-players: 1
+random-slot: true
+
+# Break Event settings - this is the core mechanic
+# 50 XP = 50 block breaks to unlock
+break-event: true
+break-event-hearts: 50
+break-event-animation: true
+break-event-sound: true
+protect-cheats: false
+protect-cheats-materials:
+  - GOLD_INGOT
+  - IRON_INGOT
+protect-speed: false
+protect-speed-delay: 1.0
+vulcan-item-hologram: false
+
+signed-events:
+  - breaker-alert-start
+  - breaker-spawn-particle
+  - breaker-alert
+  - breaker-click-progress
+  - breaker-unlocked
+  - breaker-end
+  - breaker-bossbar-locked
+  - breaker-bossbar-open
+  - breaker-bossbar-cleanup

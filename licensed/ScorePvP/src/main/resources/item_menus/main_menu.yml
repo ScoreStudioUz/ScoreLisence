@@ -1,0 +1,32 @@
+# ============================================================
+#  Main PvP Mode Selection GUI — item_menus/main_menu.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Выбор режима PvP"
+size: 36
+
+# Filler glass pane
+filler:
+  material: BLUE_STAINED_GLASS_PANE
+  name: "&r"
+
+# Mode item slots (start - end, skipping edge columns)
+mode-slots:
+  start: 10
+  end: 25
+
+# Mode item display (placeholders: {mode}, {display_name})
+mode-lore:
+  - "&7Нажмите, чтобы начать поиск"
+  - ""
+  - "&eЛКМ &7— Поиск соперника"
+
+# Unavailable mode display (version incompatible)
+unavailable:
+  material: RED_STAINED_GLASS_PANE
+  use-original-icon: false
+  name-suffix: " &8[&cНедоступно]"
+  lore:
+    - "&cТребуется версия: &e{version}+"
+    - "&7Ваша версия: &c{your_version}"

@@ -1,0 +1,663 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EVENT LIST~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# CLICK_CLOSE - click on a closed airdrop
+# CLICK_OPEN - click on an opened airdrop
+# TIMER - called every second
+# START_EVENT - when the airdrop spawns
+# END_EVENT - when the airdrop disappears
+# UNLOCK_EVENT - when the airdrop is unlocked
+# FIRST_OPEN - when someone opens the airdrop for the first time
+# SUMMONER - when someone summons the airdrop
+# ACTIVATE - when the airdrop is activated (triggered if start-countdown-after-click = true)
+# STOP_WHEN_EMPTY - called when the airdrop finishes due to depletion
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~CHECK LIST~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# NUMERICAL_CHECK - numerical check. For example, input '{time-to-open} == 60'
+# LOGICAL_CHECK - logical check. For example, input '{airdrop-is-open}'
+# STRING_CHECK - string comparison. For example, input '{airdrop-is-open} == true'
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~INTERNAL PLACEHOLDERS~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~NUMERICAL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# {time-to-open} - time in seconds until opening
+# {time-to-start} - time in seconds until the airdrop appears
+# {time-to-end} - time in seconds until the airdrop finishes
+# == if the numbers are equal (10 == 10)
+# != if the numbers are not equal (10 != 9)
+# > if the first number is greater than the second (10 > 9)
+# < if the first number is less than the second (9 < 10)
+# >= if the first number is greater than or equal to the second (10 >= 10)
+# <= if the first number is less than or equal to the second (10 <= 10)
+# % remainder of division (10 % 10 == 0) 10 / 10 = 1.0, so the remainder is 0
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~LOGICAL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# {it-was-open} - Whether the airdrop was opened
+# {airdrop-is-open} - true if the airdrop is open
+# {airdrop-is-start} - true if the airdrop has spawned
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STRING COMPARISON~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# == - if the strings are equal
+# != - if the strings are not equal
+# contains - if the string contains
+# !contains - if the string does not contain
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~COMMANDS~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# [MESSAGE] - Send a message to the player
+# [MESSAGE_ALL] - Send a message to all players
+# [TITLE] - Send a title to the player (text in the middle of the screen)
+# [TITLE_ALL] - Send a title to all players (text in the middle of the screen)
+# [ACTIONBAR] - Send an actionbar message to the player (text above the hotbar)
+# [ACTIONBAR_ALL] - Send an actionbar message to all players (text above the hotbar)
+# [CONSOLE] - Execute a command as the console
+# [PLAYER] - Execute a command as the player
+# [SOUND] - Play a sound to the player
+# [SOUND_ALL] - Play a sound to all players
+# [EFFECT_START-<NAME>-<generate id>] - Spawn an effect at the airdrop's location
+# [EFFECT_STOP-<id>] - Stop the effect
+# [EFFECT_STOP_ALL] - Stop all effects spawned by the airdrop
+# [SET_MATERIAL_<MATERIAL>] - Set the material of the airdrop
+# [SCHEMATICS_PASTE-<name>] - Paste a schematic
+# [SCHEMATICS_REMOVE] - Remove the schematic
+# [SET_TIME_START-<time>] - Set the time until start in seconds
+# [SET_TIME_UNLOCK-<time>] - Set the time until unlock in seconds
+# [SET_TIME_END-<time>] - Set the time until end in seconds
+# [SET_REGION] - Set the region
+# [SET_HOLO_TIME_TO_START] - Spawn a hologram where the airdrop appears
+# [CALL-<listener>] - Call a listener
+# [NEAR-PLAYERS=<radius>] iterate over all players within a radius. Used like [NEAR-PLAYERS=10] {CALL-test}
+# [RUN_JS=<jsname.js>] run a script
+# [NEW_BOSSBAR] - Create a boss bar
+# [BOSSBAR] - Modify a boss bar
+# [REMOVE_BOSSBAR] - Remove a boss bar
+# [ERROR] - Output an error to the console
+# [LOGGER] - Output a log to the console
+# [PLAYER-SET-ITEM-<slot>=<material>] - Set an item to the player's slot
+# [SUB_TITLE] - Subtitle
+# [SCHEDULER] - the listener will execute in a separate thread.
+# [ASYNC] - the listener will execute in a separate asynchronous thread.
+# [LATER-<time>] - the listener will execute with a delay in ticks.
+###
+# [LATER-<time>] - works only in combination with [SCHEDULER] or [ASYNC].
+# [SCHEDULER], [ASYNC], [LATER-<time>] - are executed before checking conditions and it doesn't matter where these commands are placed, whether at the end or at the beginning of all commands.
+######################################################################################
+listeners:
+  #TIMER#
+  alert-5:
+    description: '&fMessage about opening in 5 seconds'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} == 5'
+    commands:
+      - '[MESSAGE_ALL] {air-name}&7 will open in 5 seconds'
+
+
+  alert-4:
+    description: '&fMessage about opening in 10 seconds'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} == 10'
+    commands:
+      - '[MESSAGE_ALL] {air-name}&7 will open in 10 seconds'
+
+  anim:
+    description: '&fAnimation'  # Description
+    event: 'TIMER'  # Triggered every time the timer elapses
+    requirement: # Task execution conditions
+      check-1:
+        type: 'NUMERICAL_CHECK'  # Numerical check
+        input: '{time-to-open} % 2 == 0'  # Keep only even values
+      check-2:
+        type: 'LOGICAL_CHECK'  # Logical expression check
+        input: '{!airdrop-is-open}'  # Airdrop must not be open
+      check-3:
+        type: 'LOGICAL_CHECK'  # Logical expression check
+        input: '{airdrop-is-start}'  # Airdrop must be started
+    commands:
+      - '[SET_MATERIAL_LIME_WOOL]'  # Set material to Lime Wool
+    deny-commands: # If any of the requirements fails
+      - '[CALL-anim-2]'  # Call listener anim-2
+
+  alert-start:
+    description: '&fMessage about starting in 30 seconds'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-start} == 30'
+    commands:
+      - '[MESSAGE_ALL] {air-name}&7 will appear in 30 seconds!'
+
+  #START_EVENT#
+  spawn-particle:
+    description: '&fSpawns particles'
+    event: 'START_EVENT'
+    requirement:
+      check-1:
+        type: 'STRING_CHECK'
+        input: '{use-player-location} == false'
+    commands:
+      - '[EFFECT_START-ef=3-ef_helix]'
+      - '[EFFECT_START-ef=6-ef_rnd]'
+    deny-commands:
+      - '[CALL-remove_summoner_block]'
+      - '[SET_MATERIAL_{material-locked}]'
+
+
+  alert:
+    description: '&fSends a message to everyone about the start of the airdrop'
+    event: 'START_EVENT'
+    commands:
+      - '[MESSAGE_ALL] {air-name}&7 has appeared! Coordinates: &6{x}&7,&6{y}&7,&6{z}'
+      - '[TITLE_ALL] {air-name}&7 has appeared!'
+      - '[SOUND_ALL] BLOCK_BEACON_POWER_SELECT'
+
+  #END_EVENT#
+  end:
+    description: '&fAirdrop completion'
+    event: 'END_EVENT'
+    requirement:
+      check-1:
+        type: 'STRING_CHECK'
+        input: '{use-player-location} == true'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name}&7 has ended!'
+      - '[CALL-remove_summoner_block]'
+    deny-commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name}&7 has ended!'
+
+  #Others#
+  alert-open:
+    description: '&fMessage about opening'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[MESSAGE_ALL] {air-name}&7 is open!'
+
+  ACTIVATE:
+    description: '&fMessage about activating the airdrop%split%&fAlso triggers an effect'
+    event: 'ACTIVATE'
+    commands:
+      - '[MESSAGE_ALL] &7Player &6%player_name% &7has activated {air-name}'
+      - '[MESSAGE] {air-name} &aactivated!'
+      - '[EFFECT_START-ef=5=1-ef_circle]'
+      - '[SOUND_ALL] UI_TOAST_CHALLENGE_COMPLETE' #BLOCK_BARREL_CLOSE
+
+  spawn-summoner-alert:
+    description: '&aSends a message that a player has summoned the airdrop'
+    event: 'SUMMONER'
+    commands:
+      - '[MESSAGE_ALL] &7Player &6%player_name% &7has summoned {air-name}&7!'
+      - '[SET_TIME_START-31]' # Set time to start to 31 seconds
+
+
+  chest-closed:
+    description: '&fSends a message to the player that the airdrop is closed'
+    event: 'CLICK_CLOSE'
+    commands:
+      - '[MESSAGE] {air-name} &cis closed!'
+      - '[SOUND] BLOCK_BARREL_CLOSE' #BLOCK_BARREL_CLOSE
+
+  chest-open:
+    description: '&fPlays a sound to the player when clicking on the airdrop'
+    event: 'CLICK_OPEN'
+    commands:
+      - '[SOUND] BLOCK_BARREL_OPEN'
+
+
+  spawn-summoner:
+    description: '&aSpawns particles if the airdrop is summoned by a player'
+    event: 'SUMMONER'
+    requirement:
+      check-1:
+        type: 'STRING_CHECK'
+        input: '{use-player-location} == true'
+    commands:
+      - '[SET_MATERIAL_SOUL_CAMPFIRE]-offsets'
+      - '[SET_REGION]'
+      - '[EFFECT_START-ef=3-ef_helix]'
+      - '[EFFECT_START-ef=6-ef_rnd]'
+      - '[SET_HOLO_TIME_TO_START]-offsets'
+      - '[SOUND_ALL] UI_TOAST_CHALLENGE_COMPLETE'
+
+  anim-2:
+    description: '&fAnimation'  # Description
+    event: 'NONE'  # Non-triggered event
+    requirement: # Task execution conditions
+      check-1:
+        type: 'LOGICAL_CHECK'  # Logical expression check
+        input: '{!airdrop-is-open}'  # Airdrop must not be open
+      check-2:
+        type: 'LOGICAL_CHECK'  # Logical expression check
+        input: '{airdrop-is-start}'  # Airdrop must be started
+    commands:
+      - '[SET_MATERIAL_RED_WOOL]'  # Set material to Red Wool
+
+  remove_summoner_block:
+    description: '&fRemoves summoner_block'
+    event: 'NONE'
+    commands:
+      - '[SET_MATERIAL_AIR]-offsets'
+
+  steal:
+    description: '&fwhen the player use cheat steal chest'
+    event: 'PLAYER_STEAL'
+    commands:
+      - '[CONSOLE] kick %player_name% cheat'
+
+  #===========================================================================#
+  #                    EXPLOSION AIRDROP LISTENERS                            #
+  #  These listeners are used by the 'explosion' airdrop type.               #
+  #  Items explode out of the chest when the unlock timer finishes.          #
+  #  The chest CANNOT be opened by players.                                  #
+  #===========================================================================#
+
+  # Timer alert: 30 seconds before spawn
+  explosion-alert-start:
+    description: '&cExplosion airdrop spawn alert (30s)'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-start} == 30'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7will appear in 30 seconds!'
+
+  # Spawn particles on start - includes orange fire effects
+  explosion-spawn-particle:
+    description: '&cSpawns explosion airdrop particles'
+    event: 'START_EVENT'
+    commands:
+      - '[EFFECT_START-ef=3-ef_helix]'
+      - '[EFFECT_START-ef=13-ef_fire_rnd]'
+      - '[EFFECT_START-ef=14-ef_orange_circle]'
+
+  # Alert when airdrop spawns
+  explosion-alert:
+    description: '&cAlert everyone about explosion airdrop spawn'
+    event: 'START_EVENT'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7has appeared! Coordinates: &6{x}&7,&6{y}&7,&6{z}'
+      - '[TITLE_ALL] {air-name}'
+      - '[SUB_TITLE] &eItems will explode out!'
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL'
+
+  # Timer countdown messages every 10 seconds
+  explosion-alert-timer:
+    description: '&cExplosion countdown every 10s'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} % 10 == 0'
+      check-2:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} > 0'
+      check-3:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-4:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7explodes in &c{time-to-open} &7seconds!'
+      - '[SOUND_ALL] BLOCK_NOTE_BLOCK_PLING'
+
+  # Alert 5 seconds before explosion
+  explosion-alert-5:
+    description: '&cExplosion in 5 seconds alert'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} == 5'
+      check-2:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &c&lEXPLODES IN 5 SECONDS!'
+      - '[TITLE_ALL] &c&l5...'
+      - '[SOUND_ALL] ENTITY_TNT_PRIMED'
+
+  # TNT animation - flashing between TNT and REDSTONE_BLOCK
+  explosion-anim:
+    description: '&cTNT flashing animation'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} % 2 == 0'
+      check-2:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-3:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[SET_MATERIAL_REDSTONE_BLOCK]'
+    deny-commands:
+      - '[CALL-explosion-anim-2]'
+
+  explosion-anim-2:
+    description: '&cTNT flashing animation (phase 2)'
+    event: 'NONE'
+    requirement:
+      check-1:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-2:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[SET_MATERIAL_TNT]'
+
+  # THE MAIN EVENT: When the unlock timer finishes, run the explosion script
+  # This throws all items from the inventory in random directions
+  # The chest material is set to AIR (disappears) via the airdrop config
+  explosion-throw:
+    description: '&c&lThrows all items from airdrop in random directions'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[RUN_JS=explosion_drop.js] param(airdrop=airdrop)-scheduler'
+      - '[MESSAGE_ALL] {air-name} &c&lHAS EXPLODED! &7Collect the items!'
+      - '[TITLE_ALL] {air-name} &c&lEXPLODED!'
+      - '[SOUND_ALL] ENTITY_GENERIC_EXPLODE'
+
+  # Block players from opening the chest - send message instead
+  explosion-block-open:
+    description: '&cBlocks opening the explosion chest'
+    event: 'CLICK_CLOSE'
+    commands:
+      - '[MESSAGE] {air-name} &c&lCANNOT BE OPENED! &7Wait for the explosion!'
+      - '[SOUND] BLOCK_ANVIL_LAND'
+
+  # ============ BOSSBARS: 2 PHASES ============
+
+  # BOSSBAR 1: До извержения — таймер обратного отсчёта до взрыва
+  explosion-bossbar-erupting:
+    description: '&e&lBossbar: countdown to eruption'
+    event: 'START_EVENT'
+    commands:
+      - '[EasyBossBar=volcano_erupting {id}], [minRadius=0], [radius=50], [timer=\{time-to-open}], [barColor=YELLOW], [barStyle=SEGMENTED_20], [title=&c&l\u2740 {air-name} &e&lOtilishgacha: &f{time-to-open} &esoniya], [update]'
+
+  # BOSSBAR 2: До пропадания — таймер после взрыва до исчезновения аирдропа
+  explosion-bossbar-disappear:
+    description: '&c&lBossbar: countdown to disappear'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EasyBossBar=volcano_erupting {id}], [remove]'
+      - '[EasyBossBar=volcano_disappear {id}], [minRadius=0], [radius=50], [timer=\{time-to-end}], [barColor=RED], [barStyle=SEGMENTED_20], [title=&c&l\u2620 {air-name} &e{time-to-end} &fsoniyadan so''ng yo''qoladi], [update]'
+
+  # Очистка боссбаров при завершении
+  explosion-bossbar-cleanup:
+    description: '&7Cleanup all volcano bossbars'
+    event: 'END_EVENT'
+    commands:
+      - '[EasyBossBar=volcano_erupting {id}], [remove]'
+      - '[EasyBossBar=volcano_disappear {id}], [remove]'
+
+  # Volcano rumble sounds during countdown (every 5 seconds)
+  explosion-volcano-rumble:
+    description: '&cVolcano rumble sounds during countdown'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} % 5 == 0'
+      check-2:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} > 0'
+      check-3:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-4:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL 0.6 0.5'
+      - '[SOUND_ALL] BLOCK_LAVA_AMBIENT 1.0 0.8'
+      - '[SOUND_ALL] BLOCK_FIRE_AMBIENT 0.8 0.6'
+
+  # Volcano eruption sound - intensifies in last 10 seconds
+  explosion-volcano-intense:
+    description: '&cIntense volcano sounds in last 10 seconds'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} <= 10'
+      check-2:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} > 0'
+      check-3:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-4:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[SOUND_ALL] ENTITY_BLAZE_AMBIENT 1.0 0.5'
+      - '[SOUND_ALL] BLOCK_LAVA_POP 1.2 0.7'
+      - '[SOUND_ALL] ENTITY_GHAST_WARN 0.5 0.5'
+
+  # Full volcano eruption sounds at the moment of explosion
+  explosion-volcano-erupt:
+    description: '&c&lVolcano eruption sound at explosion moment'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL 2.0 0.3'
+      - '[SOUND_ALL] ENTITY_LIGHTNING_BOLT_THUNDER 1.5 0.5'
+      - '[SOUND_ALL] ENTITY_WITHER_SPAWN 1.0 0.5'
+      - '[SOUND_ALL] BLOCK_LAVA_EXTINGUISH 1.5 0.8'
+      - '[SOUND_ALL] ENTITY_BLAZE_DEATH 1.0 0.3'
+
+  # End event - cleanup
+  explosion-end:
+    description: '&cExplosion airdrop end cleanup'
+    event: 'END_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name} &7has ended!'
+
+  #===========================================================================#
+  #                     BREAKER AIRDROP LISTENERS                             #
+  #  Players must BREAK the obsidian block to reduce its XP.                 #
+  #  Each break = -1 XP. Block is instantly replaced.                        #
+  #  When XP reaches 0 the chest unlocks. Auto-opens after openingTime.     #
+  #===========================================================================#
+
+  # Timer alert: 30 seconds before spawn
+  breaker-alert-start:
+    description: '&6Breaker airdrop spawn alert (30s)'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-start} == 30'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7will appear in 30 seconds!'
+
+  # Spawn particles on start
+  breaker-spawn-particle:
+    description: '&6Spawns breaker airdrop particles'
+    event: 'START_EVENT'
+    commands:
+      - '[EFFECT_START-ef=3-ef_helix]'
+
+  # Alert when airdrop spawns
+  breaker-alert:
+    description: '&6Alert everyone about breaker airdrop spawn'
+    event: 'START_EVENT'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7has appeared! Coordinates: &6{x}&7,&6{y}&7,&6{z}'
+      - '[TITLE_ALL] {air-name}'
+      - '[SUB_TITLE] &eBreak the block to open!'
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL'
+
+  # Break progress - show remaining XP on each block break
+  breaker-click-progress:
+    description: '&6Shows break progress on block break'
+    event: 'CLICK_CLOSE'
+    commands:
+      - '[ACTIONBAR] {air-name} &eXP: &c{break-event-hearts}&7/&c{break-event-hearts-max}'
+
+  # When the chest is broken open (unlocked via break event or timer)
+  breaker-unlocked:
+    description: '&6&lBreaker chest has been broken open'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name} &a&lhas been broken open! &7Grab the loot!'
+      - '[TITLE_ALL] {air-name} &a&lBROKEN!'
+      - '[SOUND_ALL] ENTITY_IRON_GOLEM_DEATH'
+
+  # End event - cleanup
+  breaker-end:
+    description: '&6Breaker airdrop end cleanup'
+    event: 'END_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name} &7has ended!'
+
+  # ============ BREAKER BOSSBARS ============
+
+  # BOSSBAR 1: While locked — shows XP remaining and auto-open timer
+  breaker-bossbar-locked:
+    description: '&6Bossbar: breaker locked with XP and timer'
+    event: 'START_EVENT'
+    commands:
+      - '[EasyBossBar=breaker_locked {id}], [minRadius=0], [radius=50], [timer=\{time-to-open}], [barColor=YELLOW], [barStyle=SEGMENTED_20], [title=&6&l\u2692 {air-name} &eXP: &c{break-event-hearts}&7/&c{break-event-hearts-max} &8| &fAvto-ochilish: &e{time-to-open}s], [update]'
+
+  # BOSSBAR 2: After unlock — countdown to disappear
+  breaker-bossbar-open:
+    description: '&a Bossbar: breaker open, collect loot'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EasyBossBar=breaker_locked {id}], [remove]'
+      - '[EasyBossBar=breaker_open {id}], [minRadius=0], [radius=50], [timer=\{time-to-end}], [barColor=GREEN], [barStyle=SEGMENTED_20], [title=&a&l\u2714 {air-name} &fOchildi! Lut oling! &e{time-to-end} &fsoniya qoldi], [update]'
+
+  # Cleanup bossbars on end
+  breaker-bossbar-cleanup:
+    description: '&7Cleanup breaker bossbars'
+    event: 'END_EVENT'
+    commands:
+      - '[EasyBossBar=breaker_locked {id}], [remove]'
+      - '[EasyBossBar=breaker_open {id}], [remove]'
+
+  #===========================================================================#
+  #                     VULCAN AIRDROP LISTENERS                              #
+  #  Items erupt upward like a volcano and scatter in all directions.         #
+  #  Items can only be picked up after they land on the ground.              #
+  #  Fire-like particle trail follows each item.                             #
+  #===========================================================================#
+
+  # Timer alert: 30 seconds before spawn
+  vulcan-alert-start:
+    description: '&4Vulcan airdrop spawn alert (30s)'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-start} == 30'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7will erupt in 30 seconds!'
+
+  # Spawn particles on start
+  vulcan-spawn-particle:
+    description: '&4Spawns vulcan airdrop particles'
+    event: 'START_EVENT'
+    commands:
+      - '[EFFECT_START-ef=1-ef_vulcan_circle]'
+
+  # Alert when airdrop spawns
+  vulcan-alert:
+    description: '&4Alert everyone about vulcan airdrop spawn'
+    event: 'START_EVENT'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &7has appeared! Coordinates: &c{x}&7,&c{y}&7,&c{z}'
+      - '[TITLE_ALL] {air-name}'
+      - '[SUB_TITLE] &cVulcan is about to erupt!'
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL 1.0 0.5'
+
+  # Timer alerts during countdown
+  vulcan-alert-timer:
+    description: '&4Vulcan eruption countdown'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} == 5'
+    commands:
+      - '[MESSAGE_ALL] {air-name} &c&lERUPTION in 5 seconds!'
+      - '[SOUND_ALL] ENTITY_BLAZE_AMBIENT 1.0 0.5'
+
+  # Volcano eruption - throw items
+  vulcan-throw:
+    description: '&4&lVulcan eruption - items fly up and scatter'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[VULCAN_THROW]'
+      - '[MESSAGE_ALL] {air-name} &c&lVULCAN ERUPTED! &7Collect the items!'
+      - '[TITLE_ALL] {air-name} &c&lERUPTED!'
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL 2.0 0.3'
+      - '[SOUND_ALL] ENTITY_LIGHTNING_BOLT_THUNDER 1.5 0.5'
+      - '[SOUND_ALL] ENTITY_GENERIC_EXPLODE 2.0 0.6'
+
+  # Block players from opening the vulcan chest
+  vulcan-block-open:
+    description: '&4Blocks opening vulcan chest'
+    event: 'CLICK_CLOSE'
+    commands:
+      - '[MESSAGE] {air-name} &c&lCannot be opened! &7Wait for the eruption!'
+      - '[SOUND] BLOCK_ANVIL_LAND'
+
+  # Rumble sounds during countdown
+  vulcan-rumble:
+    description: '&4Vulcan rumble sounds during countdown'
+    event: 'TIMER'
+    requirement:
+      check-1:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} % 5 == 0'
+      check-2:
+        type: 'NUMERICAL_CHECK'
+        input: '{time-to-open} > 0'
+      check-3:
+        type: 'LOGICAL_CHECK'
+        input: '{!airdrop-is-open}'
+      check-4:
+        type: 'LOGICAL_CHECK'
+        input: '{airdrop-is-start}'
+    commands:
+      - '[SOUND_ALL] ENTITY_ENDER_DRAGON_GROWL 0.6 0.5'
+      - '[SOUND_ALL] BLOCK_LAVA_AMBIENT 1.0 0.8'
+
+  # BOSSBAR: Before eruption - countdown timer
+  vulcan-bossbar-erupting:
+    description: '&4Bossbar: vulcan eruption countdown'
+    event: 'START_EVENT'
+    commands:
+      - '[EasyBossBar=vulcan_locked {id}], [minRadius=0], [radius=50], [timer=\{time-to-open}], [barColor=RED], [barStyle=SEGMENTED_20], [title=&4&l\uD83C\uDF0B {air-name} &cEruption in: &e{time-to-open}s], [update]'
+
+  # BOSSBAR: After eruption - collect items countdown
+  vulcan-bossbar-open:
+    description: '&aVulcan erupted, collect items'
+    event: 'UNLOCK_EVENT'
+    commands:
+      - '[EasyBossBar=vulcan_locked {id}], [remove]'
+      - '[EasyBossBar=vulcan_open {id}], [minRadius=0], [radius=50], [timer=\{time-to-end}], [barColor=GREEN], [barStyle=SEGMENTED_20], [title=&a&l\u2714 {air-name} &fErupted! Collect items! &e{time-to-end}s &fleft], [update]'
+
+  # Cleanup bossbars on end
+  vulcan-bossbar-cleanup:
+    description: '&7Cleanup vulcan bossbars'
+    event: 'END_EVENT'
+    commands:
+      - '[EasyBossBar=vulcan_locked {id}], [remove]'
+      - '[EasyBossBar=vulcan_open {id}], [remove]'
+
+  # End event - cleanup
+  vulcan-end:
+    description: '&4Vulcan airdrop end cleanup'
+    event: 'END_EVENT'
+    commands:
+      - '[EFFECT_STOP_ALL]'
+      - '[MESSAGE_ALL] {air-name} &7has ended!'

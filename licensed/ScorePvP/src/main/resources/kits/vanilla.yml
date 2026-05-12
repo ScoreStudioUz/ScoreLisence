@@ -1,0 +1,43 @@
+# Default vanilla kit — выдаётся если у игрока нет персонального кита
+# Содержимое инвентаря сериализуется через Base64 при сохранении персональных китов
+# Здесь описывается дефолтный набор предметов
+
+name: "vanilla"
+items:
+  - slot: 0
+    material: DIAMOND_SWORD
+    name: "&fМеч"
+    enchantments:
+      sharpness: 4
+      unbreaking: 3
+  - slot: 1
+    material: BOW
+    name: "&fЛук"
+    enchantments:
+      power: 4
+      infinity: 1
+  - slot: 8
+    material: ARROW
+    name: "&fСтрела"
+    amount: 1
+  - slot: 36
+    material: DIAMOND_BOOTS
+    enchantments:
+      protection: 4
+      unbreaking: 3
+      feather_falling: 4
+  - slot: 37
+    material: DIAMOND_LEGGINGS
+    enchantments:
+      protection: 4
+      unbreaking: 3
+  - slot: 38
+    material: DIAMOND_CHESTPLATE
+    enchantments:
+      protection: 4
+      unbreaking: 3
+  - slot: 39
+    material: DIAMOND_HELMET
+    enchantments:
+      protection: 4
+      unbreaking: 3

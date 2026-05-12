@@ -1,0 +1,635 @@
+# ============================================================
+#               ScorePvP — Языковой файл (RU)
+# ============================================================
+
+prefix: "&8[&bScorePvP&8]&r "
+
+# Общие
+no-permission: "&cНет прав на выполнение этой команды."
+player-not-found: "&cИгрок &e{player} &cне найден или не в сети."
+invalid-usage: "&cНеверное использование. Введите &e{usage}"
+players-only: "&cТолько игрок может выполнить эту команду."
+
+# Инвентарь
+inventory-protected: "&cЭтот предмет защищён и не может быть перемещён."
+
+# Пати
+party:
+  already-in-party: "&cВы уже состоите в пати."
+  not-in-party: "&cВы не состоите в пати."
+  not-leader: "&cВы не являетесь лидером группы."
+  no-invite: "&cВы не получали приглашения от &e{player}&c."
+  already-invited: "&cИгрок &e{player} &cуже приглашён."
+  target-in-party: "&cИгрок &e{player} &cуже состоит в другой пати."
+  cannot-invite-self: "&cВы не можете пригласить самого себя."
+  cannot-kick-self: "&cВы не можете исключить себя. Используйте &e/party leave&c."
+  not-member: "&cИгрок &e{player} &cне является участником вашей пати."
+  invite-sent: "&aПриглашение отправлено игроку &e{player}&a."
+  invite-received: "&aВы получили приглашение в пати от &e{player}&a. Введите &b/party accept {player} &aдля принятия."
+  joined: "&aВы вступили в пати игрока &e{player}&a."
+  member-joined: "&e{player} &aвступил в пати."
+  left: "&aВы вышли из пати."
+  member-left: "&e{player} &cвышел из пати."
+  kicked: "&cВы были исключены из пати."
+  member-kicked: "&e{player} &cбыл исключён из пати."
+  disbanded: "&cПати распущена."
+  promoted: "&aВы стали новым лидером пати."
+  promoted-notify: "&aЛидерство передано игроку &e{player}&a."
+  chat-enabled: "&aЧат пати включён. Ваши сообщения видит только пати."
+  chat-disabled: "&7Чат пати выключен."
+  chat-format: "&8[&bПати&8] &e{player}&7: &f{message}"
+  pvp-blocked: "&cВы не можете войти в режим PvP, находясь в пати."
+  disbanded-owner-left: "&cПати распущена, так как лидер вышел с сервера."
+  invites-disabled: "&cИгрок &e{player} &cотключил приглашения в пати."
+  target-in-match: "&cИгрок &e{player} &cсейчас в матче."
+  only-friends-invite: "&cИгрок &e{player} &cпринимает приглашения только от друзей."
+  created: "&aПати создана! Пригласите игроков: &e/party invite <ник>"
+  cannot-create-in-match: "&cНельзя создать пати во время боя."
+  cannot-invite-in-match: "&cНельзя приглашать в пати во время боя."
+  cannot-accept-in-match: "&cНельзя принять приглашение во время боя."
+  invite-denied: "&7Вы отклонили приглашение от &e{player}&7."
+  invite-denied-notify: "&e{player} &7отклонил приглашение в пати."
+  use-leave-in-match: "&cВо время боя используйте &b/leave &cдля перехода в наблюдатели."
+  cannot-kick-in-match: "&cНельзя исключить игрока во время активного боя."
+  cannot-disband-in-match: "&cНельзя распустить пати во время активного боя."
+  invite-header: "&e{player} &7приглашает вас в пати!"
+  invite-accept-btn: "&a[✔ Принять]"
+  invite-accept-hover: "&aПринять приглашение в пати"
+  invite-decline-btn: "&c[✘ Отклонить]"
+  invite-decline-hover: "&cОтклонить приглашение"
+
+# Киты
+kit:
+  saved: "&aВаш персональный ванильный кит сохранён!"
+  not-in-region: "&cКоманда /kit save доступна только в регионе сундуков."
+  given: "&aКит &e{kit} &aвыдан."
+  reset-done: "&aДанные кита сброшены. При входе в регион — &bдефолтный кит&a."
+  kit-saved-spawn: "&aКит сохранён! Вы возвращены на спавн."
+  kit-reset-blocked: "&c/kit reset &7запрещён в ванильном регионе. Используйте &b/kit save&7."
+
+# Тиры
+tier:
+  set: "&aТир &e{tier} &aустановлен для &e{player} &aв режиме &e{mode}&a."
+  removed: "&aТир &e{player} &aв режиме &e{mode} &aсброшен."
+  not-found: "&cТир &e{tier} &cне существует."
+  mode-not-found: "&cРежим &e{mode} &cне найден."
+  info: "&eТиры игрока &b{player}&e:"
+  info-line: "  &7{mode}: &e{tier}"
+  no-tiers: "  &7Нет установленных тиров."
+
+# Регион сундуков
+chest:
+  restored: "&7Сундук восстановлен."
+  saved: "&aСодержимое сундука сохранено."
+  admin-mode: "&e[Адм] &7Вы редактируете сундук региона."
+  no-drop: "&cВ этом регионе нельзя выбрасывать предметы."
+  locked: "&cСундук занят другим игроком. Попробуйте позже."
+
+# Меню
+menu:
+  main-title: "&0Выбор режима PvP"
+  settings-title: "&0Настройки"
+  mode-disabled: "&cРежим недоступен"
+  glass-name: "&r"
+  mode-lore: "&7Нажмите, чтобы начать"
+  unavailable-version: "&cТребуется версия: &e{version}+"
+  unavailable-your-version: "&7Ваша версия: &c{version}"
+
+# Настройки — названия
+settings:
+  duel-requests:
+    name: "&fЗапросы на дуэль"
+    lore:
+      - "&7Кто может отправлять"
+      - "&7вам запросы на дуэль"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  party-invites:
+    name: "&fПриглашения в пати"
+    lore:
+      - "&7Кто может приглашать"
+      - "&7вас в пати"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  show-own-tier:
+    name: "&fПоказывать свой тир"
+    lore:
+      - "&7Кому виден ваш тир"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  friend-requests:
+    name: "&fЗаявки в друзья"
+    lore:
+      - "&7Принимать ли заявки"
+      - "&7в друзья"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  direct-messages:
+    name: "&fЛичные сообщения"
+    lore:
+      - "&7Кто может писать"
+      - "&7вам в /msg"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  friend-join-notifier:
+    name: "&fУведомления о входе"
+    lore:
+      - "&7Уведомлять о входе"
+      - "&7ваших друзей"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  profile-visibility:
+    name: "&fВидимость профиля"
+    lore:
+      - "&7Кто может просматривать"
+      - "&7ваш профиль"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+
+settings-values:
+  anyone: "&aВсе"
+  only-friends: "&eТолько друзья"
+  enabled: "&aВКЛ"
+  disabled: "&cВЫКЛ"
+  public: "&aПубличный"
+  private: "&cПриватный"
+
+# ── Match ──────────────────────────────────────────────────────────────────────
+match:
+  countdown: 5
+  kill: "&c☠ &e{killer} &7убил &e{victim}"
+  round-win: "&aВы победили!"
+  round-loss: "&cВы погибли..."
+  victory: "&6&lПОБЕДА!"
+  defeat: "&c&lПОРАЖЕНИЕ"
+  ffa-subtitle: "&7FFA — {count} игроков"
+  round-subtitle: "&7Раунд {current} / {total}"
+  fight: "&a&lБОЙ!"
+  ffa-remaining-score: "&7Осталось: &e{count} &7игроков"
+  ffa-kill: "&c☠ &e{dead} &7убит"
+  ffa-kill-by: "&c☠ &e{dead} &7убит игроком &e{killer}"
+  hp-remaining: "&a❤ &e{player} &7остался с &c{hp} HP"
+  players-remaining: "&7Осталось игроков: &e{count}"
+  ffa-victory-subtitle: "&7Вы последний выживший!"
+  ffa-winner: "&e{player} &aпобедил в FFA!"
+  player-left: "&e{player} &7покинул бой."
+  player-left-duel: "&e{player} &7покинул дуэль."
+  forfeit-win: "&e{player} &aпобедил автоматически, так как противник покинул игру."
+  duel-winner: "&e{player} &aпобедил &b{score}"
+  tie: "&7Ничья! Счёт &b{score1}&7:&b{score2}"
+  spectate-msg: "&7Наблюдение за матчем &e{player1} &7vs &e{player2}"
+  spectate-left: "&7Вы перешли в режим наблюдателя. Матч продолжается."
+  victory-subtitle: "&7Поздравляем!"
+  defeat-subtitle: "&7Попробуйте снова."
+
+# ── Block messages (styled multi-line) ────────────────────────────────────────
+round-finished:
+  - "&8&m─────────────────────────────"
+  - "&8➜ &6&lРаунд завершён &7#{round}"
+  - "&6| &fПобедил: &7{winner} &c{hp}❤"
+  - "&6| &fСчёт: &a{winner_score} &7: &c{loser_score}"
+  - "&8&m─────────────────────────────"
+
+match-victory-block:
+  - "&8&m─────────────────────────────"
+  - "&6&l  ПОБЕДА!"
+  - "&6| &fПротивник: &7{loser}"
+  - "&6| &fСчёт: &a{winner_score} &7: &c{loser_score}"
+  - "&6| &fРежим: &b{mode}"
+  - "&8&m─────────────────────────────"
+
+match-defeat-block:
+  - "&8&m─────────────────────────────"
+  - "&c&l  ПОРАЖЕНИЕ"
+  - "&c| &fПротивник: &7{winner}"
+  - "&c| &fСчёт: &a{winner_score} &7: &c{loser_score}"
+  - "&c| &fРежим: &b{mode}"
+  - "&8&m─────────────────────────────"
+
+ffa-victory-block:
+  - "&8&m─────────────────────────────"
+  - "&6&l  ПОБЕДА В FFA!"
+  - "&6| &fРежим: &b{mode}"
+  - "&6| &fИгроков было: &e{total}"
+  - "&8&m─────────────────────────────"
+
+match-tie-block:
+  - "&8&m─────────────────────────────"
+  - "&7&l  НИЧЬЯ!"
+  - "&7| &fСчёт: &b{score1} &7: &b{score2}"
+  - "&7| &fРежим: &b{mode}"
+  - "&8&m─────────────────────────────"
+
+match-forfeit-block:
+  - "&8&m─────────────────────────────"
+  - "&6&l  ПОБЕДА (техническая)"
+  - "&6| &fПротивник покинул игру"
+  - "&6| &fРежим: &b{mode}"
+  - "&8&m─────────────────────────────"
+
+duel-start-block:
+  - "&8&m─────────────────────────────"
+  - "&e&l  ДУЭЛЬ НАЧИНАЕТСЯ!"
+  - "&e| &fПротивник: &b{opponent}"
+  - "&e| &fРежим: &b{mode}"
+  - "&e| &fРаундов: &b{rounds}"
+  - "&8&m─────────────────────────────"
+
+# ── Duel ───────────────────────────────────────────────────────────────────────
+duel-invite:
+  - "&7&m──────────────────────────"
+  - "&eИгрок: &f{player}"
+  - "&eРежим: &f{mode}"
+  - "&eРаунды: &f{rounds}"
+  - "&7&m──────────────────────────"
+duel-sent-block:
+  - "&8&m─────────────────────────────"
+  - "&a&l  ВЫЗОВ ОТПРАВЛЕН"
+  - "&a| &fИгрок: &e{player}"
+  - "&a| &fРежим: &b{mode}"
+  - "&a| &fРаунды: &b{rounds}"
+  - "&8&m─────────────────────────────"
+
+duel-invite-accept: "&a[Принять]"
+duel-invite-decline: "&c[Отклонить]"
+duel-invite-accept-hover: "&aНажмите, чтобы принять дуэль"
+duel-invite-decline-hover: "&cНажмите, чтобы отклонить дуэль"
+
+duel:
+  no-request: "&cУ вас нет активных вызовов."
+  expired: "&cВызов истёк."
+  sender-offline: "&cИгрок, который вас вызвал, вышел с сервера."
+  target-in-match: "&cИгрок &e{player} &cуже в матче."
+  target-in-queue: "&cИгрок &e{player} &cуже ищет противника в очереди."
+  you-in-match: "&cВы уже в матче."
+  already-pending: "&cВы уже отправили вызов игроку &e{player}&c."
+  mode-not-found: "&cРежим &e{mode} &cне найден."
+  cannot-self: "&cНельзя вызвать самого себя."
+  requests-disabled: "&cИгрок &e{player} &cотключил запросы на дуэль."
+  only-friends: "&cИгрок &e{player} &cпринимает вызовы только от друзей."
+  target-in-party: "&cИгрок &e{player} &cсостоит в пати."
+  arena-not-found-timeout: "&cАрена не найдена за отведённое время. Попробуйте позже."
+  no-free-arena: "&cНет свободных арен для режима &e{mode}&c. Ожидайте..."
+
+# ── Block-сообщения дуэлей (многострочные) ──────────────────────────────────
+duel-declined-block:
+  - "&8&m─────────────────────────────"
+  - "&c&l  ДУЭЛЬ ОТКЛОНЕНА"
+  - "&c| &fВы отклонили вызов на дуэль."
+  - "&8&m─────────────────────────────"
+
+duel-declined-notify-block:
+  - "&8&m─────────────────────────────"
+  - "&c&l  ДУЭЛЬ ОТКЛОНЕНА"
+  - "&c| &fИгрок &e{player} &fотклонил ваш вызов."
+  - "&8&m─────────────────────────────"
+
+duel-accepted-block:
+  - "&8&m─────────────────────────────"
+  - "&a&l  ДУЭЛЬ ПРИНЯТА"
+  - "&a| &fПротивник: &e{player}"
+  - "&a| &fРежим: &b{mode}"
+  - "&a| &fРаундов: &b{rounds}"
+  - "&a| &7Поиск арены..."
+  - "&8&m─────────────────────────────"
+
+duel-no-arena-block:
+  - "&8&m─────────────────────────────"
+  - "&c&l  АРЕНА НЕ НАЙДЕНА"
+  - "&c| &fРежим: &b{mode}"
+  - "&c| &7Ожидайте..."
+  - "&8&m─────────────────────────────"
+
+# ── Queue ──────────────────────────────────────────────────────────────────────
+queue:
+  left: "&7Вы покинули очередь."
+  already-in: "&cВы уже в очереди."
+  in-match: "&cВы уже в матче."
+
+queue-joined-block:
+  - "&8&m─────────────────────────────"
+  - "&e&l  ПОИСК СОПЕРНИКА"
+  - "&e| &fРежим: &b{mode}"
+  - "&e| &7Ожидайте соперника..."
+  - "&8&m─────────────────────────────"
+
+# ── Profile ────────────────────────────────────────────────────────────────────
+profile:
+  private: "&cПрофиль игрока &e{player} &cзакрыт."
+  title: "&0Профиль: &b{player}"
+  playtime-name: "&eВремя в игре"
+  playtime-lore: "&7{hours}ч {minutes}мин"
+  stats-name: "&eОбщая статистика"
+  stats-wins: "&7Побед: &a{wins}"
+  stats-losses: "&7Поражений: &c{losses}"
+  stats-kd: "&7K/D: &e{kd}"
+  highest-tier: "&7Высший тир: {tier}"
+  current-mode-name: "&6&lТекущий режим"
+  current-mode-mode: "&7Режим: &b{mode}"
+  current-mode-tier: "&7Тир: {tier}"
+  current-mode-status: "&7Статус: &aВ бою"
+  tier-label: "&7Тир: {tier}"
+  wins-label: "&7Побед: &a{wins}"
+  losses-label: "&7Поражений: &c{losses}"
+  kd-label: "&7K/D: &e{kd}"
+  status-online: "&aОнлайн"
+  status-offline: "&cОфлайн"
+  status-label: "&7Статус: {status}"
+  uuid-label: "&7UUID: &8{uuid}..."
+  unranked: "&7Без ранга"
+  opponent-label: "&7Противник"
+
+# ── Msg ────────────────────────────────────────────────────────────────────────
+messages:
+  dm-format: "&8[&bЛС&8] &eОт &6{sender} &8→ &6{target}&8: &f{message}"
+  version-too-low: "&cДля режима &e{mode} &cтребуется версия &e{min_version}+&c. Ваша версия: &e{player_version}"
+  version-too-low-party: "&cИгрок &e{player} &cне может играть в &e{mode} &c(версия &e{version}&c). Требуется &e{min_version}+"
+  version-too-low-duel: "&cДуэль в режиме &e{mode} &cневозможна: &e{player} &cиспользует несовместимую версию &e{version}"
+
+msg:
+  blocked: "&cИгрок &e{player} &cне принимает личные сообщения."
+  no-partner: "&cУ вас нет последнего собеседника. Используйте /msg <ник>."
+  partner-offline: "&cВаш последний собеседник вышел с сервера."
+
+# ── Friends ───────────────────────────────────────────────────────────────────
+friends:
+  request-sent: "&aЗаявка в друзья отправлена игроку &e{player}&a."
+  request-accepted: "&e{player} &aпринял вашу заявку в друзья!"
+  request-denied: "&e{player} &7отклонил вашу заявку в друзья."
+  accepted: "&aВы приняли заявку от &e{player}&a. Теперь вы друзья!"
+  denied: "&7Вы отклонили заявку от &e{player}&7."
+  removed: "&7Вы удалили &e{player} &7из друзей."
+  was-removed: "&e{player} &7удалил вас из друзей."
+  no-request: "&cНет входящей заявки от &e{player}&c."
+  already-friends: "&cВы уже друзья с &e{player}&c."
+  not-friends: "&cВы не являетесь друзьями с &e{player}&c."
+  cannot-add-self: "&cНельзя добавить самого себя в друзья."
+  already-sent: "&cВы уже отправили заявку игроку &e{player}&c."
+  requests-disabled: "&cИгрок &e{player} &cне принимает заявки в друзья."
+  list-full: "&cВаш список друзей заполнен."
+  join-notify: "&7» &b{player} &7зашёл на сервер"
+  only-friends-invite: "&cИгрок &e{player} &cпринимает приглашения только от друзей."
+  duel-only-friends: "&cИгрок &e{player} &cпринимает вызовы только от друзей."
+  no-friends: "&7У вас пока нет друзей."
+  list-header: "&eДрузья &7({count}):"
+  status-online: "&aОнлайн"
+  status-offline: "&7Офлайн"
+  no-incoming: "&7Нет входящих заявок."
+  incoming-header: "&eВходящие заявки:"
+  request-header: "&e{player} &7хочет добавить вас в друзья!"
+  accept-btn: "&a[✔ Принять]"
+  accept-hover: "&aПринять заявку"
+  deny-btn: "&c[✘ Отклонить]"
+  deny-hover: "&cОтклонить заявку"
+
+# ── Section 3 additions ───────────────────────────────────────────────────────
+command-blocked-match: "&cВо время боя доступны только: &b/r &7/ &b/msg &7/ &b/leave&c."
+command-blocked-vanilla: "&cВ ванильном регионе доступна только команда &b/kit save&c."
+command-blocked-kit-reset: "&c/kit reset &7запрещён в ванильном регионе. Используйте &b/kit save &7для сохранения."
+kit-reset-blocked: "&c/kit reset &7запрещён в ванильном регионе."
+
+# ── Admin commands (ScorePvPCommand) ──────────────────────────────────────────
+admin:
+  reload: "&aКонфигурация перезагружена за &e{ms}ms&a."
+  version: "&7Версия: &b{version}"
+  version-db: "  &7База: &f{db}"
+  version-db-mysql: "&2MySQL"
+  version-db-sqlite: "&eSQLite (резерв)"
+  version-modes: "  &7Режимов загружено: &f{count}"
+  setspawn-only-player: "Только игрок может установить спавн."
+  setspawn-done: "&aВарп установлен на вашу позицию."
+  settpspawn-only-player: "Только игрок может установить точку выхода."
+  settpspawn-done: "&aТочка выхода (tp-spawn) установлена."
+  setregion-only-player: "Только игрок может установить регион."
+  editor-only-player: "Только игрок может войти в режим редактора."
+  editor-on: "&aРежим редактора &bВКЛ&a. Хотбар лобби скрыт. Используйте &b/spvp kit save <название> &aдля сохранения, затем &b/spvp editor &aеще раз для выхода."
+  editor-off: "&7Режим редактора &cВЫКЛ&7. Хотбар восстановлен."
+  kit-create-usage: "&cИспользование: &b/spvp kit create <название>"
+  kit-create-success: "&aКит &b{kit} &aуспешно создан."
+  kit-create-exists: "&cКит &b{kit} &cуже существует."
+  kit-save-only-player: "Только игрок может сохранить кит."
+  kit-save-usage: "&cИспользование: &b/spvp kit save <название>"
+  kit-save-success: "&aКит &b{kit} &aсохранён из вашего инвентаря."
+  kit-save-error: "&cОшибка сохранения кита &b{kit}&c. Проверьте логи."
+  kit-set-usage: "&cИспользование: &b/spvp kit set vanilla"
+  kit-set-only-player: "Только игрок может установить дефолтный кит."
+  kit-set-success: "&aВаш инвентарь установлен как &bDEFAULT Vanilla &aкит."
+  kit-set-error: "&cОшибка сохранения vanilla кита."
+  giveitem-usage: "&cИспользование: &b/spvp giveitem <игрок> <item_id>"
+  giveitem-available: "  &7Доступные предметы: &b{items}"
+  giveitem-unknown: "&cНеизвестный предмет: &b{item}"
+  giveitem-available-short: "  &7Доступные: &b{items}"
+  giveitem-sent: "&aПредмет &b{item} &aвыдан игроку &b{player}&a."
+  giveitem-received: "&aВам выдан кастомный предмет: &b{item}&a."
+  menu-usage: "&cИспользование: &b/spvp menu <create|editor|open> <name> [player]"
+  menu-create-usage: "&cИспользование: &b/spvp menu create <название>"
+  menu-create-success: "&aМеню &b{menu} &aсоздано."
+  menu-create-exists: "&cМеню &b{menu} &cуже существует."
+  menu-editor-only-player: "Только игрок может открыть редактор меню."
+  menu-editor-usage: "&cИспользование: &b/spvp menu editor <название>"
+  menu-not-found: "&cМеню &b{menu} &cне найдено."
+  menu-open-usage: "&cИспользование: &b/spvp menu open <название> <игрок>"
+  menu-opened: "&aМеню &b{menu} &aоткрыто для &b{player}&a."
+  menu-saved: "&aМеню &b{menu} &aсохранено."
+  clear-usage: "&cИспользование: &b/spvp clear all &7или &b/spvp clear <игрок>"
+  clear-all-done: "&aСтатистика и тиры &bвсех &aигроков очищены. Арены и киты не затронуты."
+  clear-player-done: "&aСтатистика и тиры игрока &b{player} &aочищены."
+  help-title: "&eАдмин-команды:"
+  help:
+    - "  &b/spvp reload                         &7— перезагрузить конфиг"
+    - "  &b/spvp version                        &7— информация о плагине"
+    - "  &b/spvp setspawn                       &7— установить варп слота 9"
+    - "  &b/spvp settpspawn                     &7— установить точку выхода после боя"
+    - "  &b/spvp setregion                      &7— выделить регион сундуков"
+    - "  &b/spvp editor                          &7— режим редактора китов (скрыть хотбар)"
+    - "  &b/spvp kit create <name>              &7— создать кит"
+    - "  &b/spvp kit save <name>                &7— сохранить инвентарь как кит"
+    - "  &b/spvp kit set vanilla                   &7— установить инвентарь как DEFAULT кит"
+    - "  &b/spvp giveitem <player> <item_id>    &7— выдать кастомный предмет"
+    - "  &b/spvp clear all                      &7— очистить статистику всех"
+    - "  &b/spvp clear <игрок>                  &7— очистить статистику игрока"
+    - "  &b/spvp menu create <name>             &7— создать динамическое меню"
+    - "  &b/spvp menu editor <name>             &7— редактировать меню (GUI)"
+    - "  &b/spvp menu open <name> <player>      &7— открыть меню игроку"
+
+# ── GUI ──────────────────────────────────────────────────────────────────────
+gui:
+  click-to-start: "&7Нажмите, чтобы начать"
+
+# ── Hotbar items ──────────────────────────────────────────────────────────────
+hotbar:
+  party-ffa-name: "&b&lParty FFA"
+  party-ffa-lore: "&7Нажмите для выбора режима"
+  party-close-name: "&c&lЗакрыть пати"
+  party-close-lore: "&7Нажмите для роспуска пати"
+  party-leave-name: "&c&lПокинуть пати"
+  party-leave-lore: "&7Нажмите для выхода из пати"
+  queue-name: "&c&lПоиск противника..."
+  queue-mode-lore: "&7Режим: &e{mode}"
+  queue-cancel-lore: "&cПКМ для отмены поиска"
+  cannot-disband-in-match: "&cНельзя распустить пати во время активного боя."
+  cannot-leave-use-cmd: "&cИспользуйте &b/leave &cдля выхода в режим наблюдателя."
+  cannot-create-in-match: "&cНельзя создать пати во время боя."
+
+# ── FFA (Party FFA — GUIClickListener) ────────────────────────────────────────
+ffa:
+  min-members: "&cДля FFA нужно минимум &e{min} &cучастника онлайн."
+  incompatible-versions: "&cНесовместимые версии (&e{version}+&c требуется):"
+  incompatible-entry: "  &7✗ {entry}"
+  no-arena: "&cНет свободных арен для режима &e{mode}&c."
+  not-enough-members: "&cНедостаточно участников онлайн. FFA отменён."
+  started: "&aFFA начался! Режим: {mode}"
+
+# ── Duel Rounds GUI ───────────────────────────────────────────────────────────
+duel-gui:
+  cancel-name: "&c&lОтмена"
+  cancel-lore: "&7Нажмите для отмены"
+  send-name: "&a&lОтправить дуэль"
+  send-lore: "&7Нажмите для отправки вызова"
+  round-selected: "&a▶ Выбрано"
+  round-click: "&7Нажмите для выбора"
+  round-word-1: "раунд"
+  round-word-2-4: "раунда"
+  round-word-5: "раундов"
+
+# ── Custom Items ──────────────────────────────────────────────────────────────
+custom-item:
+  golden-head-name: "&6&lЗолотая голова"
+  golden-head-lore:
+    - "&7При использовании:"
+    - "  &aРегенерация III &7на &e5 сек"
+    - "  &6Поглощение I &7на &e2 мин &7(+4 сердца)"
+    - ""
+    - "&8Перезарядка: &710 сек"
+  golden-head-use: "&6Золотая голова &7: &aРегенерация III ({regen_sec}с) &7+ &6Поглощение I ({abs_sec}с)"
+
+# ── Vanilla Region ────────────────────────────────────────────────────────────
+vanilla-region:
+  enter: "&aВы в ванильном регионе. &7Используйте &b/kit save &7для сохранения набора."
+  exit: "&7Вы покинули ванильный регион."
+
+# ── Spectator ─────────────────────────────────────────────────────────────────
+spec:
+  not-in-match: "&cЭтот игрок не в матче."
+  cannot-while-match: "&cВы не можете наблюдать, находясь в матче."
+  leave-queue-first: "&cВыйдите из очереди перед наблюдением (/leave)."
+  cannot-spectate: "&cНевозможно войти в режим наблюдателя."
+
+# ── Leave ─────────────────────────────────────────────────────────────────────
+leave:
+  nowhere: "&7Вам некуда выходить."
+
+# ── Arena ─────────────────────────────────────────────────────────────────────
+arena:
+  creation-start: "&aРежим создания арены &e#{number}&a. ЛКМ = угол 1, ПКМ = угол 2."
+  corner1-set: "&aУгол 1 установлен: &f{loc}"
+  corner2-set: "&aУгол 2 установлен: &f{loc}"
+  region-saved: "&aРегион арены &e#{number} &aсохранён. Продолжайте настройку: /arena {number} position set ..."
+  region-tool-name: "&e&lВыделение региона"
+  region-tool-lore-1: "&7ЛКМ по блоку = угол 1"
+  region-tool-lore-2: "&7ПКМ по блоку = угол 2"
+  region-select-msg: "&aВозьмите &eзолотой топор &aи выделите регион:"
+  region-select-help-1: "  &7ЛКМ по блоку &f= &aугол 1"
+  region-select-help-2: "  &7ПКМ по блоку &f= &aугол 2"
+  region-corner1: "&aУгол 1 региона: &f{loc}"
+  region-corner2: "&aУгол 2 региона: &f{loc}"
+  region-chest-saved: "&aРегион сундуков успешно сохранён!"
+  not-found: "&cАрена &e#{number} &cне найдена. Сначала /arena create {number}"
+  not-found-short: "&cАрена #{number} не найдена."
+  position-unknown: "&cПозиция не распознана. Используйте: 1 / 2 / center"
+  position-set: "&aПозиция &e{pos} &aустановлена для арены &e#{number}&a."
+  name-set: "&aИмя арены &e#{number} &aустановлено: &b{name}"
+  type-unknown: "&cТип не распознан. Используйте: default / vanilla"
+  type-set: "&aТип арены &e#{number} &aустановлен: &b{type}"
+  info-header: "&eАрена &b#{number} &e— {name}"
+  info-type: "  &7Тип: &f{type}"
+  info-status: "  &7Статус: {status}"
+  info-status-free: "&aСвободна"
+  info-status-busy: "&cЗанята"
+  info-configured: "  &7Полностью настроена: {value}"
+  info-yes: "&aДа"
+  info-no: "&cНет"
+  info-corners: "  &7Угол 1: {c1}  Угол 2: {c2}"
+  info-positions: "  &7Pos1: {p1}  Pos2: {p2}  Centre: {centre}"
+  info-snapshot: "  &7Snapshot: {value}"
+  info-snapshot-yes: "&a✔ сохранён"
+  info-snapshot-no: "&c✘ нет — используйте /arena {number} save"
+  restore-subtitle: "&7Подготовка арены..."
+  no-corners: "&cАрена &e#{number} &cне имеет заданных углов."
+  blocks-saved: "&aСохранено &e{count} &aблоков для арены &e#{number}"
+  schematic-saved: "&aСхематик арены &e#{number} &aсохранён (&e{file}&a)."
+  schematic-error: "&cОшибка сохранения схематика: {error}"
+  restoring: "&7Восстановление арены &e#{number}&7..."
+  restored: "&aАрена &e#{number} &aвосстановлена!"
+  no-snapshot: "&cНет сохранённого эталона для арены #{number}. Используйте /arena {number} save"
+  list-header: "&eАрены ({count}):"
+  list-entry-free: "&aСвободна"
+  list-entry-busy: "&cЗанята"
+  deleted: "&aАрена #{number} удалена."
+  number-required: "&cНомер должен быть числом."
+  arena-not-found: "&cАрена не найдена."
+  create-usage: "Использование: /arena create <номер>"
+  name-usage: "Использование: /arena <n> name <имя>"
+  type-usage: "Использование: /arena <n> type <default|vanilla>"
+  help-title: "&eКоманды /arena:"
+  help:
+    - "  &b/arena create <n>                        &7— создать"
+    - "  &b/arena <n> name <имя>                    &7— задать имя"
+    - "  &b/arena <n> type <default|vanilla>         &7— тип"
+    - "  &b/arena <n> position set <1|2|center>     &7— позиция"
+    - "  &b/arena <n> save                          &7— сохранить эталон (vanilla)"
+    - "  &b/arena <n> restore                       &7— восстановить вручную"
+    - "  &b/arena <n> info                          &7— информация"
+    - "  &b/arena <n> delete                        &7— удалить"
+    - "  &b/arena list                              &7— список"
+
+# ── Party help ────────────────────────────────────────────────────────────────
+party-help:
+  title: "&eКоманды пати:"
+  lines:
+    - "  &b/party invite <ник>   &7— пригласить игрока"
+    - "  &b/party accept <лидер> &7— принять приглашение"
+    - "  &b/party leave          &7— выйти из пати"
+    - "  &b/party kick <ник>     &7— исключить участника"
+    - "  &b/party disband        &7— распустить пати"
+    - "  &b/party chat           &7— переключить чат пати"
+    - "  &b/party promote <ник>  &7— передать лидерство"
+    - "  &b/party deny <лидер>   &7— отклонить приглашение"
+    - "  &b/party ffa            &7— FFA-меню для пати"
+
+# ── Friends help ──────────────────────────────────────────────────────────────
+friends-help:
+  title: "&eКоманды друзей:"
+  lines:
+    - "  &b/friends add <ник>      &7— отправить заявку"
+    - "  &b/friends remove <ник>   &7— удалить из друзей"
+    - "  &b/friends list            &7— список друзей"
+    - "  &b/friends accept <ник>   &7— принять заявку"
+    - "  &b/friends deny <ник>     &7— отклонить заявку"
+    - "  &b/friends requests        &7— входящие заявки"
+
+# ── Tier help ─────────────────────────────────────────────────────────────────
+tier-help:
+  title: "&eTier-команды (только admin):"
+  lines:
+    - "  &b/tier set <игрок> <режим> <тир>"
+    - "  &b/tier remove <игрок> <режим>"
+    - "  &b/tier info <игрок>"
+
+# ── Placeholders ─────────────────────────────────────────────────────────────
+placeholders:
+  playtime-format: "{hours}ч {minutes}мин"

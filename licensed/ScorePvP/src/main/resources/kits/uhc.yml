@@ -1,0 +1,47 @@
+# Default UHC kit
+name: "uhc"
+items:
+  - slot: 0
+    material: DIAMOND_SWORD
+    name: "&fМеч"
+    enchantments:
+      sharpness: 3
+      unbreaking: 3
+  - slot: 1
+    material: BOW
+    name: "&fЛук"
+    enchantments:
+      power: 4
+      infinity: 1
+  - slot: 2
+    material: GOLDEN_APPLE
+    name: "&fЗолотое яблоко"
+    amount: 3
+  - slot: 3
+    material: COOKED_BEEF
+    name: "&fЕда"
+    amount: 32
+  - slot: 8
+    material: ARROW
+    amount: 1
+  - slot: 36
+    material: DIAMOND_BOOTS
+    enchantments:
+      protection: 2
+      unbreaking: 3
+      feather_falling: 3
+  - slot: 37
+    material: DIAMOND_LEGGINGS
+    enchantments:
+      protection: 2
+      unbreaking: 3
+  - slot: 38
+    material: DIAMOND_CHESTPLATE
+    enchantments:
+      protection: 2
+      unbreaking: 3
+  - slot: 39
+    material: DIAMOND_HELMET
+    enchantments:
+      protection: 2
+      unbreaking: 3

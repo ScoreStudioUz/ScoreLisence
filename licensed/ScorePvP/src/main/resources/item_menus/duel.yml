@@ -1,0 +1,31 @@
+# ============================================================
+#  Duel Mode Selection GUI — item_menus/duel.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Выбор режима дуэли"
+size: 36
+
+# Filler glass pane
+filler:
+  material: BLUE_STAINED_GLASS_PANE
+  name: "&r"
+
+# Mode item slots (start - end)
+mode-slots:
+  start: 10
+  end: 25
+
+# Mode item display
+mode-lore:
+  - "&7Нажмите для выбора режима"
+  - ""
+  - "&eЛКМ &7— Выбрать"
+
+# Unavailable mode display
+unavailable:
+  material: RED_STAINED_GLASS_PANE
+  name-suffix: " &8[&cНедоступно]"
+  lore:
+    - "&cТребуется версия: &e{version}+"
+    - "&7Ваша версия: &c{your_version}"

@@ -1,0 +1,59 @@
+# ============================================================
+#               ScorePvP — Конфигурация режимов
+# ============================================================
+
+Sword:
+  display-name: "&bМеч"
+  icon: DIAMOND_SWORD
+  icon-enchanted: true
+  enabled: true
+  kit-type: "sword"
+  allowed-arenas: []
+  default-rounds: 3
+  countdown-seconds: 5
+  min-client-version: "1.8.0"
+
+Axe:
+  display-name: "&cТопор"
+  icon: DIAMOND_AXE
+  icon-enchanted: false
+  enabled: true
+  kit-type: "axe"
+  allowed-arenas: []
+  default-rounds: 3
+
+UHC:
+  display-name: "&6UHC"
+  icon: GOLDEN_APPLE
+  icon-enchanted: true
+  enabled: true
+  kit-type: "uhc"
+  allowed-arenas: []
+  default-rounds: 1
+
+Pot:
+  display-name: "&5Поушн"
+  icon: SPLASH_POTION
+  icon-enchanted: false
+  enabled: true
+  kit-type: "pot"
+  allowed-arenas: []
+  default-rounds: 3
+
+SMP:
+  display-name: "&aSMP"
+  icon: GRASS_BLOCK
+  icon-enchanted: false
+  enabled: false
+  kit-type: "smp"
+  allowed-arenas: []
+  default-rounds: 1
+
+NoDebuff:
+  display-name: "&eNo Debuff"
+  icon: MILK_BUCKET
+  icon-enchanted: false
+  enabled: true
+  kit-type: "nodebuff"
+  allowed-arenas: []
+  default-rounds: 3

@@ -1,0 +1,80 @@
+# ScoreAutoBuyer Configuration
+# Interval between inventory checks (in ticks, 20 ticks = 1 second)
+check-interval: 20
+
+# Configured items for auto-selling
+# Each item must have: name, material, and price
+# Price can include PlaceholderAPI placeholders and mathematical expressions
+# Use %amount% to reference the quantity of items being sold
+items:
+  cobblestone:
+    name: "Булыжник"
+    material: "COBBLESTONE"
+    price: "0.1 * %amount%"
+  
+  stone:
+    name: "Камень"
+    material: "STONE"
+    price: "0.2 * %amount%"
+  
+  iron_ore:
+    name: "Железная руда"
+    material: "IRON_ORE"
+    price: "5.0 * %amount%"
+  
+  gold_ore:
+    name: "Золотая руда"
+    material: "GOLD_ORE"
+    price: "10.0 * %amount%"
+  
+  diamond:
+    name: "Алмаз"
+    material: "DIAMOND"
+    price: "100.0 * %amount%"
+  
+  wheat:
+    name: "Пшеница"
+    material: "WHEAT"
+    price: "1.5 * %amount%"
+  
+  coal:
+    name: "Уголь"
+    material: "COAL"
+    price: "%math_0:_{checkitem_amount_mat:coal}*20%"
+  
+  carrot:
+    name: "Морковь"
+    material: "CARROT"
+    price: "1.0 * %amount%"
+  
+  potato:
+    name: "Картофель"
+    material: "POTATO"
+    price: "1.0 * %amount%"
+  
+  oak_log:
+    name: "Дубовое бревно"
+    material: "OAK_LOG"
+    price: "2.0 * %amount%"
+  
+  birch_log:
+    name: "Березовое бревно"
+    material: "BIRCH_LOG"
+    price: "2.0 * %amount%"
+
+# Examples with PlaceholderAPI integration
+# emerald:
+#   name: "Изумруд"
+#   material: "EMERALD"
+#   price: "%player_level% * 10 + %amount% * 50"
+
+# Complex placeholder examples:
+# redstone:
+#   name: "Красная пыль"
+#   material: "REDSTONE"
+#   price: "%math_0:_{checkitem_amount_mat:redstone}*5%"
+#
+# lapis_lazuli:
+#   name: "Лазурит"
+#   material: "LAPIS_LAZULI" 
+#   price: "%math_1:_{player_stat_mine_use_item:minecraft:lapis_ore}/100*%amount%%"

@@ -1,0 +1,32 @@
+# ScoreAutoBuyer Messages (Russian)
+messages:
+  # Command messages
+  no-permission: "&cУ вас нет прав для использования этой команды!"
+  player-not-found: "&cИгрок %player% не найден или не в сети!"
+  item-not-configured: "&cПредмет %item% не настроен в конфигурации!"
+  config-reloaded: "&aКонфигурация успешно перезагружена!"
+  
+  # Auto-buyer control messages
+  autobuyer-enabled: "&aАвтопокупатель включен для игрока %player%"
+  autobuyer-disabled: "&cАвтопокупатель отключен для игрока %player%"
+  autobuyer-enabled-self: "&aВаш автопокупатель был включен администратором!"
+  autobuyer-disabled-self: "&cВаш автопокупатель был отключен администратором!"
+  autobuyer-reset-login: "&eВаш автопокупатель был сброшен при входе на сервер"
+  
+  # Item control messages
+  item-enabled: "&aПредмет %item% включен для игрока %player%"
+  item-disabled: "&cПредмет %item% отключен для игрока %player%"
+  item-enabled-self: "&aПредмет %item% включен в автопродаже!"
+  item-disabled-self: "&cПредмет %item% отключен в автопродаже!"
+  
+  # Selling messages
+  item-sold: "&e[АвтоПродажа] &aПродано: &f%amount%x %item% &aза &f%price%"
+  
+  # Usage messages
+  usage-enable: "&eИспользование: /scoreautobuyer enable <игрок>"
+  usage-disable: "&eИспользование: /scoreautobuyer disable <игрок>"
+  usage-items: "&eИспользование: /scoreautobuyer items <enable|disable> <предмет> <игрок>"
+  
+  # Error messages
+  economy-error: "&cОшибка экономики! Свяжитесь с администратором."
+  price-calculation-error: "&cОшибка при расчете цены для предмета %item%"

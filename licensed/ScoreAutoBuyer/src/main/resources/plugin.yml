@@ -1,0 +1,27 @@
+name: ScoreAutoBuyer
+version: 1.0.0
+main: com.scoreautobuyer.ScoreAutoBuyer
+api-version: '1.21'
+author: ScoreAutoBuyer
+description: Minecraft Paper plugin for automatic item selling with admin controls
+website: https://github.com/scoreautobuyer
+
+depend: [Vault, ScoreLicense]
+softdepend: [PlaceholderAPI]
+
+commands:
+  scoreautobuyer:
+    description: Main ScoreAutoBuyer command
+    usage: /scoreautobuyer <enable|disable|items|reload> [args...]
+    permission: scoreautobuyer.admin
+    aliases: [sab, autobuyer]
+
+permissions:
+  scoreautobuyer.admin:
+    description: Admin permission for ScoreAutoBuyer
+    default: op
+  scoreautobuyer.*:
+    description: All ScoreAutoBuyer permissions
+    default: op
+    children:
+      scoreautobuyer.admin: true

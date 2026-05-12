@@ -1,0 +1,54 @@
+# ScoreTpa — English Messages
+
+messages:
+  # TPA Requests
+  request-sent: "&aYou sent a teleport request to &f%player%&a."
+  request-received: "&e%player% &7wants to teleport to you."
+  request-expired: "&cTeleport request has expired."
+  request-cancelled: "&cYou cancelled your teleport request to &f%target%&c."
+
+  # Accept / Deny
+  accepted-request: "&aYou accepted the teleport request from &f%player%&a."
+  request-accepted: "&a%target% accepted your teleport request!"
+  denied-request: "&cYou denied the teleport request from &f%player%&c."
+  request-denied: "&c%target% denied your teleport request."
+
+  # Teleportation
+  teleporting: "&eTeleporting in &b%time% &eseconds..."
+  teleport-success: "&aTeleported successfully!"
+  teleport-cancelled: "&cTeleportation cancelled!"
+  teleport-cancelled-combat: "&cTeleportation cancelled due to combat!"
+  teleport-cancelled-movement: "&cTeleportation cancelled — you moved!"
+
+  # Usage
+  usage-tpa: "&cUsage: /tpa <player>"
+
+  # Errors
+  player-not-found: "&cPlayer not found or offline."
+  no-pending-request: "&cYou have no pending teleport requests."
+  cannot-send-self: "&cYou cannot send a request to yourself."
+  already-sent-request: "&cYou already sent a request to this player."
+  already-have-request: "&cYou already have a request from this player."
+  cooldown-wait: "&cPlease wait &e%cooldown%s &cbefore sending another request."
+  no-permission: "&cYou don't have permission to do this."
+
+  # Toggle
+  tptoggle-enabled: "&aTeleport requests are now &2enabled&a."
+  tptoggle-disabled: "&cTeleport requests are now &4disabled&c."
+  teleports-disabled: "&c%player% has disabled teleport requests."
+
+  # Admin
+  config-reloaded: "&aConfiguration reloaded!"
+
+  # BossBar
+  bossbar-title: "&fTeleporting in &b%time% &fseconds"
+
+  # Buttons
+  button-accept: "&a[ACCEPT]"
+  button-deny: "&c[DENY]"
+  button-cancel: "&e[CANCEL]"
+
+  # Hover text
+  hover-accept: "&aClick to accept"
+  hover-deny: "&cClick to deny"
+  hover-cancel: "&eClick to cancel"

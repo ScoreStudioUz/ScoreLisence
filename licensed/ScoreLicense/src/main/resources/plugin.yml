@@ -1,0 +1,8 @@
+name: ScoreLicense
+version: 1.0.0
+main: com.score.license.ScoreLicensePlugin
+api-version: '1.16'
+description: License management for Score plugins
+author: ScoreStudio
+load: STARTUP
+loadbefore: [ScoreTpa, ScoreHWAuction, ScoreAirDrop, ScoreAutoBuyer, ScorePvP]

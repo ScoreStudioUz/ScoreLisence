@@ -1,0 +1,30 @@
+# ============================================================
+#  Party FFA Mode Selection GUI — item_menus/party.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Выбор режима Party FFA"
+size: 36
+
+# Filler glass pane
+filler:
+  material: BLUE_STAINED_GLASS_PANE
+  name: "&r"
+
+# Mode item slots (start - end)
+mode-slots:
+  start: 10
+  end: 25
+
+# Mode item display
+mode-lore:
+  - "&7Нажмите для запуска FFA"
+  - ""
+  - "&eЛКМ &7— Начать FFA"
+
+# Unavailable mode display
+unavailable:
+  material: RED_STAINED_GLASS_PANE
+  name-suffix: " &8[&cНедоступно]"
+  lore:
+    - "&cТребуется версия: &e{version}+"

@@ -1,0 +1,101 @@
+# ============================================================
+#  Settings GUI — item_menus/settings.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Настройки"
+size: 27
+
+# Filler glass pane
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: "&r"
+
+# Settings item slots (row 2: 10-16)
+settings-slots:
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+
+# Per-setting item config
+items:
+  duel-requests:
+    slot: 10
+    material: WOODEN_SWORD
+    name: "&fЗапросы на дуэль"
+    lore:
+      - "&7Кто может отправлять"
+      - "&7вам запросы на дуэль"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  party-invites:
+    slot: 11
+    material: NETHER_STAR
+    name: "&fПриглашения в пати"
+    lore:
+      - "&7Кто может приглашать"
+      - "&7вас в пати"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  show-own-tier:
+    slot: 12
+    material: NAME_TAG
+    name: "&fПоказывать свой тир"
+    lore:
+      - "&7Кому виден ваш тир"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  friend-requests:
+    slot: 13
+    material: PAPER
+    name: "&fЗаявки в друзья"
+    lore:
+      - "&7Принимать ли заявки"
+      - "&7в друзья"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  direct-messages:
+    slot: 14
+    material: BOOK
+    name: "&fЛичные сообщения"
+    lore:
+      - "&7Кто может писать"
+      - "&7вам в /msg"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  friend-join-notifier:
+    slot: 15
+    material: BELL
+    name: "&fУведомления о входе"
+    lore:
+      - "&7Уведомлять о входе"
+      - "&7ваших друзей"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"
+  profile-visibility:
+    slot: 16
+    material: SPYGLASS
+    name: "&fВидимость профиля"
+    lore:
+      - "&7Кто может просматривать"
+      - "&7ваш профиль"
+      - ""
+      - "&eТекущее значение: &a{value}"
+      - ""
+      - "&7Нажмите для смены"

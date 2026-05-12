@@ -1,0 +1,45 @@
+name: ScoreTpa
+version: ${project.version}
+main: com.scoretpa.ScoreTpa
+api-version: '1.21'
+authors: [ ScoreStudio ]
+description: Advanced TPA plugin with multilingual support, BossBar, LuckPerms groups and combat protection
+depend: [ ScoreLicense ]
+softdepend: [ PlaceholderAPI, LuckPerms ]
+
+commands:
+  tpa:
+    description: Send teleport request
+    usage: /tpa <player>
+    permission: scoretpa.use
+  tpaccept:
+    description: Accept teleport request
+    usage: /tpaccept [player]
+    permission: scoretpa.use
+  tpdeny:
+    description: Deny teleport request
+    usage: /tpdeny [player]
+    permission: scoretpa.use
+  tpcancel:
+    description: Cancel your teleport request
+    usage: /tpcancel
+    permission: scoretpa.use
+  tptoggle:
+    description: Toggle teleport requests
+    usage: /tptoggle
+    permission: scoretpa.toggle
+  scoretpa:
+    description: Admin commands
+    usage: /scoretpa reload
+    permission: scoretpa.admin
+
+permissions:
+  scoretpa.use:
+    description: Use TPA commands
+    default: true
+  scoretpa.toggle:
+    description: Toggle teleport requests
+    default: true
+  scoretpa.admin:
+    description: Admin commands
+    default: op

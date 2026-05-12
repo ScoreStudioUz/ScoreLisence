@@ -1,0 +1,70 @@
+name: ScorePvP
+version: 1.0.0
+main: com.scorepvp.ScorePvP
+api-version: '1.21'
+authors: [ ScorePvP ]
+description: Full PvP plugin — arenas, duels, parties, friends, placeholders
+depend: [ ScoreLicense ]
+softdepend: [ PlaceholderAPI, ViaVersion, WorldEdit, FastAsyncWorldEdit, TAB, LuckPerms ]
+
+commands:
+  scorepvp:
+    description: Admin commands
+    usage: /scorepvp <reload|version|setspawn|setregion|kit|giveitem>
+    permission: scorepvp.admin
+    aliases: [spvp]
+  party:
+    description: Party management
+    usage: /party <invite|accept|leave|kick|disband|chat|promote|ffa>
+    permission: scorepvp.use
+    aliases: [p]
+  kit:
+    description: Kit commands
+    usage: /kit <save|reset>
+    permission: scorepvp.use
+  tier:
+    description: Tier management (admin)
+    usage: /tier <set|remove|info> <player> [mode] [tier]
+    permission: scorepvp.admin
+  friends:
+    description: Friends system
+    usage: /friends <add|remove|list|accept|deny|requests>
+    permission: scorepvp.use
+    aliases: [fl, friend]
+  duel:
+    description: Duel another player
+    usage: /duel <ник> | /duel accept [ник]
+    permission: scorepvp.use
+  spec:
+    description: Spectate a match
+    usage: /spec <ник>
+    permission: scorepvp.use
+  leave:
+    description: Leave queue, match, or spectator
+    usage: /leave
+    permission: scorepvp.use
+  msg:
+    description: Send private message
+    usage: /msg <ник> <сообщение>
+    permission: scorepvp.use
+    aliases: [w, tell]
+  r:
+    description: Reply to last DM
+    usage: /r <сообщение>
+    permission: scorepvp.use
+  arena:
+    description: Arena management
+    usage: /arena <create|list|delete|<n> ...>
+    permission: scorepvp.admin
+  profile:
+    description: View player profile
+    usage: /profile [ник]
+    permission: scorepvp.use
+
+permissions:
+  scorepvp.admin:
+    description: Full admin access
+    default: op
+  scorepvp.use:
+    description: Use ScorePvP features
+    default: true

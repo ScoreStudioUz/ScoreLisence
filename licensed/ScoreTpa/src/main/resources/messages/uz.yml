@@ -1,0 +1,54 @@
+# ScoreTpa — O'zbekcha xabarlar
+
+messages:
+  # TPA so'rovlari
+  request-sent: "&aSiz &f%player%&a ga teleportatsiya so'rovi yubordingiz."
+  request-received: "&e%player% &7sizga teleportatsiya qilmoqchi."
+  request-expired: "&cTeleportatsiya so'rovi muddati tugadi."
+  request-cancelled: "&cSiz &f%target%&c ga yuborgan so'rovni bekor qildingiz."
+
+  # Qabul / Rad
+  accepted-request: "&aSiz &f%player%&a ning so'rovini qabul qildingiz."
+  request-accepted: "&a%target% teleportatsiya so'rovingizni qabul qildi!"
+  denied-request: "&cSiz &f%player%&c ning so'rovini rad etdingiz."
+  request-denied: "&c%target% so'rovingizni rad etdi."
+
+  # Teleportatsiya
+  teleporting: "&eTeleportatsiya &b%time% &esoniyadan keyin..."
+  teleport-success: "&aTeleportatsiya muvaffaqiyatli!"
+  teleport-cancelled: "&cTeleportatsiya bekor qilindi!"
+  teleport-cancelled-combat: "&cTeleportatsiya bekor qilindi — jang!"
+  teleport-cancelled-movement: "&cTeleportatsiya bekor qilindi — harakatlangansiz!"
+
+  # Foydalanish
+  usage-tpa: "&cFoydalanish: /tpa <o'yinchi>"
+
+  # Xatolar
+  player-not-found: "&cO'yinchi topilmadi yoki oflayn."
+  no-pending-request: "&cSizda kutilayotgan so'rovlar yo'q."
+  cannot-send-self: "&cO'zingizga so'rov yubora olmaysiz."
+  already-sent-request: "&cSiz allaqachon bu o'yinchiga so'rov yuborgansiz."
+  already-have-request: "&cSizda allaqachon bu o'yinchidan so'rov bor."
+  cooldown-wait: "&cQayta so'rov yuborishdan oldin &e%cooldown%s &ckuting."
+  no-permission: "&cBunga ruxsatingiz yo'q."
+
+  # O'chirish/Yoqish
+  tptoggle-enabled: "&aTeleportatsiya so'rovlari &2yoqildi&a."
+  tptoggle-disabled: "&cTeleportatsiya so'rovlari &4o'chirildi&c."
+  teleports-disabled: "&c%player% teleportatsiya so'rovlarini o'chirgan."
+
+  # Admin
+  config-reloaded: "&aKonfiguratsiya qayta yuklandi!"
+
+  # BossBar
+  bossbar-title: "&fTeleportatsiya &b%time% &fsoniyadan keyin"
+
+  # Tugmalar
+  button-accept: "&a[QABUL]"
+  button-deny: "&c[RAD]"
+  button-cancel: "&e[BEKOR]"
+
+  # Tugma ustidagi matn
+  hover-accept: "&aQabul qilish uchun bosing"
+  hover-deny: "&cRad etish uchun bosing"
+  hover-cancel: "&eBekor qilish uchun bosing"

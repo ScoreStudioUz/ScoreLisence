@@ -1,0 +1,9 @@
+# Player data storage
+# This file stores individual player settings
+# Format:
+# players:
+#   <uuid>:
+#     items:
+#       <item_key>: true/false
+
+players: {}

@@ -1,0 +1,71 @@
+# ============================================================
+#  Duel Rounds Selection GUI — item_menus/duel_rounds.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Дуэль: раунды"
+size: 27
+
+# Filler glass pane
+filler:
+  material: BLUE_STAINED_GLASS_PANE
+  name: "&r"
+
+# Round option slots (row 2: 10-16)
+round-slots:
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+
+# Round values corresponding to each slot
+round-values:
+  - 1
+  - 2
+  - 3
+  - 5
+  - 7
+  - 10
+  - 15
+
+# Default selected round count
+default-rounds: 3
+
+# Items for selected/unselected round
+selected-material: MAP
+unselected-material: PAPER
+
+# Round item display
+round-name: "&e{count} {word}"
+round-lore-selected:
+  - "&a▶ Выбрано"
+round-lore-unselected:
+  - "&7Нажмите для выбора"
+
+# Special button slots (row 3)
+cancel-slot: 21
+head-slot: 22
+send-slot: 23
+
+# Cancel button
+cancel:
+  material: BARRIER
+  name: "&c&lОтмена"
+  lore:
+    - "&7Нажмите для отмены"
+
+# Send button
+send:
+  material: GREEN_CONCRETE
+  name: "&a&lОтправить дуэль"
+  lore:
+    - "&7Нажмите для отправки вызова"
+
+# Player head (target skull)
+head-slot-display:
+  name: "&b{player}"
+  lore:
+    - "&7Противник для дуэли"

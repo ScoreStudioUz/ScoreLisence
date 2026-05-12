@@ -1,0 +1,82 @@
+name: ScoreAirdrop
+version: '${project.version}'
+main: org.by1337.bairdrop.BAirDrop
+api-version: '1.21'
+authors: [ By1337 ]
+depend: [WorldGuard, WorldEdit, ScoreLicense]
+softdepend:
+  - DecentHolograms
+  - ProtocolLib
+  - PlaceholderAPI
+load: POSTWORLD
+description: event airdrop with break-event feature
+commands:
+  scoreairdrop:
+    description: Standart Command
+    aliases: [sairdrop, sair]
+    usage: Usage /scoreairdrop help
+permissions:
+  sairdrop.*:
+    description: All cmd
+    default: op
+    children:
+      sairdrop.tp: true
+      sairdrop.reload: true
+      sairdrop.create: true
+      sairdrop.edit: true
+      sairdrop.menu: true
+      sairdrop.chance: true
+      sairdrop.start: true
+      sairdrop.stop: true
+      sairdrop.listeners: true
+      sairdrop.generate: true
+      sairdrop.get: true
+      sairdrop.delete: true
+      sairdrop.clone: true
+      sairdrop.compass: true
+      sairdrop.js: true
+  sairdrop.js:
+    description: /sairdrop js
+    default: op
+  sairdrop.tp:
+    description: /sairdrop tp <id>
+    default: op
+  sairdrop.reload:
+    description: /sairdrop reload
+    default: op
+  sairdrop.create:
+    description: /sairdrop create <id>
+    default: op
+  sairdrop.edit:
+    description: /sairdrop edit <id>
+    default: op
+  sairdrop.menu:
+    description: /sairdrop menu <id>
+    default: op
+  sairdrop.chance:
+    description: /sairdrop chance <id>
+    default: op
+  sairdrop.start:
+    description: /sairdrop start <id>
+    default: op
+  sairdrop.stop:
+    description: /sairdrop stop <id>
+    default: op
+  sairdrop.listeners:
+    description: /sairdrop listeners <id>
+    default: op
+  sairdrop.generate:
+    description: /sairdrop generate <id> <timings> <count>
+    default: op
+  sairdrop.get:
+    description: /sairdrop get <item>
+    default: op
+  sairdrop.delete:
+    description: /sairdrop delete <id>
+    default: op
+  sairdrop.clone:
+    description: /sairdrop clone <id> <new id>
+    default: op
+  sairdrop.compass:
+    description: /sairdrop compass <player> <amount>
+    default: op

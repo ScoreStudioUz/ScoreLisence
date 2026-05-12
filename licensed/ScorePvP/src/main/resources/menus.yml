@@ -1,0 +1,42 @@
+# ============================================================
+#               ScorePvP — Конфигурация меню
+# ============================================================
+# Аналог DeluxeMenus — все параметры меню настраиваются здесь.
+
+party-ffa-menu:
+  title: "&8» &bВыбор режима FFA"
+  size: 36
+  open-command: "party ffa"
+  filler:
+    material: BLUE_STAINED_GLASS_PANE
+    name: " "
+  mode-slots:
+    start: 10
+    end: 25
+
+pvp-menu:
+  title: "&8» &bВыбор режима PvP"
+  size: 36
+  open-command: "pvpmenu"
+  filler:
+    material: BLUE_STAINED_GLASS_PANE
+    name: " "
+  mode-slots:
+    start: 10
+    end: 25
+
+settings-menu:
+  title: "&8» &bНастройки"
+  size: 27
+  open-command: "settings"
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+
+profile-menu:
+  title: "&8» &bПрофиль"
+  size: 27
+  open-command: "profile"
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "

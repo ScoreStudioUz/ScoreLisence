@@ -1,0 +1,109 @@
+# Vulcan AirDrop - items erupt upward like a volcano and scatter in all directions
+# Items can ONLY be picked up after they land on the ground
+# Fire-like particle trail follows each flying item
+air-name: '&4&lVulcan Chest'
+inv-name: '&4&lVulcan Chest'
+chest-inventory-size: 27
+air-id: 'vulcan'
+air-spawn-world: world
+air-spawn-radius-min: -2000
+air-spawn-radius-max: 2000
+air-radius-protect: 20
+spawn-chance: 50
+timeToStart: 2
+use-pre-generated-locations: false
+search-before-start: 2
+stop-when-empty: false
+use-only-static-loc: false
+# Flatness check MUST be true for vulcan - ensures open area (no mountains/trees blocking)
+flatness-check: true
+# Uses vulcan generator settings with larger open area check
+generator-settings: vulcan
+use-static-loc: false
+static-location:
+  world: world
+  x: 0
+  y: 0
+  z: 0
+
+# Holograms
+air-holo-to-start:
+  - '{air-name}'
+  - '&aTime to start: &f{time-to-start} sec'
+air-holo:
+  - '{air-name}'
+  - '&c&lDORMANT'
+  - '&eEruption in: &f{time-to-open} sec'
+  - '&7Items will erupt upward!'
+air-holo-open:
+  - '{air-name}'
+  - '&4&lERUPTED!'
+  - '&7Collect the scattered items!'
+air-holo-click-wait:
+  - '{air-name}'
+  - '&7Click to activate'
+  - '&4&lDO NOT OPEN - WILL ERUPT!'
+
+holo-offsets:
+  x: 0.5
+  y: 2.5
+  z: 0.5
+
+# Timer: 1 minute to eruption
+openingTime: 1
+start-countdown-after-click: false
+time-stop-event-must-go: false
+# Time after eruption before airdrop ends (3 minutes to collect scattered items)
+time-stop-event: 3
+# Locked material - MAGMA_BLOCK to show volcanic nature
+chest-material-locked: MAGMA_BLOCK
+# Unlocked material - AIR (block disappears after eruption)
+chest-material-unlocked: AIR
+min-online-players: 1
+random-slot: true
+
+# VULCAN MODE - items erupt upward and scatter
+vulcan: true
+# Scatter radius in blocks (items fly within this range)
+vulcan-radius: 8
+# Fire-like particle trail on flying items
+vulcan-animation: true
+
+# Break event CANNOT be used with vulcan mode
+break-event: false
+
+# Protect cheats: items appear as fake materials, real item given on pickup
+# Works with vulcan - fake items fly out, picking up gives real item
+protect-cheats: true
+protect-cheats-materials:
+  - GOLD_INGOT
+  - IRON_INGOT
+# Protect speed does NOT work with vulcan (items are on the ground, not in inventory)
+protect-speed: false
+protect-speed-delay: 1.0
+
+# Item hologram: show floating name above each thrown item
+vulcan-item-hologram: true
+# Display names per material (real item material, not fake)
+# Use 'default' for items without specific name
+vulcan-item-names:
+  DIAMOND: '&b&lDiamond'
+  DIAMOND_SWORD: '&b&lDiamond Sword'
+  DIAMOND_CHESTPLATE: '&b&lDiamond Armor'
+  GOLDEN_APPLE: '&6&lGolden Apple'
+  ENDER_PEARL: '&5&lEnder Pearl'
+  default: '&7&lLoot'
+
+# Registered listeners for this airdrop
+signed-events:
+  - vulcan-alert-start
+  - vulcan-spawn-particle
+  - vulcan-alert
+  - vulcan-alert-timer
+  - vulcan-throw
+  - vulcan-block-open
+  - vulcan-rumble
+  - vulcan-bossbar-erupting
+  - vulcan-bossbar-open
+  - vulcan-bossbar-cleanup
+  - vulcan-end

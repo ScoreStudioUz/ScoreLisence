@@ -1,0 +1,62 @@
+# ============================================================
+#  Profile GUI — item_menus/profile.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Профиль: &b{player}"
+size: 36
+
+# Filler glass pane
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: "&r"
+
+# Skull slot (player head with skin)
+skull:
+  slot: 4
+  name: "&b{player}"
+  lore:
+    - "&7Статус: {status}"
+    - "&7UUID: &8{uuid}..."
+
+# Playtime slot (clock)
+playtime:
+  slot: 3
+  material: CLOCK
+  name: "&eВремя в игре"
+  lore:
+    - "&7{hours}ч {minutes}мин"
+
+# Overall stats slot (paper)
+stats:
+  slot: 5
+  material: PAPER
+  name: "&eОбщая статистика"
+  lore:
+    - "&7Побед: &a{wins}"
+    - "&7Поражений: &c{losses}"
+    - "&7Высший тир: {tier}"
+
+# Mode tier item slots
+mode-slots:
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+
+# Mode item display (per mode in profile)
+mode-lore:
+  - "&7Тир: {tier}"
+  - "&7Побед: &a{wins}"
+  - "&7Поражений: &c{losses}"
+  - "&7K/D: &e{kd}"
