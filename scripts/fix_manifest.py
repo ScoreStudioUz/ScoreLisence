@@ -3,8 +3,8 @@ so Paper does NOT remap bytecode at runtime (which would break SHA-256 hashes).
 """
 import os, zipfile, shutil
 
-SRC = "C:/Users/shoxg/OneDrive/Desktop/plugins/obfuscated-final8b"
-DST = "C:/Users/shoxg/OneDrive/Desktop/plugins/obfuscated-final9"
+SRC = "/workspaces/ScoreLisence/obfuscated-final8b"
+DST = "/workspaces/ScoreLisence/obfuscated-final9"
 os.makedirs(DST, exist_ok=True)
 
 MANIFEST_LINE = "paperweight-mappings-namespace: mojang\r\n"

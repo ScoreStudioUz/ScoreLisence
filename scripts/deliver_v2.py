@@ -1,8 +1,8 @@
 """Copy final9 jars (with manifest fix) into ScorePlugins delivery folder."""
 import os, shutil
 
-SRC = "C:/Users/shoxg/OneDrive/Desktop/plugins/obfuscated-final9"
-DST = "C:/Users/shoxg/OneDrive/Desktop/ScorePlugins"
+SRC = "/workspaces/ScoreLisence/obfuscated-final9"
+DST = "/workspaces/ScoreLisence/dist"
 
 LICENSED = {
     "ScoreAirdrop-1.0.0-obf.jar": "ScoreAirdrop.jar",
@@ -20,8 +20,8 @@ NOLIC = {
     "nolic-ScoreTpa-1.1.0-obf.jar": "ScoreTpa-NoLic.jar",
 }
 
-lic_dir = os.path.join(DST, "license")
-nolic_dir = os.path.join(DST, "no-license")
+lic_dir = os.path.join(DST, "licensed")
+nolic_dir = os.path.join(DST, "no-licensed")
 os.makedirs(lic_dir, exist_ok=True)
 os.makedirs(nolic_dir, exist_ok=True)
 
@@ -30,7 +30,11 @@ for s_name, d_name in LICENSED.items():
     print(f"[license]    {d_name}  ({os.path.getsize(os.path.join(lic_dir, d_name)):,} bytes)")
 
 for s_name, d_name in NOLIC.items():
-    shutil.copy(os.path.join(SRC, s_name), os.path.join(nolic_dir, d_name))
+    src_path = os.path.join(SRC, s_name)
+    if not os.path.exists(src_path):
+        print(f"[no-license] {s_name}: skipped (not built)")
+        continue
+    shutil.copy(src_path, os.path.join(nolic_dir, d_name))
     print(f"[no-license] {d_name}  ({os.path.getsize(os.path.join(nolic_dir, d_name)):,} bytes)")
 
 print(f"\nDone -> {DST}")

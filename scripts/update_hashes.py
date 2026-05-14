@@ -2,18 +2,15 @@
 obfuscated-final7/licensed-ScoreLicense-1.0.0-obf.jar and patch them into:
   - license-guard/src2/com/score/license/guard/LicenseGate.java
   - license-guard/wrapper_template_v2.java
-  - ScorePlugins Build/templates/wrapper_template_v2.java
-  - ScorePlugins Build/guard-src2/com/score/license/guard/LicenseGate.java
 
 Run AFTER rename_main.py and BEFORE build_v2.py.
 
 Without this step, guards will contain stale hashes and ALL plugins will
-fail with "Iltimos haqiqiy ScoreLicense plaginini ornating".
+fail with "ScoreLicense plagini aktiv emas, plagin ochirilmoqda."
 """
 import os, re, sys, zipfile, hashlib
 
-ROOT = "C:/Users/shoxg/OneDrive/Desktop/plugins"
-BUILD = "C:/Users/shoxg/OneDrive/Desktop/ScorePlugins Build"
+ROOT = "/workspaces/ScoreLisence"
 LIC_JAR = os.path.join(ROOT, "obfuscated-final7", "licensed-ScoreLicense-1.0.0-obf.jar")
 
 CLASSES = [
@@ -86,22 +83,10 @@ def patch_wrapper_template(path):
             f.write(new)
         print(f"  updated: {path}")
 
-# Patch all known locations (working copies + ScorePlugins Build copies)
-TARGETS_GATE = [
-    os.path.join(ROOT, "license-guard", "src2", "com", "score", "license", "guard", "LicenseGate.java"),
-    os.path.join(BUILD, "guard-src2", "com", "score", "license", "guard", "LicenseGate.java"),
-]
-TARGETS_TEMPLATE = [
-    os.path.join(ROOT, "license-guard", "wrapper_template_v2.java"),
-    os.path.join(BUILD, "templates", "wrapper_template_v2.java"),
-]
-
 print("\nPatching LicenseGate.java:")
-for p in TARGETS_GATE:
-    patch_license_gate(p)
+patch_license_gate(os.path.join(ROOT, "license-guard", "src2", "com", "score", "license", "guard", "LicenseGate.java"))
 
 print("\nPatching wrapper_template_v2.java:")
-for p in TARGETS_TEMPLATE:
-    patch_wrapper_template(p)
+patch_wrapper_template(os.path.join(ROOT, "license-guard", "wrapper_template_v2.java"))
 
 print("\nDone. Now run build_v2.py.")

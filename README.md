@@ -1,84 +1,98 @@
 # ScoreLicense + 5 защищённых плагинов
 
-Репозиторий для сборки `ScoreLicense.jar` и 5 зависимых плагинов
+Сборка `ScoreLicense.jar` и 5 зависимых плагинов
 (`ScoreAirdrop`, `ScoreAutoBuyer`, `ScoreHWAuction`, `ScorePvP`, `ScoreTpa`)
-с обфускацией и cross-jar лицензионной защитой.
-
-## Быстрый старт в GitHub Codespace
-
-См. `BUILD_IN_CODESPACE.md` — там полный гайд по пересборке в Linux/Codespace
-с шагами, командами и списком известных проблем.
-
-```bash
-# Установка зависимостей (Ubuntu codespace)
-sudo apt-get update
-sudo apt-get install -y openjdk-21-jdk maven python3 unzip
-
-# Сборка
-for p in ScoreLicense ScoreAirDrop ScoreAutoBuyer ScoreHWAuction ScorePvP ScoreTpa; do
-  (cd "licensed/$p" && mvn -q -DskipTests package)
-done
-
-python3 scripts/reobf_all.py
-python3 scripts/rename_main.py
-python3 scripts/update_hashes.py
-python3 scripts/build_v2.py
-python3 scripts/fix_helpers.py
-python3 scripts/fix_manifest.py
-python3 scripts/deliver_v2.py
-```
-
-Финальные jar'ы окажутся в `dist/`.
+для Paper 1.21.11 с обфускацией и cross-jar лицензионной защитой.
 
 ## Структура
 
-| Путь | Описание |
-|---|---|
-| `licensed/` | Исходники 6 плагинов (ScoreLicense + 5 зависимых) |
-| `license-guard/` | Guard-обёртки (cross-jar SHA-256 + HMAC challenge) |
-| `scripts/` | Python pipeline (reobf, rename, hash-update, build, deliver) |
-| `templates/` | wrapper_template_v2.java для build_v2.py |
-| `guard-src2/` | Копия guard-сорсов |
-| `libs/` | Provided jar'ы для Skidfuscator (paper-api 1.21.11, HikariCP, и т.д.) |
-| `skidfuscator.jar` | 15MB обфускатор (нет в Maven Central) |
-| `logs/` | Серверные логи с ошибками (latest-6.log, latest-7.log) |
-| `INSTRUCTION.md` | Подробная история и debug-инструкция |
-| `BUILD_IN_CODESPACE.md` | Гайд по сборке в codespace |
+```text
+.plugins/          Исходники плагинов (src + pom.xml для каждого)
+  ScoreLicense/
+  ScoreAirDrop/
+  ScoreAutoBuyer/
+  ScoreHWAuction/
+  ScorePvP/
+  ScoreTpa/
+  FakeScoreLicense/   Поддельный ScoreLicense для проверки guard'ов
+
+license-guard/     Guard wrapper (cross-jar SHA-256 + HMAC challenge)
+  src2/com/score/license/guard/    Сорцы LicenseGate + IntegrityChecker
+  wrapper_template_v2.java         Шаблон wrapper'а для зависимых плагинов
+
+libs/              Provided jar'ы (paper-api 1.21.11, HikariCP и т.д.)
+scripts/           Pipeline (Python)
+skidfuscator.jar   Обфускатор (нет в Maven Central)
+
+dist/              Готовые jar'ы
+  licensed/        6 jar'ов с лицензионной защитой
+  no-licensed/     5 jar'ов БЕЗ лицензии (обфусцированы, но без guard)
+```
+
+## Сборка
+
+```bash
+# 1) Maven build для каждого плагина
+for p in ScoreLicense ScoreAirDrop ScoreAutoBuyer ScoreHWAuction ScorePvP ScoreTpa; do
+  (cd ".plugins/$p" && mvn -q -DskipTests package)
+done
+
+# 2) Pipeline (порядок строгий)
+python3 scripts/reobf_all.py        # Skidfuscator -> obfuscated-final6/
+python3 scripts/rename_main.py      # ScoreLicensePlugin -> lIIIll1O0OOIl0IOOl
+python3 scripts/update_hashes.py    # пропатчить SHA-256 в guard-сорцах
+python3 scripts/build_v2.py         # инжект guard'а в зависимые jar'ы
+python3 scripts/fix_helpers.py      # +helper-классы
+python3 scripts/fix_manifest.py     # пропатчить META-INF/MANIFEST.MF
+python3 scripts/build_nolic.py      # собрать NoLic-варианты
+python3 scripts/deliver_v2.py       # положить итог в dist/licensed и dist/no-licensed
+```
+
+Итог:
+
+- `dist/licensed/` — 6 jar'ов с лицензионной защитой (`ScoreLicense.jar`,
+  `ScoreAirdrop.jar`, `ScoreAutoBuyer.jar`, `ScoreHWAuction.jar`,
+  `ScorePvP.jar`, `ScoreTpa.jar`).
+- `dist/no-licensed/` — 5 jar'ов без guard'а (`*-NoLic.jar`), обфусцированы,
+  но не требуют `ScoreLicense`.
 
 ## Защита
 
-Каждый из 5 зависимых плагинов имеет guard-обёртку, которая:
+`licensed/`-вариант каждого зависимого плагина обёрнут в guard, который:
 
 1. Проверяет SHA-256 5 критичных классов в `ScoreLicense.jar`
 2. Проверяет `LicenseAPI.identity()` возвращает ожидаемый хэш
 3. Делает HMAC-SHA256 challenge с 32-байтным nonce
-4. Только при прохождении всех 3 проверок запускает реальный main-класс
-   через `Unsafe.allocateInstance`
+4. Опрашивает `LicenseAPI.isLicensed()` периодически в рантайме
+5. Только при успехе всех проверок запускает реальный main через
+   `Unsafe.allocateInstance`
 
-Если `ScoreLicense` поддельный или отсутствует — guard отключает плагин
-с сообщением `Iltimos haqiqiy ScoreLicense plaginini ornating`.
+При проваленной проверке guard пишет в консоль:
+`ScoreLicense plagini aktiv emas, plagin ochirilmoqda.` и отключает плагин.
 
-## Известные проблемы
+`no-licensed/`-вариант — те же jar'ы после `rename_main.py`, но без
+guard-инжекции (`build_nolic.py` копирует их из `obfuscated-final7/`).
 
-Полный список — в `BUILD_IN_CODESPACE.md` (раздел 3). Кратко:
+## Особенности билда
 
-- **A** — не вызывай `LicenseAPI.isLicensed()` в исходниках 5 зависимых плагинов (caascade NPE на onDisable)
-- **B** — `IllegalPluginAccessException: register task while disabled` (paper 1.21.11 строже)
-- **C** — `Iltimos haqiqiy ScoreLicense plaginini ornating` → запусти `update_hashes.py` перед `build_v2.py`
-- **D** — `NoSuchMethodError CAirDrop.<init>(..., int)` → отключи `numberObfuscation` и `referenceObfuscation`
-- **E** — `IncompatibleClassChangeError LegacyComponentSerializer` → используй paper-api 1.21.11, не 1.21.1
-- **F** — ScoreLicense раздулся до 10MB → не запускай Skidfuscator поверх pom-output, просто копируй
-- **G** — старый jar в `target/` подхватывается вместо свежего → проверь имена в `reobf_all.py`
+- **ScoreLicense**: НЕ запускать Skidfuscator поверх pom-output (раздуется до
+  10MB). `reobf_all.py` копирует готовый `*-obf.jar` напрямую.
+- **ScorePvP / ScoreAirdrop / ScoreHWAuction**: пропускают Skidfuscator
+  (SSVM крашится на Java 21+; method-rewriting ломает интерфейсы;
+  HWAuction вешается на 17MB). Guard всё равно инжектится в `build_v2.py`.
+- **ScoreTpa**: `TeleportManager` исключён из Skidfuscator
+  (ClassFormatError на exception table).
+- **paper-api**: только `1.21.11-R0.1-SNAPSHOT`, не `1.21.1` (иначе
+  `IncompatibleClassChangeError` на `LegacyComponentSerializer`).
+- **`update_hashes.py` обязателен** между `rename_main.py` и `build_v2.py` —
+  иначе guard содержит протухшие SHA и все плагины упадут с
+  `ScoreLicense plagini aktiv emas`.
 
-## Что НЕ делать
+## Чего НЕ делать
 
-- ❌ Не вызывай `LicenseAPI.isLicensed()` в исходниках зависимых плагинов
-- ❌ Не включай `numberObfuscation` / `referenceObfuscation` в Skidfuscator
-- ❌ Не запускай Skidfuscator над `ScoreLicense` (уже обфусцирован через pom)
-- ❌ Не используй paper-api 1.21.1 — только 1.21.11
-- ❌ Не пуш в `main` без sanity-проверок (см. `BUILD_IN_CODESPACE.md` раздел 5)
-
----
-
-**Последний рабочий билд**: 2026-05-10 18:52
-**Дата актуализации**: 2026-05-12
+- Не вызывать `LicenseAPI.isLicensed()` напрямую в исходниках зависимых
+  плагинов (cascade NPE на onDisable). Проверка делается guard'ом.
+- Не включать `numberObfuscation` / `referenceObfuscation` в Skidfuscator
+  (`NoSuchMethodError` на интерфейсных методах).
+- Не запускать Skidfuscator на `ScoreLicense` (см. выше).
+- Не пушить в `main` без проверки `dist/licensed/` на сервере.

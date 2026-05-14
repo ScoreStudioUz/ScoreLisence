@@ -69,20 +69,16 @@ public final class __NAME__ extends JavaPlugin {
         }
     }
 
-    private boolean verifyLicense() {
+    private boolean verifyLicense(boolean logOnFail) {
         try {
             Plugin lic = Bukkit.getPluginManager().getPlugin("ScoreLicense");
-            if (lic == null) {
-                getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
-                return false;
-            }
+            if (lic == null) return false;
             ClassLoader licCl = lic.getClass().getClassLoader();
 
             for (String[] pair : LIC_HASHES) {
                 byte[] got = sha256OfResource(licCl, pair[0]);
                 byte[] exp = hex(pair[1]);
                 if (got == null || got.length != exp.length || !MessageDigest.isEqual(got, exp)) {
-                    getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
                     return false;
                 }
             }
@@ -91,14 +87,14 @@ public final class __NAME__ extends JavaPlugin {
 
             Method idM = api.getMethod("identity");
             Object idObj = idM.invoke(null);
-            if (!EXPECTED_ID.equals(String.valueOf(idObj))) {
-                getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
-                return false;
-            }
+            if (!EXPECTED_ID.equals(String.valueOf(idObj))) return false;
+
+            Method licM = api.getMethod("isLicensed");
+            Object res = licM.invoke(null);
+            if (!(res instanceof Boolean) || !((Boolean) res).booleanValue()) return false;
 
             byte[] nonce = new byte[32];
             new SecureRandom().nextBytes(nonce);
-
             Method sign = api.getMethod("signChallenge", byte[].class);
             byte[] got = (byte[]) sign.invoke(null, (Object) nonce);
 
@@ -108,13 +104,8 @@ public final class __NAME__ extends JavaPlugin {
             byte[] expected = mac.doFinal(nonce);
             for (int i = 0; i < s.length; i++) s[i] = 0;
 
-            if (!MessageDigest.isEqual(expected, got)) {
-                getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
-                return false;
-            }
-            return true;
+            return MessageDigest.isEqual(expected, got);
         } catch (Throwable t) {
-            getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
             return false;
         }
     }
@@ -180,13 +171,13 @@ public final class __NAME__ extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        if (!verifyLicense()) {
-            getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
+        if (!verifyLicense(true)) {
+            getLogger().severe("ScoreLicense plagini aktiv emas, plagin ochirilmoqda.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (delegate == null) {
-            getLogger().severe("delegate not initialized.");
+            getLogger().severe("ScoreLicense plagini aktiv emas, plagin ochirilmoqda.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -201,7 +192,20 @@ public final class __NAME__ extends JavaPlugin {
             getLogger().severe("root cause: " + c);
             for (StackTraceElement el : c.getStackTrace()) getLogger().severe("  at " + el);
             Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, new Runnable() {
+            @Override public void run() {
+                if (!verifyLicense(false)) {
+                    Bukkit.getScheduler().runTask(__NAME__.this, new Runnable() {
+                        @Override public void run() {
+                            getLogger().severe("ScoreLicense plagini aktiv emas, plagin ochirilmoqda.");
+                            Bukkit.getPluginManager().disablePlugin(__NAME__.this);
+                        }
+                    });
+                }
+            }
+        }, 6000L, 6000L);
     }
 
     @Override

@@ -32,10 +32,7 @@ public final class LicenseGate extends JavaPlugin {
         for (Map.Entry<String, String> e : EXPECTED.entrySet()) {
             byte[] got = IntegrityChecker.sha256OfResource(cl, e.getKey());
             byte[] exp = IntegrityChecker.hex(e.getValue());
-            if (!IntegrityChecker.equals(got, exp)) {
-                getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
-                return false;
-            }
+            if (!IntegrityChecker.equals(got, exp)) return false;
         }
         return true;
     }
@@ -94,11 +91,6 @@ public final class LicenseGate extends JavaPlugin {
             copyFields(this, delegate);
             delegate.onLoad();
         } catch (Throwable t) {
-            Throwable c = t;
-            while (c.getCause() != null && c.getCause() != c) c = c.getCause();
-            getLogger().severe("delegate onLoad failed: " + t);
-            getLogger().severe("root cause: " + c);
-            for (StackTraceElement el : c.getStackTrace()) getLogger().severe("  at " + el);
             ok = false;
         }
     }
@@ -106,7 +98,7 @@ public final class LicenseGate extends JavaPlugin {
     @Override
     public void onEnable() {
         if (!ok || delegate == null) {
-            getLogger().severe("Iltimos haqiqiy ScoreLicense plaginini ornating");
+            getLogger().severe("ScoreLicense plagini buzilgan, ishga tushirib bo'lmadi.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }

@@ -2,14 +2,14 @@
 Then run Skidfuscator over the whole bundle, inject obfuscated classes back, write final8/."""
 import os, subprocess, shutil, zipfile, re, sys, glob, hashlib
 
-ROOT = "C:/Users/shoxg/OneDrive/Desktop/plugins"
+ROOT = "/workspaces/ScoreLisence"
 GUARD = os.path.join(ROOT, "license-guard")
 SRC2 = os.path.join(GUARD, "src2")
 TPL2 = os.path.join(GUARD, "wrapper_template_v2.java")
 WORK = os.path.join(GUARD, "skid-work2")
 SKIDFUSCATOR = os.path.join(ROOT, "skidfuscator.jar")
 LIBS = os.path.join(ROOT, "libs")
-PAPER = os.path.join(LIBS, "paper-api-1.21.11-R0.1-SNAPSHOT.jar")
+PAPER = os.path.join(LIBS, "paper-api-1.21.11-R0.1-SNAPSHOT.jar") + os.pathsep + os.path.join(LIBS, "adventure-key-4.26.1.jar")
 IN_DIR = os.path.join(ROOT, "obfuscated-final7")
 OUT_DIR = os.path.join(ROOT, "obfuscated-final8")
 
@@ -175,6 +175,7 @@ print(f"  -> {dst_lic} ({os.path.getsize(dst_lic):,} bytes)")
 print("[7] patch dependent jars with v2 wrappers...")
 for plug, (jar, real_main, pkg, name) in PLUGINS.items():
     pkg_prefix = pkg.replace(".", "/") + "/"
+    guard_main = f"{pkg}.{name}"
     src = os.path.join(IN_DIR, jar)
     dst = os.path.join(OUT_DIR, jar)
     relevant = {n: d for n, d in obf.items() if n.startswith(pkg_prefix)}
@@ -183,10 +184,15 @@ for plug, (jar, real_main, pkg, name) in PLUGINS.items():
             for it in zin.infolist():
                 if it.filename.startswith(pkg_prefix):
                     continue
-                zout.writestr(it, zin.read(it.filename), zipfile.ZIP_DEFLATED, compresslevel=9)
+                if it.filename == "plugin.yml":
+                    yml = zin.read(it.filename).decode("utf-8")
+                    yml = re.sub(r"^main:.*$", f"main: {guard_main}", yml, count=1, flags=re.M)
+                    zout.writestr("plugin.yml", yml, zipfile.ZIP_DEFLATED, compresslevel=9)
+                else:
+                    zout.writestr(it, zin.read(it.filename), zipfile.ZIP_DEFLATED, compresslevel=9)
             for n, data in relevant.items():
                 zout.writestr(n, data, zipfile.ZIP_DEFLATED, compresslevel=9)
-    print(f"  {jar}: +{len(relevant)} guard classes  ({os.path.getsize(dst):,} bytes)")
+    print(f"  {jar}: main->{guard_main}, +{len(relevant)} guard classes  ({os.path.getsize(dst):,} bytes)")
 
 # ---- Step 8: copy nolic-* unchanged ----
 print("[8] copy unchanged jars...")

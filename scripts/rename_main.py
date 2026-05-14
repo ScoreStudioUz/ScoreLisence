@@ -16,8 +16,8 @@ assert len(OLD) == len(NEW), "names must be same length for byte-safe replace"
 OLD_B = OLD.encode("ascii")
 NEW_B = NEW.encode("ascii")
 
-SRC = "C:/Users/shoxg/OneDrive/Desktop/plugins/obfuscated-final6"
-OUT = "C:/Users/shoxg/OneDrive/Desktop/plugins/obfuscated-final7"
+SRC = "/workspaces/ScoreLisence/obfuscated-final6"
+OUT = "/workspaces/ScoreLisence/obfuscated-final7"
 os.makedirs(OUT, exist_ok=True)
 
 # Old plugin.yml uses a fully-qualified path

@@ -5,8 +5,10 @@ target/
 
 # Pipeline output directories (regenerable)
 obfuscated-final*/
-dist/
 tmp-skid-*/
+mappings/
+skidfuscator.log
+*.log
 
 # IDE
 .idea/
@@ -23,3 +25,6 @@ Thumbs.db
 # Logs from local builds
 build.log
 mvn.log
+
+# Guard build intermediates
+license-guard/skid-work*/

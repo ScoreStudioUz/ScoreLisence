@@ -6,7 +6,7 @@ Then recompute hashes (LicenseAPI changes!) and rebuild guards with the new hash
 """
 import os, zipfile, hashlib, shutil, re
 
-ROOT = "C:/Users/shoxg/OneDrive/Desktop/plugins"
+ROOT = "/workspaces/ScoreLisence"
 BUNDLE = os.path.join(ROOT, "license-guard/skid-work2/bundle-out.jar")
 IN_DIR = os.path.join(ROOT, "obfuscated-final8")  # we will fix in place by writing to final8b first
 TMP_DIR = os.path.join(ROOT, "obfuscated-final8b")
@@ -47,16 +47,18 @@ print(f"\nLicenseAPI in bundle: {'YES' if fresh_license_api else 'NO'}")
 PREV_BUNDLE = os.path.join(ROOT, "license-guard/skid-work/bundle-out.jar")
 prev_helpers = {}
 prev_license_api = None
-with zipfile.ZipFile(PREV_BUNDLE, "r") as z:
-    for n in z.namelist():
-        if not n.endswith(".class"): continue
-        if n == "com/score/license/LicenseAPI.class":
-            prev_license_api = z.read(n)
-        elif not any((p.endswith("/") and n.startswith(p)) or n == p for p in SOURCE_PKGS):
-            prev_helpers[n] = z.read(n)
-            print(f"prev-helper: {n}  ({len(z.read(n))} bytes)")
-
-print(f"prev LicenseAPI: {'YES' if prev_license_api else 'NO'}")
+if os.path.exists(PREV_BUNDLE):
+    with zipfile.ZipFile(PREV_BUNDLE, "r") as z:
+        for n in z.namelist():
+            if not n.endswith(".class"): continue
+            if n == "com/score/license/LicenseAPI.class":
+                prev_license_api = z.read(n)
+            elif not any((p.endswith("/") and n.startswith(p)) or n == p for p in SOURCE_PKGS):
+                prev_helpers[n] = z.read(n)
+                print(f"prev-helper: {n}  ({len(z.read(n))} bytes)")
+    print(f"prev LicenseAPI: {'YES' if prev_license_api else 'NO'}")
+else:
+    print(f"prev bundle not present (ok): {PREV_BUNDLE}")
 
 # Strategy: keep current obfuscated LicenseAPI (which references ongnajdkreqrrkfg/...)
 # and add BOTH helpers (orolmpiksjnvxyut + ongnajdkreqrrkfg) to every jar that has guards.
