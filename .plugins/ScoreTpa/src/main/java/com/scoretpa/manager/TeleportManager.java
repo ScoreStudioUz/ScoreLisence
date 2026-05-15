@@ -30,10 +30,15 @@ public class TeleportManager {
     public void startTeleport(Player player, Player target) {
         int delay = getDelay(player);
         ConfigManager cfg = plugin.getConfigManager();
+        boolean debug = cfg.isDebug();
+
+        if (debug) {
+            plugin.getLogger().info("[tpa] startTeleport " + player.getName()
+                    + " -> " + target.getName() + " (delay=" + delay + "s)");
+        }
 
         if (delay <= 0) {
-            player.teleport(target.getLocation());
-            MessageUtil.send(player, cfg.getMessage("teleport-success"));
+            doTeleport(player, target, cfg, debug);
             return;
         }
 
@@ -79,6 +84,8 @@ public class TeleportManager {
                 Player t = Bukkit.getPlayer(targetId);
 
                 if (p == null || t == null) {
+                    if (debug) plugin.getLogger().info("[tpa] cancel: player offline (p="
+                            + (p != null) + " t=" + (t != null) + ")");
                     cancelTeleport(playerId, "teleport-cancelled");
                     return;
                 }
@@ -86,20 +93,39 @@ public class TeleportManager {
                 if (finalBar != null) {
                     double progress = 1.0 - ((double) ticks / totalTicks);
                     finalBar.setProgress(Math.max(0, progress));
-                    int secondsLeft = (totalTicks - ticks) / 20;
+                    int secondsLeft = ((totalTicks - ticks) + 19) / 20;
                     finalBar.setTitle(MessageUtil.color(
                             cfg.getMessage("bossbar-title", "%time%", String.valueOf(secondsLeft))));
                 }
 
                 if (ticks >= totalTicks) {
                     removeTeleport(playerId);
-                    p.teleport(t.getLocation());
-                    MessageUtil.send(p, cfg.getMessage("teleport-success"));
+                    doTeleport(p, t, cfg, debug);
                 }
             }
         }, 1L, 1L);
 
-        activeTeleports.put(playerId, new TeleportTask(task, finalBar, startLoc));
+        activeTeleports.put(playerId, new TeleportTask(task, finalBar, startLoc, totalTicks));
+    }
+
+    private void doTeleport(Player player, Player target, ConfigManager cfg, boolean debug) {
+        if (!player.isOnline() || !target.isOnline()) {
+            if (debug) plugin.getLogger().info("[tpa] doTeleport: someone offline, abort");
+            return;
+        }
+        Location dest = target.getLocation();
+        if (debug) {
+            plugin.getLogger().info("[tpa] teleport " + player.getName()
+                    + " -> " + target.getName() + " @ " + dest.getWorld().getName()
+                    + " " + dest.getBlockX() + "," + dest.getBlockY() + "," + dest.getBlockZ());
+        }
+        boolean ok = player.teleport(dest);
+        if (debug) plugin.getLogger().info("[tpa] teleport result=" + ok);
+        if (ok) {
+            MessageUtil.send(player, cfg.getMessage("teleport-success"));
+        } else {
+            MessageUtil.send(player, cfg.getMessage("teleport-cancelled"));
+        }
     }
 
     public void cancelTeleport(UUID playerId, String messageKey) {
@@ -126,7 +152,12 @@ public class TeleportManager {
     }
 
     public int getTimeLeft(UUID playerId) {
-        return 0;
+        TeleportTask tp = activeTeleports.get(playerId);
+        if (tp == null) return 0;
+        long elapsedMs = System.currentTimeMillis() - tp.startedAt;
+        long remainingMs = (tp.totalTicks * 50L) - elapsedMs;
+        if (remainingMs <= 0) return 0;
+        return (int) Math.ceil(remainingMs / 1000.0);
     }
 
     public void cancelAll() {
@@ -178,11 +209,15 @@ public class TeleportManager {
         final BukkitTask task;
         final BossBar bossBar;
         final Location startLocation;
+        final long startedAt;
+        final int totalTicks;
 
-        TeleportTask(BukkitTask task, BossBar bossBar, Location startLocation) {
+        TeleportTask(BukkitTask task, BossBar bossBar, Location startLocation, int totalTicks) {
             this.task = task;
             this.bossBar = bossBar;
             this.startLocation = startLocation;
+            this.startedAt = System.currentTimeMillis();
+            this.totalTicks = totalTicks;
         }
     }
 }
