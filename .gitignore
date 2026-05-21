@@ -28,3 +28,7 @@ mvn.log
 
 # Guard build intermediates
 license-guard/skid-work*/
+
+# Local working files
+.plugins/*.backup-*/
+messeges.txt

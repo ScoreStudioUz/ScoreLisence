@@ -196,6 +196,7 @@ public class MatchManager {
                 p.updateInventory();
             }
             byId.remove(match.getMatchId());
+            plugin.getRoundStatsManager().clearMatch(match.getMatchId());
         }, 60L);
     }
 
@@ -311,14 +312,25 @@ public class MatchManager {
                 plugin.getConfigManager().rawStr("match.round-win"),
                 "&7" + match.getScoreFor(killer.getUuid()));
 
-        // Send round-finished block message to all participants
-        String killerHp = killerPlayer != null ? String.format("%.1f", killerPlayer.getHealth()) : "?";
-        sendBlockToMatch(match, "round-finished",
-                "{round}", String.valueOf(match.getCurrentRound()),
-                "{winner}", killer.getName(),
-                "{hp}", killerHp,
-                "{winner_score}", String.valueOf(killer.getWins()),
-                "{loser_score}", String.valueOf(dead.getWins()));
+        // Send round-finished block message — per-player rendering so we can
+        // gate the accuracy/stats lines on permissions and embed a hoverable
+        // [посмотреть] component with each viewer's own stats tooltip.
+        String killerHp = killerPlayer != null ? String.format("%.2f", killerPlayer.getHealth()) : "?";
+        for (UUID uuid : match.getAllUuids()) {
+            Player p = player(uuid);
+            if (p == null) continue;
+            // The "viewer" for the stats lines is the recipient themselves.
+            com.scorepvp.util.StatsMessageBuilder.sendRoundFinished(plugin, p,
+                    match.getMatchId(), uuid,
+                    match.getCurrentRound(),
+                    killer.getName(),
+                    killerHp,
+                    killer.getWins(),
+                    dead.getWins());
+        }
+
+        // Snapshot the round into history so totals() can average all rounds.
+        plugin.getRoundStatsManager().rolloverRound(match.getMatchId());
 
         // Play ALL rounds — only end when currentRound > totalRounds
         match.nextRound();
@@ -387,16 +399,21 @@ public class MatchManager {
             if (winner != null && loser != null) {
                 String ws = String.valueOf(winner.getWins());
                 String ls = String.valueOf(loser.getWins());
-                // Victory block to winner
-                sendBlockToPlayer(player(winner.getUuid()), "match-victory-block",
-                        "{loser}", loser.getName(),
-                        "{winner_score}", ws, "{loser_score}", ls,
-                        "{mode}", modeName);
-                // Defeat block to loser
-                sendBlockToPlayer(player(loser.getUuid()), "match-defeat-block",
-                        "{winner}", winner.getName(),
-                        "{winner_score}", ws, "{loser_score}", ls,
-                        "{mode}", modeName);
+                Player winnerPlayer = player(winner.getUuid());
+                String winnerHp = winnerPlayer != null
+                        ? String.format("%.2f", winnerPlayer.getHealth()) : "?";
+
+                // Duel-finished block (per-player, with hover stats tooltip)
+                for (UUID uuid : match.getAllUuids()) {
+                    Player p = player(uuid);
+                    if (p == null) continue;
+                    com.scorepvp.util.StatsMessageBuilder.sendDuelFinished(plugin, p,
+                            match.getMatchId(), uuid,
+                            winner.getName(),
+                            winnerHp,
+                            winner.getWins(),
+                            loser.getWins());
+                }
             } else if (winner == null && match.getFighter1() != null && match.getFighter2() != null) {
                 // Tie block to all
                 sendBlockToMatch(match, "match-tie-block",
@@ -421,6 +438,7 @@ public class MatchManager {
                 p.updateInventory();
             }
             byId.remove(match.getMatchId());
+            plugin.getRoundStatsManager().clearMatch(match.getMatchId());
         }, 60L);
     }
 

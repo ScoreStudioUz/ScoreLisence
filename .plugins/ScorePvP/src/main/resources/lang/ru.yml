@@ -195,14 +195,95 @@ match:
   spectate-left: "&7Вы перешли в режим наблюдателя. Матч продолжается."
   victory-subtitle: "&7Поздравляем!"
   defeat-subtitle: "&7Попробуйте снова."
+  # Action bar shown to attackers with `duels.actionbar` on every successful hit.
+  # Placeholders: {combo} {best} {dist} {dmg}
+  actionbar-hit: "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg}"
+
+# ── Cosmetics ──────────────────────────────────────────────────────────────────
+cosmetics:
+  menu-title: "&8Косметика"
+  shields-menu-title: "&8Косметика › Щиты"
+  diamond-menu-title: "&8Косметика › Алмазная броня"
+  netherite-menu-title: "&8Косметика › Незеритовая броня"
+  editor-suffix: " &7[редактор]"
+
+  main:
+    shields-name: "&b&lЩиты"
+    shields-lore:
+      - "&7Выберите косметический щит,"
+      - "&7который будет выдаваться в дуэлях."
+      - ""
+      - "&eНажмите, чтобы открыть."
+    diamond-name: "&b&lАлмазная броня"
+    diamond-lore:
+      - "&7Выберите цветовую косметическую"
+      - "&7алмазную броню для дуэлей."
+      - ""
+      - "&eНажмите, чтобы открыть."
+    netherite-name: "&5&lНезеритовая броня"
+    netherite-lore:
+      - "&7Выберите цветовую косметическую"
+      - "&7незеритовую броню для дуэлей."
+      - ""
+      - "&eНажмите, чтобы открыть."
+    back-name: "&c&lНазад"
+    clear-name: "&c&lОчистить"
+    clear-lore:
+      - "&7Сбросить выбранный предмет."
+
+  messages:
+    no-permission: "&cУ вас нет доступа к косметике."
+    not-holding-shield: "&cВозьмите щит в руку."
+    not-holding-armor: "&cВозьмите крашенную часть брони в руку."
+    shield-added: "&aЩит добавлен в косметику (слот {slot})."
+    shield-removed: "&aЩит удалён (слот {slot})."
+    armor-set: "&aЭлемент брони &e{piece} &aобновлён."
+    selected: "&aВыбрано: &e{name}"
+    cleared: "&aВыбор сброшен."
+    saved: "&aМеню косметики сохранено."
+    only-one-shield: "&cМожно выбрать только один щит."
+    invalid-slot: "&cНеверный слот."
+    not-cosmetic-armor: "&cВ руке нет крашенной {piece}."
 
 # ── Block messages (styled multi-line) ────────────────────────────────────────
+# Each "lines" list is sent verbatim. Lines prefixed with "%accuracy%" or
+# "%view%" are dropped unless the player has the matching permission.
+# The {stats_view} placeholder on a line is rendered as a hoverable
+# "[посмотреть]" component built from `stats-tooltip` below.
 round-finished:
-  - "&8&m─────────────────────────────"
-  - "&8➜ &6&lРаунд завершён &7#{round}"
-  - "&6| &fПобедил: &7{winner} &c{hp}❤"
-  - "&6| &fСчёт: &a{winner_score} &7: &c{loser_score}"
-  - "&8&m─────────────────────────────"
+  header:
+    - ""
+    - "&6➥ &fРаунд завершён &7#{round}"
+    - ""
+  winner-line: "&6↾ &fПобедил: &b{winner} &c{hp}&c💔"
+  score-line:  "&6▏ &fСчёт: &a{winner_score} &7⋎ &c{loser_score}"
+  accuracy-line: "&6⇂ &fТочность: &e{accuracy}%"
+  stats-line:    "&6⇂ &fСтатистика: &b{stats_view}"
+  view-text:     "&b[посмотреть]"
+  view-hover:    "&7Нажмите, чтобы посмотреть статистику"
+
+duel-finished:
+  header:
+    - ""
+    - "&6➥ &fДуэль завершена &c🗡"
+    - ""
+  winner-line: "&6↾ &fПобедил: &b{winner} &c{hp}&c💔"
+  score-line:  "&6▏ &fСчёт: &a{winner_score} &7⋎ &c{loser_score}"
+  stats-line:  "&6⇂ &fСтатистика: &b{stats_view}"
+  view-text:   "&b[посмотреть]"
+  view-hover:  "&7Нажмите, чтобы посмотреть статистику"
+
+# Hover tooltip rendered when the player hovers over [посмотреть].
+# Placeholders: {hits} {misses} {accuracy} {damage} {avg_reach} {best_combo}
+stats-tooltip:
+  - "&6&lПолная статистика"
+  - "&7"
+  - "&fПопадания: &a{hits}"
+  - "&fПромахи: &c{misses}"
+  - "&fТочность: &e{accuracy}%"
+  - "&fУрон: &c{damage}"
+  - "&fСредний Reach: &b{avg_reach}"
+  - "&fЛучшее комбо: &6{best_combo}"
 
 match-victory-block:
   - "&8&m─────────────────────────────"

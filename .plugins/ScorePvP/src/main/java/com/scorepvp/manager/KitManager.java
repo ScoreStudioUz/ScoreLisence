@@ -343,7 +343,70 @@ public class KitManager {
 
     private void applyDefaultKit(Player player, String kitName) {
         ItemStack[] items = loadDefaultKit(kitName);
+        applyCosmeticsToKit(player, items);
         player.getInventory().setContents(items);
+    }
+
+    /**
+     * Walks the resolved kit contents and replaces vanilla shield/diamond/
+     * netherite armor items with the player's selected cosmetic counterparts,
+     * if any. Only runs when the player has {@code duels.cosmetics} permission.
+     *
+     * The kit array layout matches what {@link #loadDefaultKit} returns:
+     *   0..35 = main inventory, 36..39 = armor (helmet, chest, leggings, boots),
+     *   40 = offhand. We scan the main inventory for shields (often offhand
+     *   appears in slot 40 too) and replace by exact material match.
+     */
+    private void applyCosmeticsToKit(Player player, ItemStack[] items) {
+        if (!player.hasPermission("duels.cosmetics")) return;
+        com.scorepvp.manager.CosmeticsManager mgr = plugin.getCosmeticsManager();
+        if (mgr == null) return;
+        java.util.UUID uid = player.getUniqueId();
+
+        // Shield (any slot containing a SHIELD)
+        ItemStack cosShield = mgr.getSelectedShield(uid);
+        if (cosShield != null) {
+            for (int i = 0; i < items.length; i++) {
+                ItemStack it = items[i];
+                if (it != null && it.getType() == Material.SHIELD) {
+                    items[i] = cosShield.clone();
+                }
+            }
+        }
+
+        // Armor slots: 36=helmet, 37=chest, 38=leggings, 39=boots
+        replaceArmorSlot(items, 36, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.HELMET);
+        replaceArmorSlot(items, 37, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.CHESTPLATE);
+        replaceArmorSlot(items, 38, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.LEGGINGS);
+        replaceArmorSlot(items, 39, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.BOOTS);
+    }
+
+    private void replaceArmorSlot(ItemStack[] items, int slot, java.util.UUID uid,
+                                   com.scorepvp.manager.CosmeticsManager.ArmorPiece piece) {
+        ItemStack it = items[slot];
+        if (it == null || it.getType().isAir()) return;
+        Material m = it.getType();
+        com.scorepvp.manager.CosmeticsManager.ArmorMaterial mat;
+        if (m == Material.DIAMOND_HELMET || m == Material.DIAMOND_CHESTPLATE
+                || m == Material.DIAMOND_LEGGINGS || m == Material.DIAMOND_BOOTS) {
+            mat = com.scorepvp.manager.CosmeticsManager.ArmorMaterial.DIAMOND;
+        } else if (m == Material.NETHERITE_HELMET || m == Material.NETHERITE_CHESTPLATE
+                || m == Material.NETHERITE_LEGGINGS || m == Material.NETHERITE_BOOTS) {
+            mat = com.scorepvp.manager.CosmeticsManager.ArmorMaterial.NETHERITE;
+        } else return;
+        ItemStack cos = plugin.getCosmeticsManager().getSelectedArmor(uid, mat, piece);
+        if (cos != null) {
+            // Preserve original enchantments by copying them onto the cosmetic clone
+            ItemStack out = cos.clone();
+            var meta = out.getItemMeta();
+            if (meta != null && it.getItemMeta() != null) {
+                for (var ench : it.getItemMeta().getEnchants().entrySet()) {
+                    meta.addEnchant(ench.getKey(), ench.getValue(), true);
+                }
+                out.setItemMeta(meta);
+            }
+            items[slot] = out;
+        }
     }
 
     private ItemStack[] loadDefaultKit(String kitName) {

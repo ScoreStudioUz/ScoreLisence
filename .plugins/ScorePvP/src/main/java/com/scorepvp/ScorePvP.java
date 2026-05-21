@@ -39,6 +39,8 @@ public final class ScorePvP extends JavaPlugin {
     private ClientVersionManager clientVersionManager;
     private NameTagProvider      nameTagProvider;
     private MenuManager          menuManager;
+    private RoundStatsManager    roundStatsManager;
+    private CosmeticsManager     cosmeticsManager;
 
     // ── Custom Items ──────────────────────────────────────────────────────────
     private CustomItemRegistry customItemRegistry;
@@ -52,6 +54,7 @@ public final class ScorePvP extends JavaPlugin {
     private DuelRoundsGUI duelRoundsGUI;
     private PartyFfaGUI   partyFfaGUI;
     private ProfileGUI    profileGUI;
+    private CosmeticsGUI  cosmeticsGUI;
 
     // ── onEnable ──────────────────────────────────────────────────────────────
     @Override
@@ -121,6 +124,8 @@ public final class ScorePvP extends JavaPlugin {
         customItemRegistry   = new CustomItemRegistry();
         customItemRegistry.setPlugin(this);
         menuManager          = new MenuManager(this);
+        roundStatsManager    = new RoundStatsManager(this);
+        cosmeticsManager     = new CosmeticsManager(this);
 
         arenaManager.loadAll();
         placeholderCache.init();
@@ -131,6 +136,7 @@ public final class ScorePvP extends JavaPlugin {
         duelRoundsGUI = new DuelRoundsGUI(this);
         partyFfaGUI   = new PartyFfaGUI(this);
         profileGUI    = new ProfileGUI(this);
+        cosmeticsGUI  = new CosmeticsGUI(this);
 
         // ── Listeners ─────────────────────────────────────────────────────────
         var pm = getServer().getPluginManager();
@@ -147,6 +153,10 @@ public final class ScorePvP extends JavaPlugin {
         pm.registerEvents(new CommandBlockListener(this),       this);
         // Section 5: custom item (golden head)
         pm.registerEvents(new CustomItemListener(this),         this);
+        // Round combat stats + action bar HUD
+        pm.registerEvents(new CombatStatsListener(this),        this);
+        // Cosmetics GUIs
+        pm.registerEvents(new CosmeticsListener(this),          this);
         // Dynamic menu editor
         menuEditorListener = new MenuEditorListener(this);
         pm.registerEvents(menuEditorListener,                   this);
@@ -157,6 +167,7 @@ public final class ScorePvP extends JavaPlugin {
         regCmd("kit",      new KitCommand(this));
         regCmd("tier",     new TierCommand(this));
         regCmd("friends",  new FriendsCommand(this));
+        regCmd("cosmetics", new com.scorepvp.command.CosmeticsCommand(this));
         CommandRegistry.register(this);
 
         // ── PlaceholderAPI ────────────────────────────────────────────────────
@@ -245,6 +256,9 @@ public final class ScorePvP extends JavaPlugin {
     public DuelRoundsGUI        getDuelRoundsGUI()         { return duelRoundsGUI; }
     public PartyFfaGUI          getPartyFfaGUI()           { return partyFfaGUI; }
     public ProfileGUI           getProfileGUI()            { return profileGUI; }
+    public CosmeticsGUI         getCosmeticsGUI()          { return cosmeticsGUI; }
     public MenuManager          getMenuManager()           { return menuManager; }
     public MenuEditorListener   getMenuEditorListener()    { return menuEditorListener; }
+    public RoundStatsManager    getRoundStatsManager()     { return roundStatsManager; }
+    public CosmeticsManager     getCosmeticsManager()      { return cosmeticsManager; }
 }
