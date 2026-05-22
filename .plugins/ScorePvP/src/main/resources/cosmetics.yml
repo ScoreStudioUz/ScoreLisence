@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Cosmetics configuration
+#
+#  All visible strings for the /cosmetics menu, sub-menus and admin
+#  feedback messages live here. Edit freely — the plugin reloads this file
+#  on each `/scorepvp reload`.
+#
+#  Permissions referenced in code (defined in plugin.yml):
+#    duels.cosmetics        — open the menu, have selections applied
+#    duels.cosmetics.admin  — add/remove shields, set armor pieces
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Titles shown at the top of each menu. The listener matches on these strings
+# verbatim, so changing them is safe but they must remain unique.
+menu-title:           "&8Косметика"
+shields-menu-title:   "&8Косметика › Щиты"
+diamond-menu-title:   "&8Косметика › Алмазная броня"
+netherite-menu-title: "&8Косметика › Незеритовая броня"
+
+# Suffix appended to admin-only hints inside the menu.
+editor-suffix: " &7[редактор]"
+
+# How "selected" state is shown next to a cosmetic item.
+selected-prefix: "&a✔ "
+selected-lore:   "&aВыбрано — нажмите чтобы снять"
+
+# Filler glass material used as the background of all menus.
+filler-material: "GRAY_STAINED_GLASS_PANE"
+filler-name:     "&r"
+
+# Divider row in the shields menu (slots 36..44) — visually separates the
+# cosmetic shields from the navigation row at the bottom.
+divider-material: "BLACK_STAINED_GLASS_PANE"
+divider-name:     "&r"
+
+# Hint shown to admins on empty slots inside the shields menu.
+empty-shield-slot-name: "&8Свободный слот #{slot}"
+empty-shield-slot-lore:
+  - "&7Возьмите щит в руку и используйте"
+  - "&e/cosmetics admin shield add"
+
+# Hint shown to admins on empty armor piece slots.
+empty-armor-slot-name: "&8{piece} &7— не задано"
+empty-armor-slot-lore:
+  - "&7Возьмите крашенную часть брони в руку"
+  - "&7и используйте &e/cosmetics admin armor set {piece}"
+
+# ── Main menu buttons ────────────────────────────────────────────────────────
+main:
+  shields-name: "&b&lЩиты"
+  shields-lore:
+    - "&7Выберите косметический щит,"
+    - "&7который будет выдаваться в дуэлях."
+    - ""
+    - "&eНажмите, чтобы открыть."
+  diamond-name: "&b&lАлмазная броня"
+  diamond-lore:
+    - "&7Выберите цветовую косметическую"
+    - "&7алмазную броню для дуэлей."
+    - ""
+    - "&eНажмите, чтобы открыть."
+  netherite-name: "&5&lНезеритовая броня"
+  netherite-lore:
+    - "&7Выберите цветовую косметическую"
+    - "&7незеритовую броню для дуэлей."
+    - ""
+    - "&eНажмите, чтобы открыть."
+  back-name: "&c&lНазад"
+  clear-name: "&c&lОчистить всё"
+  clear-lore:
+    - "&7Сбросить выбранные щит и броню."
+
+# ── Sub-menu buttons ─────────────────────────────────────────────────────────
+sub:
+  back-name: "&c&lНазад"
+  clear-name: "&c&lСбросить выбор"
+  clear-lore:
+    - "&7Сбросить выбор в этом подменю."
+
+# ── Chat messages ────────────────────────────────────────────────────────────
+messages:
+  prefix:               "&8[&bКосметика&8] "
+  no-permission:        "&cУ вас нет доступа к косметике."
+  no-admin-permission:  "&cУ вас нет доступа к редактированию косметики."
+  not-holding-shield:   "&cВозьмите щит в руку."
+  not-holding-armor:    "&cВ руке нет подходящей {piece}."
+  shield-added:         "&aЩит добавлен в косметику (слот &e#{slot}&a)."
+  shield-removed:       "&aЩит удалён (слот &e#{slot}&a)."
+  shield-slots-full:    "&cНет свободных слотов — все 36 заняты."
+  armor-set:            "&aЭлемент брони &e{piece} &aобновлён."
+  selected-shield:      "&aВыбран щит &e#{slot}&a."
+  selected-armor:       "&aВыбрана {piece} &7({material})&a."
+  deselected-armor:     "&7Снят выбор {piece} &8({material})&7."
+  cleared-shield:       "&7Косметический щит сброшен."
+  cleared-armor:        "&7Косметическая {material} броня сброшена."
+  cleared-all:          "&7Все косметические настройки сброшены."
+  invalid-slot:         "&cНеверный слот."
+  invalid-piece:        "&cНеверная часть брони."
+  invalid-armor-material: "&cЭтот предмет не алмазная и не незеритовая броня."
+
+# ── Display names used by the listener in chat ───────────────────────────────
+piece-names:
+  helmet:     "шлем"
+  chestplate: "нагрудник"
+  leggings:   "поножи"
+  boots:      "ботинки"
+
+material-names:
+  diamond:   "алмазная"
+  netherite: "незеритовая"

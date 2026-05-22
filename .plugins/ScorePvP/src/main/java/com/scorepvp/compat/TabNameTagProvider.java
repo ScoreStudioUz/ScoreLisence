@@ -116,6 +116,24 @@ public class TabNameTagProvider implements NameTagProvider {
                 }
             }
             healthInjected.put(match.getMatchId(), injected);
+
+            // Force a Criteria.HEALTH update — without this, the BELOW_NAME
+            // score reads "0" until the player takes damage. Schedule a
+            // no-op setHealth() one tick later so the value lands after the
+            // kit / teleport have settled.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                for (UUID uuid : match.getAllUuids()) {
+                    Player p = Bukkit.getPlayer(uuid);
+                    if (p == null || !p.isOnline()) continue;
+                    double h = p.getHealth();
+                    double max = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null
+                            ? p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue()
+                            : 20.0;
+                    if (h > max) h = max;
+                    if (h <= 0) continue;
+                    p.setHealth(h);
+                }
+            }, 1L);
         }
     }
 

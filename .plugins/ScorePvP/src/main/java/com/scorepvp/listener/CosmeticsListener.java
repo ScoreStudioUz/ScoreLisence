@@ -9,13 +9,24 @@ import com.scorepvp.manager.CosmeticsManager.ArmorPiece;
 import com.scorepvp.util.ColorUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 
 /**
- * Click router for the three cosmetics menus. Identifies the active menu by
- * the inventory title (read from the {@code cosmetics.*-menu-title} lang
- * keys), then dispatches to the right handler.
+ * Routes clicks inside the four cosmetics menus.
+ *
+ *  • Identifies the active menu by inventory title (each menu uses a unique
+ *    title from cosmetics.yml).
+ *  • Cancels every interaction unconditionally — there is no legitimate
+ *    drag/shift/drop inside these menus.
+ *  • Also blocks {@link InventoryDragEvent} so hoppers/drag actions cannot
+ *    spawn ghost items.
+ *
+ * Shift-clicking a shield removes it (admins only). Right-clicking deselects.
+ * Left-clicking selects.
  */
 public class CosmeticsListener implements Listener {
 
@@ -23,36 +34,57 @@ public class CosmeticsListener implements Listener {
 
     public CosmeticsListener(ScorePvP plugin) { this.plugin = plugin; }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        String title = e.getView().getTitle();
-        CosmeticsGUI gui = plugin.getCosmeticsGUI();
 
-        if (title.equals(gui.mainTitle())) {
-            e.setCancelled(true);
-            handleMain(p, e.getRawSlot());
-            return;
+        CosmeticsGUI gui = plugin.getCosmeticsGUI();
+        String title = e.getView().getTitle();
+        int kind = which(gui, title);
+        if (kind < 0) return;
+        // Any interaction inside a cosmetics menu is cancelled — including
+        // shift-clicks from the player's bottom inventory (which would
+        // otherwise insert items into the top).
+        e.setCancelled(true);
+
+        // Only react to clicks in the TOP inventory (menu).
+        if (e.getClickedInventory() == null
+                || e.getClickedInventory().getType() == InventoryType.PLAYER) return;
+
+        int slot = e.getRawSlot();
+        boolean rightClick = e.isRightClick();
+        boolean shiftClick = e.isShiftClick();
+
+        switch (kind) {
+            case 0 -> handleMain(p, slot);
+            case 1 -> handleShields(p, slot, shiftClick, rightClick);
+            case 2 -> handleArmor(p, slot, ArmorMaterial.DIAMOND, rightClick);
+            case 3 -> handleArmor(p, slot, ArmorMaterial.NETHERITE, rightClick);
         }
-        if (title.equals(gui.shieldsTitle())) {
-            e.setCancelled(true);
-            handleShields(p, e.getRawSlot());
-            return;
-        }
-        if (title.equals(gui.diamondTitle())) {
-            e.setCancelled(true);
-            handleArmor(p, e.getRawSlot(), ArmorMaterial.DIAMOND);
-            return;
-        }
-        if (title.equals(gui.netheriteTitle())) {
-            e.setCancelled(true);
-            handleArmor(p, e.getRawSlot(), ArmorMaterial.NETHERITE);
-        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDrag(InventoryDragEvent e) {
+        if (!(e.getWhoClicked() instanceof Player)) return;
+        CosmeticsGUI gui = plugin.getCosmeticsGUI();
+        String title = e.getView().getTitle();
+        if (which(gui, title) < 0) return;
+        e.setCancelled(true);
+    }
+
+    /** -1 = not a cosmetics menu, 0 main, 1 shields, 2 diamond, 3 netherite. */
+    private int which(CosmeticsGUI gui, String title) {
+        if (title.equals(gui.mainTitle()))      return 0;
+        if (title.equals(gui.shieldsTitle()))   return 1;
+        if (title.equals(gui.diamondTitle()))   return 2;
+        if (title.equals(gui.netheriteTitle())) return 3;
+        return -1;
     }
 
     // ── Main menu ────────────────────────────────────────────────────────────
 
     private void handleMain(Player p, int slot) {
+        CosmeticsManager mgr = plugin.getCosmeticsManager();
         if (slot == CosmeticsGUI.MAIN_SHIELDS_SLOT) {
             plugin.getCosmeticsGUI().openShields(p);
         } else if (slot == CosmeticsGUI.MAIN_DIAMOND_SLOT) {
@@ -60,69 +92,83 @@ public class CosmeticsListener implements Listener {
         } else if (slot == CosmeticsGUI.MAIN_NETHERITE_SLOT) {
             plugin.getCosmeticsGUI().openArmor(p, ArmorMaterial.NETHERITE);
         } else if (slot == CosmeticsGUI.MAIN_CLEAR_SLOT) {
-            CosmeticsManager mgr = plugin.getCosmeticsManager();
             mgr.clearShield(p.getUniqueId());
             mgr.clearArmor(p.getUniqueId(), ArmorMaterial.DIAMOND);
             mgr.clearArmor(p.getUniqueId(), ArmorMaterial.NETHERITE);
-            p.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                    .rawStr("cosmetics.messages.cleared")));
+            tell(p, "messages.cleared-all");
             plugin.getCosmeticsGUI().openMain(p);
         }
     }
 
     // ── Shields menu ─────────────────────────────────────────────────────────
 
-    private void handleShields(Player p, int slot) {
+    private void handleShields(Player p, int slot, boolean shift, boolean right) {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
-        boolean admin = p.hasPermission(CosmeticsCommand.PERM_ADMIN);
 
         if (slot >= 0 && slot < 36) {
-            // Admin shift-click to remove
-            if (admin && mgr.getShields().containsKey(slot)) {
-                // Plain click selects, shift-click removes
-                // We can't easily detect shift here without storing — accept
-                // both: clicking an admin pane (empty slot) does nothing,
-                // clicking an existing shield selects it.
-                mgr.selectShield(p.getUniqueId(), slot);
-                p.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                        .rawStr("cosmetics.messages.selected")
-                        .replace("{name}", "щит #" + slot)));
+            boolean exists = mgr.getShields().containsKey(slot);
+
+            // Admin shift-click — remove this shield entirely.
+            if (shift && p.hasPermission(CosmeticsCommand.PERM_ADMIN) && exists) {
+                mgr.removeShield(slot);
+                tellPlaceholder(p, "messages.shield-removed", "{slot}", String.valueOf(slot));
                 plugin.getCosmeticsGUI().openShields(p);
                 return;
             }
-            if (mgr.getShields().containsKey(slot)) {
-                mgr.selectShield(p.getUniqueId(), slot);
-                p.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                        .rawStr("cosmetics.messages.selected")
-                        .replace("{name}", "щит #" + slot)));
+
+            // Right-click — deselect if currently selected.
+            int currentlySelected = mgr.getSelection(p.getUniqueId()).shieldSlot;
+            if (right && currentlySelected == slot) {
+                mgr.clearShield(p.getUniqueId());
+                tell(p, "messages.cleared-shield");
                 plugin.getCosmeticsGUI().openShields(p);
+                return;
             }
+
+            if (!exists) return; // empty slot, nothing to do
+            mgr.selectShield(p.getUniqueId(), slot);
+            tellPlaceholder(p, "messages.selected-shield", "{slot}", String.valueOf(slot));
+            plugin.getCosmeticsGUI().openShields(p);
             return;
         }
         if (slot == CosmeticsGUI.SHIELDS_BACK_SLOT) {
             plugin.getCosmeticsGUI().openMain(p);
         } else if (slot == CosmeticsGUI.SHIELDS_CLEAR_SLOT) {
             mgr.clearShield(p.getUniqueId());
-            p.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                    .rawStr("cosmetics.messages.cleared")));
+            tell(p, "messages.cleared-shield");
             plugin.getCosmeticsGUI().openShields(p);
         }
     }
 
     // ── Armor menu ───────────────────────────────────────────────────────────
 
-    private void handleArmor(Player p, int slot, ArmorMaterial mat) {
+    private void handleArmor(Player p, int slot, ArmorMaterial mat, boolean right) {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
 
         ArmorPiece piece = CosmeticsGUI.armorPieceForSlot(slot);
         if (piece != null) {
             if (mgr.getArmor(mat).get(piece) == null) return; // nothing configured
+
+            String pieceLabel = pieceLabel(piece);
+            String materialLabel = materialLabel(mat);
+
+            // Right-click always deselects this piece.
+            if (right) {
+                if (mgr.isArmorSelected(p.getUniqueId(), mat, piece)) {
+                    mgr.toggleArmor(p.getUniqueId(), mat, piece);
+                    tellPlaceholder2(p, "messages.deselected-armor",
+                            "{piece}", pieceLabel, "{material}", materialLabel);
+                    plugin.getCosmeticsGUI().openArmor(p, mat);
+                }
+                return;
+            }
+
             mgr.toggleArmor(p.getUniqueId(), mat, piece);
-            String state = mgr.isArmorSelected(p.getUniqueId(), mat, piece)
-                    ? plugin.getConfigManager().rawStr("cosmetics.messages.selected")
-                          .replace("{name}", piece.name().toLowerCase())
-                    : plugin.getConfigManager().rawStr("cosmetics.messages.cleared");
-            p.sendMessage(ColorUtil.color(state));
+            String key = mgr.isArmorSelected(p.getUniqueId(), mat, piece)
+                    ? "messages.selected-armor"
+                    : "messages.deselected-armor";
+            tellPlaceholder2(p, key,
+                    "{piece}", pieceLabel, "{material}", materialLabel);
             plugin.getCosmeticsGUI().openArmor(p, mat);
             return;
         }
@@ -130,9 +176,38 @@ public class CosmeticsListener implements Listener {
             plugin.getCosmeticsGUI().openMain(p);
         } else if (slot == CosmeticsGUI.ARMOR_CLEAR_SLOT) {
             mgr.clearArmor(p.getUniqueId(), mat);
-            p.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                    .rawStr("cosmetics.messages.cleared")));
+            tellPlaceholder(p, "messages.cleared-armor", "{material}", materialLabel(mat));
             plugin.getCosmeticsGUI().openArmor(p, mat);
         }
+    }
+
+    // ── Label helpers ────────────────────────────────────────────────────────
+
+    private String pieceLabel(ArmorPiece piece) {
+        return plugin.getConfigManager().cosStr("piece-names." + piece.name().toLowerCase());
+    }
+
+    private String materialLabel(ArmorMaterial mat) {
+        return plugin.getConfigManager().cosStr("material-names." + mat.key());
+    }
+
+    private void tell(Player p, String key) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key);
+        p.sendMessage(ColorUtil.color(prefix + body));
+    }
+
+    private void tellPlaceholder(Player p, String key, String ph, String value) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key).replace(ph, value);
+        p.sendMessage(ColorUtil.color(prefix + body));
+    }
+
+    private void tellPlaceholder2(Player p, String key,
+                                   String ph1, String v1, String ph2, String v2) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key)
+                .replace(ph1, v1).replace(ph2, v2);
+        p.sendMessage(ColorUtil.color(prefix + body));
     }
 }

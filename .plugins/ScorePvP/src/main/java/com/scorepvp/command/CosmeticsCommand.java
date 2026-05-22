@@ -12,19 +12,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * /cosmetics                          → open main menu (needs duels.cosmetics)
- * /cosmetics admin shield add         → add held shield (needs duels.cosmetics.admin)
- * /cosmetics admin shield remove <s>  → remove shield slot
- * /cosmetics admin armor set <piece>  → set held armor piece for its material
+ * /cosmetics                                  → open the main menu.
+ * /cosmetics admin shield add                 → store held shield (slot 0..35).
+ * /cosmetics admin shield remove <slot>       → remove a stored shield.
+ * /cosmetics admin armor set <piece>          → store held diamond/netherite piece.
+ * /cosmetics admin armor remove <mat> <piece> → drop a stored armor piece.
  */
 public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
@@ -44,27 +43,20 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 0) {
-            if (!player.hasPermission(PERM_USE)) {
-                msg(player, "cosmetics.messages.no-permission");
-                return true;
-            }
+            if (!player.hasPermission(PERM_USE)) { tell(player, "messages.no-permission"); return true; }
             plugin.getCosmeticsGUI().openMain(player);
             return true;
         }
 
         if (args[0].equalsIgnoreCase("admin")) {
             if (!player.hasPermission(PERM_ADMIN)) {
-                msg(player, "cosmetics.messages.no-permission");
+                tell(player, "messages.no-admin-permission");
                 return true;
             }
             return handleAdmin(player, args);
         }
 
-        // Default: open menu
-        if (!player.hasPermission(PERM_USE)) {
-            msg(player, "cosmetics.messages.no-permission");
-            return true;
-        }
+        if (!player.hasPermission(PERM_USE)) { tell(player, "messages.no-permission"); return true; }
         plugin.getCosmeticsGUI().openMain(player);
         return true;
     }
@@ -76,6 +68,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
         }
 
         String type = args[1].toLowerCase();
+        CosmeticsManager mgr = plugin.getCosmeticsManager();
 
         if (type.equals("shield")) {
             if (args.length < 3) {
@@ -83,26 +76,15 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             String action = args[2].toLowerCase();
-            CosmeticsManager mgr = plugin.getCosmeticsManager();
             if (action.equals("add")) {
                 ItemStack held = player.getInventory().getItemInMainHand();
-                if (held.getType() != Material.SHIELD) {
-                    msg(player, "cosmetics.messages.not-holding-shield");
+                if (held == null || held.getType() != Material.SHIELD) {
+                    tell(player, "messages.not-holding-shield");
                     return true;
                 }
-                boolean ok = mgr.addShield(held);
-                if (!ok) {
-                    player.sendMessage(ColorUtil.color("&cНет свободных слотов (0..35 все заняты)."));
-                    return true;
-                }
-                // Find the slot it was placed into
-                int slot = -1;
-                for (var e : mgr.getShields().entrySet()) {
-                    if (e.getValue().isSimilar(held)) { slot = e.getKey(); break; }
-                }
-                player.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                        .rawStr("cosmetics.messages.shield-added")
-                        .replace("{slot}", String.valueOf(slot))));
+                int slot = mgr.addShield(held);
+                if (slot < 0) { tell(player, "messages.shield-slots-full"); return true; }
+                tellPlaceholder(player, "messages.shield-added", "{slot}", String.valueOf(slot));
                 return true;
             }
             if (action.equals("remove")) {
@@ -112,45 +94,61 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                 }
                 int slot;
                 try { slot = Integer.parseInt(args[3]); }
-                catch (NumberFormatException ex) {
-                    msg(player, "cosmetics.messages.invalid-slot");
-                    return true;
-                }
-                if (!mgr.removeShield(slot)) {
-                    msg(player, "cosmetics.messages.invalid-slot");
-                    return true;
-                }
-                player.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                        .rawStr("cosmetics.messages.shield-removed")
-                        .replace("{slot}", String.valueOf(slot))));
+                catch (NumberFormatException ex) { tell(player, "messages.invalid-slot"); return true; }
+                if (!mgr.removeShield(slot)) { tell(player, "messages.invalid-slot"); return true; }
+                tellPlaceholder(player, "messages.shield-removed", "{slot}", String.valueOf(slot));
                 return true;
             }
             return true;
         }
 
         if (type.equals("armor")) {
-            if (args.length < 4 || !args[2].equalsIgnoreCase("set")) {
-                player.sendMessage(ColorUtil.color("&e/cosmetics admin armor set <helmet|chestplate|leggings|boots>"));
+            if (args.length < 3) {
+                player.sendMessage(ColorUtil.color("&e/cosmetics admin armor <set|remove> ..."));
                 return true;
             }
-            ArmorPiece piece;
-            try { piece = ArmorPiece.valueOf(args[3].toUpperCase()); }
-            catch (IllegalArgumentException ex) {
-                player.sendMessage(ColorUtil.color("&cНеверная часть брони."));
+            String action = args[2].toLowerCase();
+
+            if (action.equals("set")) {
+                if (args.length < 4) {
+                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor set <helmet|chestplate|leggings|boots>"));
+                    return true;
+                }
+                ArmorPiece piece = parsePiece(args[3]);
+                if (piece == null) { tell(player, "messages.invalid-piece"); return true; }
+                ItemStack held = player.getInventory().getItemInMainHand();
+                ArmorMaterial mat = detectArmorMaterial(held, piece);
+                if (mat == null) {
+                    String pieceLabel = pieceLabel(piece);
+                    tellPlaceholder(player, "messages.not-holding-armor", "{piece}", pieceLabel);
+                    return true;
+                }
+                mgr.setArmorPiece(mat, piece, held);
+                tellPlaceholder(player, "messages.armor-set",
+                        "{piece}", pieceLabel(piece));
                 return true;
             }
-            ItemStack held = player.getInventory().getItemInMainHand();
-            ArmorMaterial mat = detectArmorMaterial(held, piece);
-            if (mat == null) {
-                player.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                        .rawStr("cosmetics.messages.not-cosmetic-armor")
-                        .replace("{piece}", piece.name().toLowerCase())));
+
+            if (action.equals("remove")) {
+                if (args.length < 5) {
+                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor remove <diamond|netherite> <piece>"));
+                    return true;
+                }
+                ArmorMaterial mat;
+                try { mat = ArmorMaterial.valueOf(args[3].toUpperCase()); }
+                catch (IllegalArgumentException ex) {
+                    tell(player, "messages.invalid-armor-material");
+                    return true;
+                }
+                ArmorPiece piece = parsePiece(args[4]);
+                if (piece == null) { tell(player, "messages.invalid-piece"); return true; }
+                if (!mgr.removeArmorPiece(mat, piece)) {
+                    tell(player, "messages.invalid-piece");
+                    return true;
+                }
+                tellPlaceholder(player, "messages.armor-set", "{piece}", pieceLabel(piece));
                 return true;
             }
-            plugin.getCosmeticsManager().setArmorPiece(mat, piece, held);
-            player.sendMessage(ColorUtil.color(plugin.getConfigManager()
-                    .rawStr("cosmetics.messages.armor-set")
-                    .replace("{piece}", piece.name().toLowerCase())));
             return true;
         }
 
@@ -159,58 +157,46 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Detects whether the held item is a coloured (dyed) armor piece matching
-     * the requested piece. Returns the {@link ArmorMaterial} (DIAMOND for any
-     * coloured diamond armor, NETHERITE for any coloured netherite armor) or
-     * null if the held item is invalid. Detection rules:
-     *
-     *   • The material must match the piece (helmet→*_HELMET, etc.).
-     *   • The item meta must implement LeatherArmorMeta-like color OR the
-     *     "trim" pattern — in vanilla 1.21, diamond/netherite armor cannot be
-     *     dyed natively, so we accept any item with a non-empty display name
-     *     OR custom model data OR enchantments as a "cosmetic" piece. This is
-     *     intentionally loose so admins can use resource-pack-themed items.
+     * Maps a held item to its {@link ArmorMaterial}. Returns null when the
+     * material does not match the expected piece (e.g. holding leggings while
+     * trying to register a helmet). Diamond/netherite armor types only.
      */
     private ArmorMaterial detectArmorMaterial(ItemStack held, ArmorPiece piece) {
         if (held == null || held.getType().isAir()) return null;
         Material m = held.getType();
-        ArmorMaterial mat;
-        switch (piece) {
-            case HELMET:
-                if (m == Material.DIAMOND_HELMET) mat = ArmorMaterial.DIAMOND;
-                else if (m == Material.NETHERITE_HELMET) mat = ArmorMaterial.NETHERITE;
-                else return null;
-                break;
-            case CHESTPLATE:
-                if (m == Material.DIAMOND_CHESTPLATE) mat = ArmorMaterial.DIAMOND;
-                else if (m == Material.NETHERITE_CHESTPLATE) mat = ArmorMaterial.NETHERITE;
-                else return null;
-                break;
-            case LEGGINGS:
-                if (m == Material.DIAMOND_LEGGINGS) mat = ArmorMaterial.DIAMOND;
-                else if (m == Material.NETHERITE_LEGGINGS) mat = ArmorMaterial.NETHERITE;
-                else return null;
-                break;
-            case BOOTS:
-                if (m == Material.DIAMOND_BOOTS) mat = ArmorMaterial.DIAMOND;
-                else if (m == Material.NETHERITE_BOOTS) mat = ArmorMaterial.NETHERITE;
-                else return null;
-                break;
-            default: return null;
-        }
-        // Require some cosmetic marker (display name, model data, enchant, trim)
-        var meta = held.getItemMeta();
-        if (meta == null) return null;
-        boolean isCosmetic = meta.hasDisplayName()
-                || meta.hasCustomModelData()
-                || meta.hasLore()
-                || !meta.getEnchants().isEmpty()
-                || meta instanceof LeatherArmorMeta;
-        return isCosmetic ? mat : mat; // accept anyway — admin's choice
+        return switch (piece) {
+            case HELMET -> m == Material.DIAMOND_HELMET ? ArmorMaterial.DIAMOND
+                          : m == Material.NETHERITE_HELMET ? ArmorMaterial.NETHERITE : null;
+            case CHESTPLATE -> m == Material.DIAMOND_CHESTPLATE ? ArmorMaterial.DIAMOND
+                              : m == Material.NETHERITE_CHESTPLATE ? ArmorMaterial.NETHERITE : null;
+            case LEGGINGS -> m == Material.DIAMOND_LEGGINGS ? ArmorMaterial.DIAMOND
+                            : m == Material.NETHERITE_LEGGINGS ? ArmorMaterial.NETHERITE : null;
+            case BOOTS -> m == Material.DIAMOND_BOOTS ? ArmorMaterial.DIAMOND
+                         : m == Material.NETHERITE_BOOTS ? ArmorMaterial.NETHERITE : null;
+        };
     }
 
-    private void msg(Player p, String key) {
-        p.sendMessage(ColorUtil.color(plugin.getConfigManager().rawStr(key)));
+    private ArmorPiece parsePiece(String s) {
+        try { return ArmorPiece.valueOf(s.toUpperCase()); }
+        catch (IllegalArgumentException ex) { return null; }
+    }
+
+    private String pieceLabel(ArmorPiece piece) {
+        return plugin.getConfigManager().cosStr("piece-names." + piece.name().toLowerCase());
+    }
+
+    // ── Chat helpers ─────────────────────────────────────────────────────────
+
+    private void tell(Player p, String key) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key);
+        p.sendMessage(ColorUtil.color(prefix + body));
+    }
+
+    private void tellPlaceholder(Player p, String key, String ph, String value) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key).replace(ph, value);
+        p.sendMessage(ColorUtil.color(prefix + body));
     }
 
     // ── Tab completion ───────────────────────────────────────────────────────
@@ -229,7 +215,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("admin")) {
             if (args[1].equalsIgnoreCase("shield")) return filter(args[2], "add", "remove");
-            if (args[1].equalsIgnoreCase("armor"))  return filter(args[2], "set");
+            if (args[1].equalsIgnoreCase("armor"))  return filter(args[2], "set", "remove");
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("admin")) {
             if (args[1].equalsIgnoreCase("shield") && args[2].equalsIgnoreCase("remove")) {
@@ -240,6 +226,13 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             if (args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("set")) {
                 return filter(args[3], "helmet", "chestplate", "leggings", "boots");
             }
+            if (args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("remove")) {
+                return filter(args[3], "diamond", "netherite");
+            }
+        }
+        if (args.length == 5 && args[0].equalsIgnoreCase("admin")
+                && args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("remove")) {
+            return filter(args[4], "helmet", "chestplate", "leggings", "boots");
         }
         return Collections.emptyList();
     }

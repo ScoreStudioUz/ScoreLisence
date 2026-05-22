@@ -78,6 +78,28 @@ public class BukkitNameTagProvider implements NameTagProvider {
         }
 
         matchScoreboards.put(match.getMatchId(), scoreboard);
+
+        // Force a Criteria.HEALTH update — without this, the BELOW_NAME score
+        // reads "0" until the player takes damage or regenerates. We schedule
+        // a no-op setHealth() one tick later (after the kit + teleport have
+        // settled) which makes Bukkit push the current value to the new
+        // scoreboard.
+        if (healthEnabled) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                for (UUID uuid : match.getAllUuids()) {
+                    Player p = Bukkit.getPlayer(uuid);
+                    if (p == null || !p.isOnline()) continue;
+                    double h = p.getHealth();
+                    // Clamp inside [0, maxHealth] to avoid IllegalArgumentException
+                    double max = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null
+                            ? p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue()
+                            : 20.0;
+                    if (h > max) h = max;
+                    if (h <= 0) continue;
+                    p.setHealth(h);
+                }
+            }, 1L);
+        }
     }
 
     @Override

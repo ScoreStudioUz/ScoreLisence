@@ -20,6 +20,7 @@ public class ConfigManager {
 
     private FileConfiguration lang;
     private FileConfiguration modesConfig;
+    private FileConfiguration cosmeticsConfig;
 
     private final List<PvPMode> pvpModes   = new ArrayList<>();
     private final Map<String, PvPMode> modeById = new LinkedHashMap<>();
@@ -38,9 +39,41 @@ public class ConfigManager {
     public void reload() {
         plugin.reloadConfig();
         String langCode = plugin.getConfig().getString("language", "ru");
-        lang        = loadYaml("lang/" + langCode + ".yml");
-        modesConfig = loadYaml("modes.yml");
+        lang            = loadYaml("lang/" + langCode + ".yml");
+        modesConfig     = loadYaml("modes.yml");
+        cosmeticsConfig = loadYaml("cosmetics.yml");
         loadModes();
+    }
+
+    public FileConfiguration getCosmeticsConfig() { return cosmeticsConfig; }
+
+    /**
+     * Resolves a key from cosmetics.yml as a raw string (legacy ampersand
+     * codes, ItemBuilder will colour-translate). Falls back to lang.yml
+     * if the key is missing from cosmetics.yml so previously translated
+     * keys remain functional.
+     */
+    public String cosStr(String path) {
+        String v = cosmeticsConfig != null ? cosmeticsConfig.getString(path, null) : null;
+        if (v != null) return v;
+        return lang.getString(path, "");
+    }
+
+    /** Same as {@link #cosStr} but for string lists. */
+    public List<String> cosList(String path) {
+        if (cosmeticsConfig != null && cosmeticsConfig.contains(path)) {
+            return cosmeticsConfig.getStringList(path);
+        }
+        return lang.getStringList(path);
+    }
+
+    /** Coloured single-string resolver for cosmetics.yml with placeholders. */
+    public String cosMsg(String path, String... placeholders) {
+        String raw = cosStr(path);
+        for (int i = 0; i + 1 < placeholders.length; i += 2) {
+            raw = raw.replace(placeholders[i], placeholders[i + 1]);
+        }
+        return ColorUtil.color(raw);
     }
 
     private FileConfiguration loadYaml(String relativePath) {

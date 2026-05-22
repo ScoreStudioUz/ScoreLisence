@@ -65,17 +65,22 @@ public class CosmeticsManager {
         return armor.computeIfAbsent(mat.key(), k -> new ConcurrentHashMap<>());
     }
 
-    public boolean addShield(ItemStack shield) {
-        if (shield == null || shield.getType() != Material.SHIELD) return false;
-        // Find next free slot 0..35
+    /**
+     * Stores the given shield in the first free 0..35 slot and returns that
+     * slot, or {@code -1} if all slots are occupied or the item is not a
+     * shield. The stored stack is a defensive clone — modifying the player's
+     * inventory afterwards will not mutate the stored cosmetic.
+     */
+    public int addShield(ItemStack shield) {
+        if (shield == null || shield.getType() != Material.SHIELD) return -1;
         for (int i = 0; i < 36; i++) {
             if (!shields.containsKey(i)) {
                 shields.put(i, shield.clone());
                 saveShields();
-                return true;
+                return i;
             }
         }
-        return false;
+        return -1;
     }
 
     public boolean removeShield(int slot) {
@@ -94,6 +99,23 @@ public class CosmeticsManager {
         Map<ArmorPiece, ItemStack> m = getArmor(mat);
         m.put(piece, item.clone());
         saveArmor();
+    }
+
+    /**
+     * Removes the configured armor piece and invalidates any per-player
+     * selection that still references it. Returns true if a piece was
+     * actually removed.
+     */
+    public boolean removeArmorPiece(ArmorMaterial mat, ArmorPiece piece) {
+        Map<ArmorPiece, ItemStack> m = getArmor(mat);
+        if (m.remove(piece) == null) return false;
+        String key = mat.key() + "." + piece.name().toLowerCase();
+        for (PlayerSelection sel : selections.values()) {
+            sel.armor.remove(key);
+        }
+        saveArmor();
+        savePlayers();
+        return true;
     }
 
     public PlayerSelection getSelection(UUID uuid) {
@@ -235,11 +257,18 @@ public class CosmeticsManager {
     private void savePlayers() {
         YamlConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<UUID, PlayerSelection> e : selections.entrySet()) {
-            String k = e.getKey().toString();
             PlayerSelection sel = e.getValue();
+            // Skip empty selections — keeps the file lean
+            if (sel.shieldSlot < 0 && sel.armor.values().stream().noneMatch(Boolean.TRUE::equals)) {
+                continue;
+            }
+            String k = e.getKey().toString();
             cfg.set(k + ".shield", sel.shieldSlot);
             for (Map.Entry<String, Boolean> a : sel.armor.entrySet()) {
-                cfg.set(k + "." + a.getKey().replace('.', '.'), a.getValue());
+                if (!Boolean.TRUE.equals(a.getValue())) continue;
+                // a.getKey() is already "material.piece" — set directly so
+                // it nests under the player UUID as a configuration section.
+                cfg.set(k + "." + a.getKey(), true);
             }
         }
         try { cfg.save(playersFile); }
