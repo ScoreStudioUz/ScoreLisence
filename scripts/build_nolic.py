@@ -40,6 +40,27 @@ def detect_main(jar_path):
     return m.group(1) if m else None
 
 
+def strip_license_dep(yml: str) -> str:
+    """Remove ScoreLicense from depend:/softdepend: in a plugin.yml string.
+
+    Handles both single-line (`depend: [ ScoreLicense ]`) and YAML block list
+    formats. If no other dependency remains, the line is dropped entirely.
+    """
+    out = []
+    for line in yml.splitlines():
+        m = re.match(r"^(depend|softdepend):\s*\[(.*)\]\s*$", line)
+        if m:
+            key = m.group(1)
+            items = [x.strip() for x in m.group(2).split(",") if x.strip()]
+            items = [x for x in items if x.lower() != "scorelicense"]
+            if items:
+                out.append(f"{key}: [ {', '.join(items)} ]")
+            # else: drop the line entirely
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
 for src_name, dst_name, expected_main in JOBS:
     src = os.path.join(SRC, src_name)
     if not os.path.exists(src):
@@ -47,24 +68,23 @@ for src_name, dst_name, expected_main in JOBS:
         continue
 
     current_main = detect_main(src)
-    # In final7 the main: in plugin.yml still points to the original plugin
-    # main class (guard injection happens later in build_v2). So no rewrite of
-    # plugin.yml is needed — we just copy the jar verbatim.
-    if expected_main and current_main and current_main != expected_main:
-        # final7 plugin.yml should still hold the real main. If not, rewrite.
-        tmp = src + ".fixmain"
-        with zipfile.ZipFile(src, "r") as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
-            for it in zin.infolist():
-                if it.filename == "plugin.yml":
-                    yml = zin.read(it.filename).decode("utf-8")
+    # Rewrite plugin.yml: ensure main: points to the original plugin main
+    # (final7 should already have it, but be safe), AND remove ScoreLicense
+    # from depend:/softdepend: so the no-license jar can load standalone.
+    tmp = src + ".nolic"
+    with zipfile.ZipFile(src, "r") as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for it in zin.infolist():
+            if it.filename == "plugin.yml":
+                yml = zin.read(it.filename).decode("utf-8")
+                if expected_main and current_main and current_main != expected_main:
                     yml = re.sub(r"^main:.*$", f"main: {expected_main}", yml, count=1, flags=re.M)
-                    zout.writestr("plugin.yml", yml)
-                else:
-                    zout.writestr(it, zin.read(it.filename))
-        shutil.move(tmp, os.path.join(DST, dst_name))
-        print(f"  {dst_name}  (main rewritten: {current_main} -> {expected_main}, {os.path.getsize(os.path.join(DST, dst_name)):,} bytes)")
-    else:
-        shutil.copy(src, os.path.join(DST, dst_name))
-        print(f"  {dst_name}  (main: {current_main}, {os.path.getsize(os.path.join(DST, dst_name)):,} bytes)")
+                yml = strip_license_dep(yml)
+                zout.writestr("plugin.yml", yml)
+            else:
+                zout.writestr(it, zin.read(it.filename))
+    shutil.move(tmp, os.path.join(DST, dst_name))
+    note = " (main rewritten)" if expected_main and current_main != expected_main else ""
+    print(f"  {dst_name}  (main: {expected_main or current_main}, ScoreLicense dep stripped{note}, "
+          f"{os.path.getsize(os.path.join(DST, dst_name)):,} bytes)")
 
 print(f"\nDone -> {DST}")
