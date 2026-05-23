@@ -27,7 +27,7 @@ selected-lore:   "&aВыбрано — нажмите чтобы снять"
 # Filler glass material used as the background of all menus.
 filler-material: "GRAY_STAINED_GLASS_PANE"
 filler-name:     "&r"
-ищтыфш
+
 # Divider row in the shields menu (slots 36..44) — visually separates the
 # cosmetic shields from the navigation row at the bottom.
 divider-material: "BLACK_STAINED_GLASS_PANE"

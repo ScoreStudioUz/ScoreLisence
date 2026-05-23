@@ -187,7 +187,14 @@ public class CosmeticsManager {
     }
 
     private void loadShields() {
-        if (!shieldsFile.exists()) return;
+        if (!shieldsFile.exists()) {
+            // First-time setup: seed with 18 default coloured shields so the
+            // menu isn't empty out-of-the-box. Admins can remove or replace
+            // any of them via /cosmetics admin shield remove/add.
+            seedDefaultShields();
+            saveShields();
+            return;
+        }
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(shieldsFile);
         ConfigurationSection sec = cfg.getConfigurationSection("shields");
         if (sec == null) return;
@@ -198,6 +205,50 @@ public class CosmeticsManager {
                 if (s != null) shields.put(slot, s);
             } catch (NumberFormatException ignored) {}
         }
+    }
+
+    /**
+     * Populates the cosmetic shield grid with one shield per Bukkit
+     * {@link org.bukkit.DyeColor} (16 colours) plus two patterned bonuses,
+     * for 18 total. Each shield is a banner-base shield with no patterns —
+     * vanilla just renders it in the matching base colour.
+     */
+    private void seedDefaultShields() {
+        org.bukkit.DyeColor[] colours = org.bukkit.DyeColor.values(); // 16
+        int slot = 0;
+        for (org.bukkit.DyeColor c : colours) {
+            shields.put(slot++, buildBaseShield(c, null));
+        }
+        // Bonus #1 — white shield with red cross (medic look).
+        shields.put(slot++, buildBaseShield(org.bukkit.DyeColor.WHITE, java.util.List.of(
+                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.RED,
+                        org.bukkit.block.banner.PatternType.STRIPE_CENTER),
+                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.RED,
+                        org.bukkit.block.banner.PatternType.STRIPE_MIDDLE)
+        )));
+        // Bonus #2 — black shield with gold border + diagonal.
+        shields.put(slot, buildBaseShield(org.bukkit.DyeColor.BLACK, java.util.List.of(
+                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.YELLOW,
+                        org.bukkit.block.banner.PatternType.BORDER),
+                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.YELLOW,
+                        org.bukkit.block.banner.PatternType.STRIPE_DOWNRIGHT)
+        )));
+    }
+
+    private ItemStack buildBaseShield(org.bukkit.DyeColor base,
+                                      java.util.List<org.bukkit.block.banner.Pattern> patterns) {
+        ItemStack shield = new ItemStack(Material.SHIELD);
+        org.bukkit.inventory.meta.BlockStateMeta meta =
+                (org.bukkit.inventory.meta.BlockStateMeta) shield.getItemMeta();
+        if (meta != null) {
+            org.bukkit.block.Banner banner = (org.bukkit.block.Banner) meta.getBlockState();
+            banner.setBaseColor(base);
+            if (patterns != null) banner.setPatterns(patterns);
+            banner.update();
+            meta.setBlockState(banner);
+            shield.setItemMeta(meta);
+        }
+        return shield;
     }
 
     private void saveShields() {

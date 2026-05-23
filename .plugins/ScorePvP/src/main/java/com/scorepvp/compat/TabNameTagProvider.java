@@ -116,24 +116,6 @@ public class TabNameTagProvider implements NameTagProvider {
                 }
             }
             healthInjected.put(match.getMatchId(), injected);
-
-            // Force a Criteria.HEALTH update — without this, the BELOW_NAME
-            // score reads "0" until the player takes damage. Schedule a
-            // no-op setHealth() one tick later so the value lands after the
-            // kit / teleport have settled.
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                for (UUID uuid : match.getAllUuids()) {
-                    Player p = Bukkit.getPlayer(uuid);
-                    if (p == null || !p.isOnline()) continue;
-                    double h = p.getHealth();
-                    double max = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null
-                            ? p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue()
-                            : 20.0;
-                    if (h > max) h = max;
-                    if (h <= 0) continue;
-                    p.setHealth(h);
-                }
-            }, 1L);
         }
     }
 
@@ -173,11 +155,24 @@ public class TabNameTagProvider implements NameTagProvider {
         Set<UUID> injected = healthInjected.get(match.getMatchId());
         if (injected == null || !injected.contains(player.getUniqueId())) return;
 
-        // Re-inject if the objective was lost (e.g. scoreboard was swapped by another plugin)
-        Scoreboard board = player.getScoreboard();
-        Objective obj = board.getObjective(HEALTH_OBJ_NAME);
-        if (obj == null) {
-            injectHealthObjective(player);
+        // Push the latest HP for every fighter in the match — the objective
+        // is DUMMY so it does not auto-track health. Pushing on every damage
+        // event keeps the BELOW_NAME score in sync.
+        for (UUID uuid : match.getAllUuids()) {
+            Player target = Bukkit.getPlayer(uuid);
+            if (target == null) continue;
+            Scoreboard board = target.getScoreboard();
+            Objective obj = board.getObjective(HEALTH_OBJ_NAME);
+            if (obj == null) {
+                injectHealthObjective(target);
+                obj = board.getObjective(HEALTH_OBJ_NAME);
+                if (obj == null) continue;
+            }
+            for (UUID other : match.getAllUuids()) {
+                Player o = Bukkit.getPlayer(other);
+                if (o == null) continue;
+                obj.getScore(o.getName()).setScore((int) Math.ceil(o.getHealth()));
+            }
         }
     }
 
@@ -244,12 +239,29 @@ public class TabNameTagProvider implements NameTagProvider {
         Scoreboard board = player.getScoreboard();
         Objective obj = board.getObjective(HEALTH_OBJ_NAME);
         if (obj == null) {
+            // DUMMY criteria — we push values manually on damage so the
+            // BELOW_NAME score is correct from the very first frame instead
+            // of waiting for a damage tick from the HEALTH criteria.
             obj = board.registerNewObjective(
-                    HEALTH_OBJ_NAME, Criteria.HEALTH,
+                    HEALTH_OBJ_NAME, Criteria.DUMMY,
                     LEGACY.deserialize(healthSymbol)
             );
         }
         obj.setDisplaySlot(DisplaySlot.BELOW_NAME);
+        // Seed scores for every player in the match so the value is non-zero
+        // immediately. The MatchListener.onDamageMonitor handler keeps it in
+        // sync after that.
+        Match match = plugin.getMatchManager().getMatch(player.getUniqueId());
+        if (match != null) {
+            for (UUID uuid : match.getAllUuids()) {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p != null) {
+                    obj.getScore(p.getName()).setScore((int) Math.ceil(p.getHealth()));
+                }
+            }
+        } else {
+            obj.getScore(player.getName()).setScore((int) Math.ceil(player.getHealth()));
+        }
     }
 
     private void removeHealthObjective(Player player) {

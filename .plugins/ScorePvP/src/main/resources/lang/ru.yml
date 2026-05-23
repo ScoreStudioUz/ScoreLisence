@@ -196,8 +196,9 @@ match:
   victory-subtitle: "&7Поздравляем!"
   defeat-subtitle: "&7Попробуйте снова."
   # Action bar shown to attackers with `duels.actionbar` on every successful hit.
-  # Placeholders: {combo} {best} {dist} {dmg}
-  actionbar-hit: "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg}"
+  # Placeholders: {combo} {best} {dist} {dmg} {ping} {hp} {max_hp}
+  # {ping} is pre-colored according to ping-color thresholds in config.yml.
+  actionbar-hit: "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg} &8; &fHP: &c{hp}&8/&c{max_hp} &8| {ping}ms"
 
 # Cosmetics moved to a dedicated cosmetics.yml — see that file for the
 # menu titles, button names, and chat messages.

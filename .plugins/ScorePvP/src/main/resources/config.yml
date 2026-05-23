@@ -192,6 +192,19 @@ nametag:
   no-tier-duel-format: "%lp_prefix%%team_color%"
   no-tier-ffa-format: "%lp_prefix%"
 
+# ── HUD / Action Bar ───────────────────────────────────────────────────────────
+hud:
+  # Пороги цвета пинга в action-bar HUD.
+  #   0..good-max     → good-color   (по умолчанию зелёный)
+  #   good-max..mid   → mid-color    (по умолчанию оранжевый)
+  #   > mid           → bad-color    (по умолчанию красный)
+  ping:
+    good-max: 80
+    mid-max: 150
+    good-color: "&a"
+    mid-color: "&6"
+    bad-color: "&c"
+
 # ── Custom Items ───────────────────────────────────────────────────────────────
 custom-items:
   golden-head:

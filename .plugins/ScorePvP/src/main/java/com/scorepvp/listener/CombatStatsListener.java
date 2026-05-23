@@ -134,15 +134,39 @@ public class CombatStatsListener implements Listener {
         double dist = lh == null ? 0d : lh.distance;
         double dmg = lh == null ? 0d : lh.damage;
 
+        Player pl = Bukkit.getPlayer(uuid);
+        int ping = pl != null ? pl.getPing() : 0;
+        int hp = pl != null ? (int) Math.ceil(pl.getHealth()) : 0;
+        int maxHp = 20;
+        if (pl != null) {
+            org.bukkit.attribute.AttributeInstance attr =
+                    pl.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            if (attr != null) maxHp = (int) Math.ceil(attr.getValue());
+        }
+
         String template = plugin.getConfigManager().rawStr("match.actionbar-hit");
         if (template == null || template.isEmpty()) {
-            template = "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg}";
+            template = "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg} &8; &fПинг: {ping} &8; &fHP: &c{hp}&8/&c{max_hp}";
         }
         return ColorUtil.color(template
                 .replace("{combo}", Integer.toString(combo))
                 .replace("{best}",  Integer.toString(best))
                 .replace("{dist}",  String.format(java.util.Locale.ROOT, "%.1f", dist))
-                .replace("{dmg}",   String.format(java.util.Locale.ROOT, "%.2f", dmg)));
+                .replace("{dmg}",   String.format(java.util.Locale.ROOT, "%.2f", dmg))
+                .replace("{ping}",  colorizePing(ping))
+                .replace("{hp}",    Integer.toString(hp))
+                .replace("{max_hp}", Integer.toString(maxHp)));
+    }
+
+    /** Wraps ping value in a colour code chosen by config-driven thresholds. */
+    private String colorizePing(int ping) {
+        int goodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
+        int midMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
+        String good = plugin.getConfig().getString("hud.ping.good-color", "&a");
+        String mid  = plugin.getConfig().getString("hud.ping.mid-color", "&6");
+        String bad  = plugin.getConfig().getString("hud.ping.bad-color", "&c");
+        String colour = ping <= goodMax ? good : (ping <= midMax ? mid : bad);
+        return colour + ping;
     }
 
     private Component deserialize(String s) {
