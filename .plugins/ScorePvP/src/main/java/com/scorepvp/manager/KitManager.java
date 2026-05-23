@@ -17,18 +17,23 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages vanilla kits.
  *
- * Kit-type in modes.yml: "vanilla"  → kits/vanilla.yml (default kit)
+ * Personal kits are stored as YAML files at {@code plugins/ScorePvP/data/{uuid}.yml}.
+ * The schema mirrors the named-kit format ({@code items: [{slot, material, …}]})
+ * so the same loader handles both.
  *
- * Each player can have one personal vanilla kit saved in the DB.
- * The "default" kit is the admin-set vanilla kit (/spvp kit set vanilla).
+ * No SQLite is used for personal kits — the database path was deprecated due to
+ * Bukkit ItemStack binary deserialization failing across server versions
+ * ("Failed to deserialize ItemStack array").
  *
- * Section 4 additions:
+ * Section 4:
  *   /spvp kit create <name>   — create a named kit file
  *   /spvp kit save <name>     — save current inventory into the named kit
  *   /spvp kit set vanilla     — set current admin inventory as the default vanilla kit
  *   /kit reset                — reset player inventory to default vanilla kit (blocked in region)
  */
 public class KitManager {
+
+    private static final String DATA_DIR = "data";
 
     private final ScorePvP plugin;
 
@@ -45,14 +50,12 @@ public class KitManager {
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     public void loadAsync(UUID uuid) {
-        plugin.getDatabase().loadPersonalKitAsync(uuid)
-                .thenAccept(items -> {
-                    if (items != null && items.length > 0) {
-                        personalKits.put(uuid, items);
-                    } else {
-                        personalKits.put(uuid, new ItemStack[0]);
-                    }
-                });
+        // Personal kits live as YAML files now — load synchronously off the main
+        // thread so we don't block joins; YAML parsing is fast enough.
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            ItemStack[] items = loadKitFromFile(uuid);
+            personalKits.put(uuid, items != null ? items : new ItemStack[0]);
+        });
     }
 
     public void unload(UUID uuid) {
@@ -61,10 +64,6 @@ public class KitManager {
 
     // ── Give Kit ──────────────────────────────────────────────────────────────
 
-    /**
-     * Gives the vanilla kit to the player.
-     * Personal kit → default kit fallback.
-     */
     public void giveVanillaKit(Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
@@ -77,7 +76,6 @@ public class KitManager {
         }
     }
 
-    /** Gives strictly the default vanilla kit, ignoring any personal kit. */
     public void giveDefaultVanillaKit(Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
@@ -87,45 +85,33 @@ public class KitManager {
 
     public void giveKitByType(Player player, String kitType) {
         player.getInventory().clear();
-        String kitName = kitType;
-        if (kitName.equals("vanilla")) {
+        if (kitType.equals("vanilla")) {
             giveVanillaKit(player);
             return;
         }
-        applyDefaultKit(player, kitName);
+        applyDefaultKit(player, kitType);
     }
 
-    // ── Section 2: Kit Reset — data-only ─────────────────────────────────────
+    // ── Personal kit reset ─────────────────────────────────────────────────────
 
-    /**
-     * Clears the player's personal kit DATA from memory and DB.
-     * Does NOT give a kit immediately. On next vanilla region entry,
-     * the player receives the default kit.
-     */
     public void resetPersonalKit(Player player) {
         personalKits.put(player.getUniqueId(), new ItemStack[0]);
-        plugin.getDatabase().savePersonalKitAsync(player.getUniqueId(), new ItemStack[0]);
-        saveKitToFile(player.getUniqueId(), new ItemStack[0]);
+        deleteKitFile(player.getUniqueId());
         plugin.getPlayerDataManager().setKitResetPending(player.getUniqueId(), true);
         player.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                 + " " + plugin.getConfigManager().rawMsg("kit.reset-done"));
     }
 
-    public boolean consumeResetPending(java.util.UUID uuid) {
+    public boolean consumeResetPending(UUID uuid) {
         boolean p = plugin.getPlayerDataManager().isKitResetPending(uuid);
         if (p) plugin.getPlayerDataManager().setKitResetPending(uuid, false);
         return p;
     }
 
-    /** Compat alias. */
     public void resetToDefault(Player player) { resetPersonalKit(player); }
 
-    // ── Section 4: Named kit management ──────────────────────────────────────
+    // ── Named kit management ─────────────────────────────────────────────────
 
-    /**
-     * Creates an empty kit file with the given name.
-     * /spvp kit create <name>
-     */
     public boolean createNamedKit(String name) {
         File kitFile = new File(plugin.getDataFolder(), "kits/" + name + ".yml");
         if (kitFile.exists()) return false;
@@ -142,25 +128,11 @@ public class KitManager {
         }
     }
 
-    /**
-     * Saves the admin's current inventory into the named kit file.
-     * Includes: all main slots, armor, offhand, custom items, all enchantments.
-     * /spvp kit save <name>
-     */
     public boolean saveNamedKit(Player admin, String name) {
         File kitFile = new File(plugin.getDataFolder(), "kits/" + name + ".yml");
         kitFile.getParentFile().mkdirs();
 
-        ItemStack[] main    = admin.getInventory().getContents().clone();
-        ItemStack[] armor   = admin.getInventory().getArmorContents().clone();
-        ItemStack   offhand = admin.getInventory().getItemInOffHand();
-
-        ItemStack[] full = new ItemStack[41];
-        System.arraycopy(main, 0, full, 0, Math.min(main.length, 36));
-        System.arraycopy(armor, 0, full, 36, Math.min(armor.length, 4));
-        if (offhand != null && !offhand.getType().isAir()) full[40] = offhand.clone();
-
-        // Build YAML items list from inventory
+        ItemStack[] full = snapshotInventory(admin);
         List<Map<String, Object>> itemList = serializeKitItems(full);
 
         YamlConfiguration cfg = new YamlConfiguration();
@@ -176,10 +148,6 @@ public class KitManager {
         }
     }
 
-    /**
-     * Sets the current admin inventory as the default vanilla kit.
-     * /spvp kit set vanilla
-     */
     public boolean setVanillaDefault(Player admin) {
         return saveNamedKit(admin, "vanilla");
     }
@@ -189,18 +157,9 @@ public class KitManager {
     public boolean savePersonalKit(Player player) {
         if (!plugin.getConfigManager().isInChestRegion(player.getLocation())) return false;
 
-        ItemStack[] main    = player.getInventory().getContents().clone();
-        ItemStack[] armor   = player.getInventory().getArmorContents().clone();
-        ItemStack   offhand = player.getInventory().getItemInOffHand();
-
-        ItemStack[] contents = new ItemStack[41];
-        System.arraycopy(main, 0, contents, 0, Math.min(main.length, 36));
-        System.arraycopy(armor, 0, contents, 36, Math.min(armor.length, 4));
-        if (offhand != null && !offhand.getType().isAir()) contents[40] = offhand.clone();
-
+        ItemStack[] contents = snapshotInventory(player);
         personalKits.put(player.getUniqueId(), contents);
-        plugin.getDatabase().savePersonalKitAsync(player.getUniqueId(), contents);
-        saveKitToFile(player.getUniqueId(), contents);  // Section 2: file mirror
+        saveKitToFile(player.getUniqueId(), contents);
         return true;
     }
 
@@ -209,14 +168,22 @@ public class KitManager {
         return kit != null && kit.length > 0;
     }
 
-    // ── Serialization ─────────────────────────────────────────────────────────
+    // ── Snapshot inventory → 41-slot array ───────────────────────────────────
 
-    /**
-     * Serializes a full 41-slot kit into a List<Map> suitable for YAML storage.
-     * Preserves: material, amount, slot, custom name, lore, enchantments.
-     * Also handles player_head custom texture via item serialization.
-     */
-    @SuppressWarnings("unchecked")
+    private ItemStack[] snapshotInventory(Player p) {
+        ItemStack[] main    = p.getInventory().getContents().clone();
+        ItemStack[] armor   = p.getInventory().getArmorContents().clone();
+        ItemStack   offhand = p.getInventory().getItemInOffHand();
+
+        ItemStack[] full = new ItemStack[41];
+        System.arraycopy(main, 0, full, 0, Math.min(main.length, 36));
+        System.arraycopy(armor, 0, full, 36, Math.min(armor.length, 4));
+        if (offhand != null && !offhand.getType().isAir()) full[40] = offhand.clone();
+        return full;
+    }
+
+    // ── Serialization (rich YAML schema, shared with named kits) ─────────────
+
     private List<Map<String, Object>> serializeKitItems(ItemStack[] items) {
         List<Map<String, Object>> list = new ArrayList<>();
         for (int slot = 0; slot < items.length; slot++) {
@@ -231,7 +198,6 @@ public class KitManager {
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
                 if (meta.hasDisplayName()) {
-                    // Store as legacy string
                     entry.put("name", net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                             .legacyAmpersand().serialize(meta.displayName()));
                 }
@@ -248,7 +214,6 @@ public class KitManager {
                     meta.getEnchants().forEach((ench, level) -> enchMap.put(ench.getKey().getKey(), level));
                     entry.put("enchantments", enchMap);
                 }
-                // Player head custom texture
                 if (item.getType() == Material.PLAYER_HEAD
                         && meta instanceof org.bukkit.inventory.meta.SkullMeta skullMeta) {
                     org.bukkit.profile.PlayerProfile profile = skullMeta.getOwnerProfile();
@@ -256,11 +221,9 @@ public class KitManager {
                         entry.put("skull-texture", profile.getTextures().getSkin().toString());
                     }
                 }
-                // Custom model data
                 if (meta.hasCustomModelData()) {
                     entry.put("custom-model-data", meta.getCustomModelData());
                 }
-                // Unbreakable
                 if (meta.isUnbreakable()) {
                     entry.put("unbreakable", true);
                 }
@@ -270,52 +233,41 @@ public class KitManager {
         return list;
     }
 
+    // ── File-based personal kit storage (data/{uuid}.yml) ────────────────────
 
-    // ── Section 2: File-based kit storage (fallback) ─────────────────────────
+    private File personalKitFile(UUID uuid) {
+        File dir = new File(plugin.getDataFolder(), DATA_DIR);
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, uuid.toString() + ".yml");
+    }
 
-    private void saveKitToFile(java.util.UUID uuid, ItemStack[] items) {
+    private void saveKitToFile(UUID uuid, ItemStack[] items) {
         try {
-            java.io.File dir = new java.io.File(plugin.getDataFolder(), "userdata");
-            dir.mkdirs();
-            java.io.File file = new java.io.File(dir, uuid.toString() + ".yml");
-            org.bukkit.configuration.file.YamlConfiguration cfg = new org.bukkit.configuration.file.YamlConfiguration();
-            java.util.List<java.util.Map<String, Object>> serialized = new java.util.ArrayList<>();
-            for (int i = 0; i < items.length; i++) {
-                if (items[i] == null || items[i].getType().isAir()) continue;
-                java.util.Map<String, Object> entry = new java.util.LinkedHashMap<>();
-                entry.put("slot", i);
-                entry.put("item", items[i].serialize());
-                serialized.add(entry);
-            }
-            cfg.set("kit", serialized);
+            File file = personalKitFile(uuid);
+            YamlConfiguration cfg = new YamlConfiguration();
+            cfg.set("items", serializeKitItems(items));
             cfg.save(file);
         } catch (Exception e) {
             plugin.getLogger().warning("[ScorePvP] saveKitToFile failed for " + uuid + ": " + e.getMessage());
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private ItemStack[] loadKitFromFile(java.util.UUID uuid) {
+    private void deleteKitFile(UUID uuid) {
+        File file = personalKitFile(uuid);
+        if (file.exists() && !file.delete()) {
+            plugin.getLogger().warning("[ScorePvP] could not delete kit file " + file.getName());
+        }
+    }
+
+    private ItemStack[] loadKitFromFile(UUID uuid) {
+        File file = personalKitFile(uuid);
+        if (!file.exists()) return null;
         try {
-            java.io.File file = new java.io.File(plugin.getDataFolder(), "userdata/" + uuid.toString() + ".yml");
-            if (!file.exists()) return null;
-            org.bukkit.configuration.file.YamlConfiguration cfg =
-                    org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
-            java.util.List<?> list = cfg.getList("kit");
-            if (list == null || list.isEmpty()) return null;
-            ItemStack[] result = new ItemStack[41];
-            for (Object obj : list) {
-                if (!(obj instanceof java.util.Map<?,?> map)) continue;
-                int slot;
-                try { slot = Integer.parseInt(String.valueOf(map.get("slot"))); } catch (NumberFormatException ex) { continue; }
-                if (slot < 0 || slot >= result.length) continue;
-                Object itemData = map.get("item");
-                if (itemData instanceof java.util.Map) {
-                    try { result[slot] = ItemStack.deserialize((java.util.Map<String,Object>)itemData); }
-                    catch (Exception ex) { plugin.getLogger().warning("[ScorePvP] Kit slot " + slot + " deserialization error"); }
-                }
-            }
-            return result;
+            YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+            ItemStack[] result = buildItemsFromConfig(cfg);
+            // Empty or all-null result → treat as "no kit".
+            for (ItemStack it : result) if (it != null) return result;
+            return null;
         } catch (Exception e) {
             plugin.getLogger().warning("[ScorePvP] loadKitFromFile failed for " + uuid + ": " + e.getMessage());
             return null;
@@ -348,22 +300,16 @@ public class KitManager {
     }
 
     /**
-     * Walks the resolved kit contents and replaces vanilla shield/diamond/
-     * netherite armor items with the player's selected cosmetic counterparts,
-     * if any. Only runs when the player has {@code duels.cosmetics} permission.
-     *
-     * The kit array layout matches what {@link #loadDefaultKit} returns:
-     *   0..35 = main inventory, 36..39 = armor (helmet, chest, leggings, boots),
-     *   40 = offhand. We scan the main inventory for shields (often offhand
-     *   appears in slot 40 too) and replace by exact material match.
+     * Replaces vanilla shield/diamond/netherite armor in the resolved kit with
+     * the player's selected cosmetic counterparts (if any). Only runs when the
+     * player has {@code duels.cosmetics} permission.
      */
     private void applyCosmeticsToKit(Player player, ItemStack[] items) {
         if (!player.hasPermission("duels.cosmetics")) return;
-        com.scorepvp.manager.CosmeticsManager mgr = plugin.getCosmeticsManager();
+        CosmeticsManager mgr = plugin.getCosmeticsManager();
         if (mgr == null) return;
-        java.util.UUID uid = player.getUniqueId();
+        UUID uid = player.getUniqueId();
 
-        // Shield (any slot containing a SHIELD)
         ItemStack cosShield = mgr.getSelectedShield(uid);
         if (cosShield != null) {
             for (int i = 0; i < items.length; i++) {
@@ -374,33 +320,31 @@ public class KitManager {
             }
         }
 
-        // Armor slots: 36=helmet, 37=chest, 38=leggings, 39=boots
-        replaceArmorSlot(items, 36, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.HELMET);
-        replaceArmorSlot(items, 37, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.CHESTPLATE);
-        replaceArmorSlot(items, 38, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.LEGGINGS);
-        replaceArmorSlot(items, 39, uid, com.scorepvp.manager.CosmeticsManager.ArmorPiece.BOOTS);
+        replaceArmorSlot(items, 36, uid, CosmeticsManager.ArmorPiece.HELMET);
+        replaceArmorSlot(items, 37, uid, CosmeticsManager.ArmorPiece.CHESTPLATE);
+        replaceArmorSlot(items, 38, uid, CosmeticsManager.ArmorPiece.LEGGINGS);
+        replaceArmorSlot(items, 39, uid, CosmeticsManager.ArmorPiece.BOOTS);
     }
 
-    private void replaceArmorSlot(ItemStack[] items, int slot, java.util.UUID uid,
-                                   com.scorepvp.manager.CosmeticsManager.ArmorPiece piece) {
+    private void replaceArmorSlot(ItemStack[] items, int slot, UUID uid,
+                                   CosmeticsManager.ArmorPiece piece) {
         ItemStack it = items[slot];
         if (it == null || it.getType().isAir()) return;
         Material m = it.getType();
-        com.scorepvp.manager.CosmeticsManager.ArmorMaterial mat;
+        CosmeticsManager.ArmorMaterial mat;
         if (m == Material.DIAMOND_HELMET || m == Material.DIAMOND_CHESTPLATE
                 || m == Material.DIAMOND_LEGGINGS || m == Material.DIAMOND_BOOTS) {
-            mat = com.scorepvp.manager.CosmeticsManager.ArmorMaterial.DIAMOND;
+            mat = CosmeticsManager.ArmorMaterial.DIAMOND;
         } else if (m == Material.NETHERITE_HELMET || m == Material.NETHERITE_CHESTPLATE
                 || m == Material.NETHERITE_LEGGINGS || m == Material.NETHERITE_BOOTS) {
-            mat = com.scorepvp.manager.CosmeticsManager.ArmorMaterial.NETHERITE;
+            mat = CosmeticsManager.ArmorMaterial.NETHERITE;
         } else return;
         ItemStack cos = plugin.getCosmeticsManager().getSelectedArmor(uid, mat, piece);
         if (cos != null) {
-            // Preserve original enchantments by copying them onto the cosmetic clone
             ItemStack out = cos.clone();
-            var meta = out.getItemMeta();
+            ItemMeta meta = out.getItemMeta();
             if (meta != null && it.getItemMeta() != null) {
-                for (var ench : it.getItemMeta().getEnchants().entrySet()) {
+                for (Map.Entry<Enchantment, Integer> ench : it.getItemMeta().getEnchants().entrySet()) {
                     meta.addEnchant(ench.getKey(), ench.getValue(), true);
                 }
                 out.setItemMeta(meta);
@@ -410,7 +354,6 @@ public class KitManager {
     }
 
     private ItemStack[] loadDefaultKit(String kitName) {
-        // Check in-memory cache for admin-saved kits first
         if (namedKitCache.containsKey(kitName)) {
             return namedKitCache.get(kitName).clone();
         }
@@ -426,6 +369,11 @@ public class KitManager {
         }
 
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(kitFile);
+        return buildItemsFromConfig(cfg);
+    }
+
+    /** Shared YAML→ItemStack[41] decoder used by personal & named kits. */
+    private ItemStack[] buildItemsFromConfig(YamlConfiguration cfg) {
         ItemStack[] result = new ItemStack[41];
 
         for (Object obj : cfg.getMapList("items")) {
@@ -439,7 +387,7 @@ public class KitManager {
             Material mat;
             try { mat = Material.valueOf(String.valueOf(map.get("material")).toUpperCase()); }
             catch (IllegalArgumentException ex) {
-                plugin.getLogger().warning("[ScorePvP] Unknown material in kit " + kitName + " slot " + slot);
+                plugin.getLogger().warning("[ScorePvP] Unknown material in kit slot " + slot);
                 continue;
             }
 
@@ -454,6 +402,11 @@ public class KitManager {
             if (map.containsKey("name")) {
                 builder.name(String.valueOf(map.get("name")));
             }
+            if (map.get("lore") instanceof List<?> loreList) {
+                List<String> lore = new ArrayList<>();
+                for (Object l : loreList) lore.add(String.valueOf(l));
+                builder.lore(lore);
+            }
 
             if (map.get("enchantments") instanceof Map<?, ?> encMap) {
                 for (Map.Entry<?, ?> entry : encMap.entrySet()) {
@@ -463,7 +416,6 @@ public class KitManager {
                     catch (NumberFormatException ex) { continue; }
                     Enchantment ench = Enchantment.getByName(enchName);
                     if (ench == null) {
-                        // Try registry key lookup
                         try {
                             ench = org.bukkit.Registry.ENCHANTMENT.get(
                                     org.bukkit.NamespacedKey.minecraft(String.valueOf(entry.getKey()).toLowerCase()));
@@ -474,7 +426,6 @@ public class KitManager {
                 }
             }
 
-            // Skull texture
             if (mat == Material.PLAYER_HEAD && map.containsKey("skull-texture")) {
                 String textureUrl = String.valueOf(map.get("skull-texture"));
                 result[slot] = buildSkullFromUrl(textureUrl, builder);
@@ -495,7 +446,6 @@ public class KitManager {
         return result;
     }
 
-    /** Builds a PLAYER_HEAD ItemStack with a skin texture URL. */
     private ItemStack buildSkullFromUrl(String textureUrl, ItemBuilder builder) {
         try {
             ItemStack skull = builder.build();
@@ -503,8 +453,7 @@ public class KitManager {
                     (org.bukkit.inventory.meta.SkullMeta) skull.getItemMeta();
             if (skullMeta == null) return skull;
 
-            // Use PlayerProfile to set texture
-            java.util.UUID fakeUUID = java.util.UUID.nameUUIDFromBytes(textureUrl.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            UUID fakeUUID = UUID.nameUUIDFromBytes(textureUrl.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             org.bukkit.profile.PlayerProfile profile =
                     org.bukkit.Bukkit.createPlayerProfile(fakeUUID, "ScorePvPHead");
             org.bukkit.profile.PlayerTextures textures = profile.getTextures();
@@ -519,17 +468,14 @@ public class KitManager {
         }
     }
 
-    /** Builds a PLAYER_HEAD with a raw Base64 texture value. */
     public static ItemStack buildSkullFromBase64(String base64Value) {
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         org.bukkit.inventory.meta.SkullMeta meta = (org.bukkit.inventory.meta.SkullMeta) skull.getItemMeta();
         if (meta == null) return skull;
         try {
-            // Decode base64 to get the URL from the JSON
             String decoded = new String(java.util.Base64.getDecoder().decode(base64Value), java.nio.charset.StandardCharsets.UTF_8);
-            // JSON looks like: {"textures":{"SKIN":{"url":"http://..."}}}
             String skinUrl = decoded.replaceAll(".*\"url\"\\s*:\\s*\"([^\"]+)\".*", "$1");
-            java.util.UUID fakeUUID = java.util.UUID.nameUUIDFromBytes(base64Value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            UUID fakeUUID = UUID.nameUUIDFromBytes(base64Value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             org.bukkit.profile.PlayerProfile profile =
                     org.bukkit.Bukkit.createPlayerProfile(fakeUUID, "ScorePvPCustom");
             org.bukkit.profile.PlayerTextures textures = profile.getTextures();

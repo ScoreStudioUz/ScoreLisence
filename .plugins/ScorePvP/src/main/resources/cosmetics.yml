@@ -27,7 +27,7 @@ selected-lore:   "&aВыбрано — нажмите чтобы снять"
 # Filler glass material used as the background of all menus.
 filler-material: "GRAY_STAINED_GLASS_PANE"
 filler-name:     "&r"
-
+ищтыфш
 # Divider row in the shields menu (slots 36..44) — visually separates the
 # cosmetic shields from the navigation row at the bottom.
 divider-material: "BLACK_STAINED_GLASS_PANE"
@@ -76,6 +76,24 @@ sub:
   clear-name: "&c&lСбросить выбор"
   clear-lore:
     - "&7Сбросить выбор в этом подменю."
+
+# ── Armor sub-menu layout (DeluxeMenus-style) ────────────────────────────────
+# Each piece occupies a list of `slots:` — one stored item is rendered on every
+# listed slot. Clicking any of those slots toggles selection for that piece.
+# `back-slot` and `clear-slot` control the navigation overlays.
+armor-menu:
+  size: 54
+  back-slot:  45
+  clear-slot: 49
+  pieces:
+    helmet:
+      slots:  [10, 11, 12]
+    chestplate:
+      slots:  [14, 15, 16]
+    leggings:
+      slots:  [19, 20, 21]
+    boots:
+      slots:  [23, 24, 25]
 
 # ── Chat messages ────────────────────────────────────────────────────────────
 messages:

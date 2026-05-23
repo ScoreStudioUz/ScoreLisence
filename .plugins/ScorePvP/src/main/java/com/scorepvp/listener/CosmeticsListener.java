@@ -144,8 +144,9 @@ public class CosmeticsListener implements Listener {
 
     private void handleArmor(Player p, int slot, ArmorMaterial mat, boolean right) {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
+        CosmeticsGUI gui = plugin.getCosmeticsGUI();
 
-        ArmorPiece piece = CosmeticsGUI.armorPieceForSlot(slot);
+        ArmorPiece piece = gui.armorPieceForSlotConfigured(slot);
         if (piece != null) {
             if (mgr.getArmor(mat).get(piece) == null) return; // nothing configured
 
@@ -172,9 +173,9 @@ public class CosmeticsListener implements Listener {
             plugin.getCosmeticsGUI().openArmor(p, mat);
             return;
         }
-        if (slot == CosmeticsGUI.ARMOR_BACK_SLOT) {
+        if (slot == gui.armorBackSlot()) {
             plugin.getCosmeticsGUI().openMain(p);
-        } else if (slot == CosmeticsGUI.ARMOR_CLEAR_SLOT) {
+        } else if (slot == gui.armorClearSlot()) {
             mgr.clearArmor(p.getUniqueId(), mat);
             tellPlaceholder(p, "messages.cleared-armor", "{material}", materialLabel(mat));
             plugin.getCosmeticsGUI().openArmor(p, mat);

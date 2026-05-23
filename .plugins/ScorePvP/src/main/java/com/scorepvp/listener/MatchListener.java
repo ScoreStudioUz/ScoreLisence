@@ -4,30 +4,44 @@ import com.scorepvp.ScorePvP;
 import com.scorepvp.model.Arena;
 import com.scorepvp.model.Match;
 import com.scorepvp.model.MatchPlayer;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Handles all in-match events:
  *   - Freeze during countdown
- *   - Death → round handling (duel) / elimination (FFA)
+ *   - Smooth death (no vanilla death screen): would-be-fatal damage is
+ *     intercepted; we mark the player as dead, switch them to spectator at
+ *     the death location, and trigger MatchManager round handling.
  *   - Quit → forfeit
  *   - Damage isolation (only fighters on same arena can hurt each other)
  *   - Spectator boundary enforcement
- *
- * FIX: Party FFA friendly fire — explicitly allow damage between alive
- *      fighters in the same FFA match (was being cancelled by fallthrough).
  */
 public class MatchListener implements Listener {
 
+    /** ms a recorded killer reference stays "live" after the last hit. */
+    private static final long KILLER_TTL_MS = 10_000L;
+
     private final ScorePvP plugin;
+
+    /** victim UUID → last attacker UUID (kept until KILLER_TTL_MS expires). */
+    private final Map<UUID, UUID> lastAttacker = new ConcurrentHashMap<>();
+    /** victim UUID → ms timestamp of the last damage. */
+    private final Map<UUID, Long> lastAttackerAt = new ConcurrentHashMap<>();
 
     public MatchListener(ScorePvP plugin) {
         this.plugin = plugin;
@@ -40,7 +54,6 @@ public class MatchListener implements Listener {
         Match match = plugin.getMatchManager().getMatch(e.getPlayer().getUniqueId());
         if (match == null) return;
 
-        // Freeze fighters during countdown
         if (match.getState() == Match.State.COUNTDOWN) {
             MatchPlayer mp = match.getFighter(e.getPlayer().getUniqueId());
             if (mp != null && mp.isFrozen()) {
@@ -49,50 +62,41 @@ public class MatchListener implements Listener {
                  || e.getFrom().getBlockY() != e.getTo().getBlockY()) {
                     e.setTo(e.getFrom().clone().add(0, 0, 0));
                 }
-                return;
             }
         }
-
-        // Spectators and dead FFA fighters can fly freely — no boundary enforcement
     }
 
     // ── Damage isolation ──────────────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDamage(EntityDamageByEntityEvent e) {
+    public void onPvP(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player victim)) return;
         if (!(e.getDamager() instanceof Player attacker)) return;
 
         Match victimMatch   = plugin.getMatchManager().getMatch(victim.getUniqueId());
         Match attackerMatch = plugin.getMatchManager().getMatch(attacker.getUniqueId());
 
-        // One of them not in a match — cancel PvP
         if (victimMatch == null || attackerMatch == null) { e.setCancelled(true); return; }
-        // Not in the same match — cancel
         if (!victimMatch.getMatchId().equals(attackerMatch.getMatchId())) { e.setCancelled(true); return; }
-        // Countdown or not active — cancel
         if (victimMatch.getState() != Match.State.ACTIVE) { e.setCancelled(true); return; }
 
         MatchPlayer vmp = victimMatch.getFighter(victim.getUniqueId());
         MatchPlayer amp = attackerMatch.getFighter(attacker.getUniqueId());
 
-        // FFA (Party FFA): ALLOW damage between two alive fighters explicitly
         if (victimMatch.isFfa()) {
-            // Both must be non-null alive fighters in the FFA list
             if (vmp == null || !vmp.isFighter() || vmp.isDead()) { e.setCancelled(true); return; }
             if (amp == null || !amp.isFighter() || amp.isDead()) { e.setCancelled(true); return; }
-            // Explicitly allow — do NOT cancel for alive FFA fighters
+            recordAttacker(victim.getUniqueId(), attacker.getUniqueId());
             return;
         }
 
-        // Duel: both must be active fighters
         if (vmp == null || !vmp.isFighter()) { e.setCancelled(true); return; }
         if (amp == null || !amp.isFighter()) { e.setCancelled(true); return; }
+        recordAttacker(victim.getUniqueId(), attacker.getUniqueId());
     }
 
     /**
      * Ensures health BELOW_NAME objective stays intact after damage.
-     * Re-injects the objective if another plugin swapped the scoreboard mid-match.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamageMonitor(EntityDamageByEntityEvent e) {
@@ -102,7 +106,59 @@ public class MatchListener implements Listener {
         }
     }
 
-    // ── Death handling ────────────────────────────────────────────────────────
+    // ── Smooth death: intercept fatal damage BEFORE vanilla kills the player ──
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFatalDamage(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player victim)) return;
+        Match match = plugin.getMatchManager().getMatch(victim.getUniqueId());
+        if (match == null || match.getState() != Match.State.ACTIVE) return;
+
+        MatchPlayer vmp = match.getFighter(victim.getUniqueId());
+        if (vmp == null || !vmp.isFighter() || vmp.isDead()) return;
+
+        // Would this damage drop them below 0?
+        if (victim.getHealth() - e.getFinalDamage() > 0) return;
+
+        // Intercept — no real death.
+        e.setCancelled(true);
+
+        Location deathLoc = victim.getLocation().clone();
+        UUID killerUuid = currentAttacker(victim.getUniqueId());
+
+        // Reset to a clean spectator state at the death location.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!victim.isOnline()) return;
+            try {
+                victim.setHealth(victim.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null
+                        ? victim.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue()
+                        : 20.0);
+            } catch (Throwable ignored) { /* ignore clamp issues */ }
+            victim.setFireTicks(0);
+            for (org.bukkit.potion.PotionEffect effect : victim.getActivePotionEffects()) {
+                victim.removePotionEffect(effect.getType());
+            }
+            // Drop arena-clean inventory (we don't want it left on the ground; arena clean-up handles it).
+            victim.getInventory().clear();
+            victim.setGameMode(GameMode.SPECTATOR);
+            victim.teleport(deathLoc);
+        });
+
+        if (match.isFfa()) {
+            MatchPlayer killerMp = killerUuid == null ? null : match.getFighter(killerUuid);
+            plugin.getMatchManager().handleFfaDeath(match, vmp, killerMp);
+        } else {
+            MatchPlayer killerMp = match.getOpponent(victim.getUniqueId());
+            if (killerMp == null) return;
+            plugin.getMatchManager().handleFighterDeath(match, vmp, killerMp);
+        }
+
+        // Clear killer tracking for this victim.
+        lastAttacker.remove(victim.getUniqueId());
+        lastAttackerAt.remove(victim.getUniqueId());
+    }
+
+    // ── Legacy death path: if vanilla death ever fires anyway, suppress noise ─
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDeath(PlayerDeathEvent e) {
@@ -114,26 +170,9 @@ public class MatchListener implements Listener {
         e.getDrops().clear();
         e.setDroppedExp(0);
         e.setKeepInventory(true);
-
-        if (match.getState() != Match.State.ACTIVE) return;
-
-        MatchPlayer deadMp = match.getFighter(dead.getUniqueId());
-        if (deadMp == null) return;
-
-        if (match.isFfa()) {
-            MatchPlayer killerMp = null;
-            if (dead.getKiller() != null) {
-                killerMp = match.getFighter(dead.getKiller().getUniqueId());
-            }
-            plugin.getMatchManager().handleFfaDeath(match, deadMp, killerMp);
-        } else {
-            MatchPlayer killerMp = match.getOpponent(dead.getUniqueId());
-            if (killerMp == null) return;
-            plugin.getMatchManager().handleFighterDeath(match, deadMp, killerMp);
-        }
+        // Note: with the smooth-death interceptor above this should not fire
+        // for fighters mid-match. Spectator quits / disconnects still pass.
     }
-
-    // ── Respawn inside match ──────────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(org.bukkit.event.player.PlayerRespawnEvent e) {
@@ -148,7 +187,26 @@ public class MatchListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent e) {
-        // intentionally empty — PlayerJoinQuitListener covers disconnect handling
+        lastAttacker.remove(e.getPlayer().getUniqueId());
+        lastAttackerAt.remove(e.getPlayer().getUniqueId());
+    }
+
+    // ── Attacker tracking ─────────────────────────────────────────────────────
+
+    private void recordAttacker(UUID victim, UUID attacker) {
+        lastAttacker.put(victim, attacker);
+        lastAttackerAt.put(victim, System.currentTimeMillis());
+    }
+
+    private UUID currentAttacker(UUID victim) {
+        Long at = lastAttackerAt.get(victim);
+        if (at == null) return null;
+        if (System.currentTimeMillis() - at > KILLER_TTL_MS) {
+            lastAttacker.remove(victim);
+            lastAttackerAt.remove(victim);
+            return null;
+        }
+        return lastAttacker.get(victim);
     }
 
     // ── Arena bounds check ────────────────────────────────────────────────────

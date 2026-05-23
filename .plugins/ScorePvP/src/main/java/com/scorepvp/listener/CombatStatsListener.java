@@ -11,27 +11,27 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerAnimationEvent;
-import org.bukkit.event.player.PlayerAnimationType;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Listens to attack swings + actual damage events to populate
- * {@link RoundStatsManager} and push an action-bar HUD to attackers
- * with the {@code duels.actionbar} permission.
+ * Combat stats tracker for the per-round HUD.
  *
- *  ● A swing without a damage event = miss (combo reset).
- *  ● A swing followed by an EntityDamageByEntityEvent on a fighter in the
- *    same match in the same tick = hit (combo +1, damage/reach recorded).
- *  ● Action bar shows: combo / best combo / distance / last damage. Fades
- *    out ~1.5s after the last hit.
+ * Definitions per user spec:
+ *   • HIT  — landed a damaging EntityDamageByEntityEvent on an enemy fighter.
+ *   • MISS — main-hand LEFT-clicked AIR (never on an entity or block).
+ *
+ * We use PlayerInteractEvent LEFT_CLICK_AIR for misses because PlayerAnimation
+ * ARM_SWING fires multiple times per attack (animation + cooldown packets),
+ * which produced phantom miss-after-hit and reset the combo to 0 every swing.
  */
 public class CombatStatsListener implements Listener {
 
@@ -39,8 +39,6 @@ public class CombatStatsListener implements Listener {
     private static final long ACTIONBAR_FADE_MS = 1500L;
 
     private final ScorePvP plugin;
-    /** uuid -> tick of last MAIN_HAND swing (used to correlate with damage). */
-    private final Map<UUID, Long> pendingSwingTick = new ConcurrentHashMap<>();
     /** uuid -> BukkitTask that refreshes the action bar each tick. */
     private final Map<UUID, BukkitTask> actionbarTasks = new ConcurrentHashMap<>();
 
@@ -48,32 +46,22 @@ public class CombatStatsListener implements Listener {
         this.plugin = plugin;
     }
 
-    // ── Swing → tentative miss (will be cancelled if damage event arrives) ──
+    // ── Left-click air = miss ──────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onSwing(PlayerAnimationEvent e) {
-        if (e.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
+    public void onInteract(PlayerInteractEvent e) {
+        if (e.getAction() != Action.LEFT_CLICK_AIR) return;
+        if (e.getHand() != EquipmentSlot.HAND) return;
         Player p = e.getPlayer();
         Match match = plugin.getMatchManager().getMatch(p.getUniqueId());
         if (match == null || match.getState() != Match.State.ACTIVE) return;
 
-        long tick = Bukkit.getServer().getCurrentTick();
-        pendingSwingTick.put(p.getUniqueId(), tick);
-
-        // Schedule a 1-tick later check: if no damage event consumed this swing, count miss.
-        UUID matchId = match.getMatchId();
-        UUID uuid = p.getUniqueId();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Long stillPending = pendingSwingTick.get(uuid);
-            if (stillPending != null && stillPending == tick) {
-                pendingSwingTick.remove(uuid);
-                plugin.getRoundStatsManager().registerMiss(matchId, uuid);
-                // No actionbar update on miss — just combo break
-            }
-        }, 1L);
+        plugin.getRoundStatsManager().registerMiss(match.getMatchId(), p.getUniqueId());
+        // Action-bar refreshes on combo change so the user sees combo break instantly.
+        if (p.hasPermission("duels.actionbar")) startOrRefreshActionbar(p);
     }
 
-    // ── Damage → confirmed hit ────────────────────────────────────────────
+    // ── Damage = hit ──────────────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent e) {
@@ -86,19 +74,13 @@ public class CombatStatsListener implements Listener {
         Match vm = plugin.getMatchManager().getMatch(victim.getUniqueId());
         if (vm == null || !vm.getMatchId().equals(match.getMatchId())) return;
 
-        // Consume the pending swing — this swing landed.
-        pendingSwingTick.remove(attacker.getUniqueId());
-
         double dmg = e.getFinalDamage();
         double dist = attacker.getLocation().distance(victim.getLocation());
 
         plugin.getRoundStatsManager().registerHit(match.getMatchId(),
                 attacker.getUniqueId(), victim.getUniqueId(), dmg, dist);
 
-        // Action bar (permission gated)
-        if (attacker.hasPermission("duels.actionbar")) {
-            startOrRefreshActionbar(attacker);
-        }
+        if (attacker.hasPermission("duels.actionbar")) startOrRefreshActionbar(attacker);
     }
 
     // ── Cleanup ───────────────────────────────────────────────────────────
@@ -106,7 +88,6 @@ public class CombatStatsListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         UUID id = e.getPlayer().getUniqueId();
-        pendingSwingTick.remove(id);
         BukkitTask t = actionbarTasks.remove(id);
         if (t != null) t.cancel();
         plugin.getRoundStatsManager().clearPlayer(id);

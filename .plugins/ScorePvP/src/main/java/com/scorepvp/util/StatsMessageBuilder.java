@@ -108,8 +108,9 @@ public final class StatsMessageBuilder {
                     "{accuracy}", fmt1(acc)));
         }
 
-        // Stats line — gated by duels.stats.view, embeds hoverable [посмотреть]
-        if (recipient.hasPermission(PERM_VIEW)) {
+        // Stats line — only on duel-finished (full-match summary). Round-finished
+        // shows accuracy only. Gated by duels.stats.view.
+        if ("duel-finished".equals(key) && recipient.hasPermission(PERM_VIEW)) {
             Component statsLine = buildStatsLine(plugin, matchId, viewerUuid, key);
             recipient.sendMessage(statsLine);
         }

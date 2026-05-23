@@ -67,6 +67,22 @@ public class ConfigManager {
         return lang.getStringList(path);
     }
 
+    /** Integer list resolver for cosmetics.yml (used by the armor menu layout). */
+    public List<Integer> cosIntList(String path) {
+        if (cosmeticsConfig != null && cosmeticsConfig.contains(path)) {
+            return cosmeticsConfig.getIntegerList(path);
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    /** Integer resolver for cosmetics.yml with a default. */
+    public int cosInt(String path, int def) {
+        if (cosmeticsConfig != null && cosmeticsConfig.contains(path)) {
+            return cosmeticsConfig.getInt(path, def);
+        }
+        return def;
+    }
+
     /** Coloured single-string resolver for cosmetics.yml with placeholders. */
     public String cosMsg(String path, String... placeholders) {
         String raw = cosStr(path);
