@@ -302,6 +302,28 @@ public class ArenaRestoreManager {
 
         Arena arena = match.getArena();
 
+        // Fast path: if no one broke or placed a single block this round,
+        // there is literally nothing to restore — skip every paste / timer
+        // path and start the next round immediately.
+        ArenaBlockTracker tracker = plugin.getArenaBlockTracker();
+        if (tracker != null && !tracker.hasChanges(match.getMatchId())) {
+            onComplete.run();
+            return;
+        }
+
+        // Fast path: diff-based revert. We only touch blocks the players
+        // actually changed, so it fits in a single tick even on huge arenas
+        // — no schematic paste, no blocks-per-tick loop, no ping spikes.
+        if (tracker != null) {
+            int reverted = tracker.restore(match);
+            if (reverted > 0) {
+                plugin.getLogger().fine("[ScorePvP] Arena #" + arena.getNumber()
+                        + " restored " + reverted + " block(s) via diff tracker.");
+            }
+            onComplete.run();
+            return;
+        }
+
         // If WorldEdit is available and schematic exists, use fast schematic paste
         if (hasWorldEdit && getSchematicFile(arena.getNumber()).exists()) {
             int delayTicks = plugin.getConfig().getInt("arena.vanilla-restore-delay-ticks", 60);

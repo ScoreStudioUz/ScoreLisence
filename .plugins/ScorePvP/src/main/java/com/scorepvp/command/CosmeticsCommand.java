@@ -110,11 +110,16 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             String action = args[2].toLowerCase();
 
             if (action.equals("set")) {
-                if (args.length < 4) {
-                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor set <helmet|chestplate|leggings|boots>"));
+                if (args.length < 5) {
+                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor set <set#1-9> <helmet|chestplate|leggings|boots>"));
                     return true;
                 }
-                ArmorPiece piece = parsePiece(args[3]);
+                int setIdx = parseSetIndex(args[3]);
+                if (setIdx < 0) {
+                    player.sendMessage(ColorUtil.color("&cНомер набора должен быть 1..9."));
+                    return true;
+                }
+                ArmorPiece piece = parsePiece(args[4]);
                 if (piece == null) { tell(player, "messages.invalid-piece"); return true; }
                 ItemStack held = player.getInventory().getItemInMainHand();
                 ArmorMaterial mat = detectArmorMaterial(held, piece);
@@ -123,15 +128,15 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                     tellPlaceholder(player, "messages.not-holding-armor", "{piece}", pieceLabel);
                     return true;
                 }
-                mgr.setArmorPiece(mat, piece, held);
+                mgr.setArmorPiece(mat, setIdx, piece, held);
                 tellPlaceholder(player, "messages.armor-set",
                         "{piece}", pieceLabel(piece));
                 return true;
             }
 
             if (action.equals("remove")) {
-                if (args.length < 5) {
-                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor remove <diamond|netherite> <piece>"));
+                if (args.length < 6) {
+                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor remove <diamond|netherite> <set#1-9> <piece>"));
                     return true;
                 }
                 ArmorMaterial mat;
@@ -140,9 +145,14 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                     tell(player, "messages.invalid-armor-material");
                     return true;
                 }
-                ArmorPiece piece = parsePiece(args[4]);
+                int setIdx = parseSetIndex(args[4]);
+                if (setIdx < 0) {
+                    player.sendMessage(ColorUtil.color("&cНомер набора должен быть 1..9."));
+                    return true;
+                }
+                ArmorPiece piece = parsePiece(args[5]);
                 if (piece == null) { tell(player, "messages.invalid-piece"); return true; }
-                if (!mgr.removeArmorPiece(mat, piece)) {
+                if (!mgr.removeArmorPiece(mat, setIdx, piece)) {
                     tell(player, "messages.invalid-piece");
                     return true;
                 }
@@ -179,6 +189,18 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
     private ArmorPiece parsePiece(String s) {
         try { return ArmorPiece.valueOf(s.toUpperCase()); }
         catch (IllegalArgumentException ex) { return null; }
+    }
+
+    /**
+     * Parses a 1-based armor-set number from the command line. Returns the
+     * 0-based internal index, or -1 if the value is not 1..9.
+     */
+    private int parseSetIndex(String s) {
+        try {
+            int n = Integer.parseInt(s);
+            if (n < 1 || n > 9) return -1;
+            return n - 1;
+        } catch (NumberFormatException ex) { return -1; }
     }
 
     private String pieceLabel(ArmorPiece piece) {
@@ -224,15 +246,24 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                 return filter(args[3], out.toArray(new String[0]));
             }
             if (args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("set")) {
-                return filter(args[3], "helmet", "chestplate", "leggings", "boots");
+                return filter(args[3], "1", "2", "3", "4", "5", "6", "7", "8", "9");
             }
             if (args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("remove")) {
                 return filter(args[3], "diamond", "netherite");
             }
         }
         if (args.length == 5 && args[0].equalsIgnoreCase("admin")
+                && args[1].equalsIgnoreCase("armor")) {
+            if (args[2].equalsIgnoreCase("set")) {
+                return filter(args[4], "helmet", "chestplate", "leggings", "boots");
+            }
+            if (args[2].equalsIgnoreCase("remove")) {
+                return filter(args[4], "1", "2", "3", "4", "5", "6", "7", "8", "9");
+            }
+        }
+        if (args.length == 6 && args[0].equalsIgnoreCase("admin")
                 && args[1].equalsIgnoreCase("armor") && args[2].equalsIgnoreCase("remove")) {
-            return filter(args[4], "helmet", "chestplate", "leggings", "boots");
+            return filter(args[5], "helmet", "chestplate", "leggings", "boots");
         }
         return Collections.emptyList();
     }

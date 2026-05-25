@@ -146,31 +146,36 @@ public class CosmeticsListener implements Listener {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
         CosmeticsGUI gui = plugin.getCosmeticsGUI();
 
-        ArmorPiece piece = gui.armorPieceForSlotConfigured(slot);
-        if (piece != null) {
-            if (mgr.getArmor(mat).get(piece) == null) return; // nothing configured
+        if (CosmeticsGUI.isArmorGridSlot(slot)) {
+            int[] coords = CosmeticsGUI.armorSetForSlot(slot);
+            if (coords == null) return;
+            int row = coords[0];
+            int setIdx = coords[1];
+            ArmorPiece piece = ArmorPiece.values()[row];
 
-            String pieceLabel = pieceLabel(piece);
+            // Slot must actually have an item stored — empty slots are no-ops.
+            org.bukkit.inventory.ItemStack stored = mgr.getArmorPiece(mat, setIdx, piece);
+            if (stored == null) return;
+
             String materialLabel = materialLabel(mat);
+            String itemName      = stripColour(gui.displayNameOf(stored));
 
-            // Right-click always deselects this piece.
+            // Right-click on the currently selected set → deselect.
             if (right) {
-                if (mgr.isArmorSelected(p.getUniqueId(), mat, piece)) {
-                    mgr.toggleArmor(p.getUniqueId(), mat, piece);
+                if (mgr.isSetSelected(p.getUniqueId(), mat, setIdx)) {
+                    mgr.clearArmor(p.getUniqueId(), mat);
                     tellPlaceholder2(p, "messages.deselected-armor",
-                            "{piece}", pieceLabel, "{material}", materialLabel);
-                    plugin.getCosmeticsGUI().openArmor(p, mat);
+                            "{name}", itemName, "{material}", materialLabel);
+                    gui.openArmor(p, mat);
                 }
                 return;
             }
 
-            mgr.toggleArmor(p.getUniqueId(), mat, piece);
-            String key = mgr.isArmorSelected(p.getUniqueId(), mat, piece)
-                    ? "messages.selected-armor"
-                    : "messages.deselected-armor";
-            tellPlaceholder2(p, key,
-                    "{piece}", pieceLabel, "{material}", materialLabel);
-            plugin.getCosmeticsGUI().openArmor(p, mat);
+            // Left-click → select THIS whole set for the player.
+            mgr.selectArmorSet(p.getUniqueId(), mat, setIdx);
+            tellPlaceholder2(p, "messages.selected-armor",
+                    "{name}", itemName, "{material}", materialLabel);
+            gui.openArmor(p, mat);
             return;
         }
         if (slot == gui.armorBackSlot()) {
@@ -180,6 +185,12 @@ public class CosmeticsListener implements Listener {
             tellPlaceholder(p, "messages.cleared-armor", "{material}", materialLabel(mat));
             plugin.getCosmeticsGUI().openArmor(p, mat);
         }
+    }
+
+    /** Strips &amp;/§ legacy colour codes for clean chat insertion of item names. */
+    private static String stripColour(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return s.replaceAll("[&§§][0-9a-fk-orA-FK-OR]", "");
     }
 
     // ── Label helpers ────────────────────────────────────────────────────────

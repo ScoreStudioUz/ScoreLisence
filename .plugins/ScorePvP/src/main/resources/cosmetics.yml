@@ -40,10 +40,11 @@ empty-shield-slot-lore:
   - "&e/cosmetics admin shield add"
 
 # Hint shown to admins on empty armor piece slots.
-empty-armor-slot-name: "&8{piece} &7— не задано"
+# {piece} = piece name (шлем/нагрудник/…), {set} = column number 1..9
+empty-armor-slot-name: "&8{piece} &7— набор &e#{set}"
 empty-armor-slot-lore:
   - "&7Возьмите крашенную часть брони в руку"
-  - "&7и используйте &e/cosmetics admin armor set {piece}"
+  - "&7и используйте &e/cosmetics admin armor set {set} {piece}"
 
 # ── Main menu buttons ────────────────────────────────────────────────────────
 main:
@@ -77,23 +78,16 @@ sub:
   clear-lore:
     - "&7Сбросить выбор в этом подменю."
 
-# ── Armor sub-menu layout (DeluxeMenus-style) ────────────────────────────────
-# Each piece occupies a list of `slots:` — one stored item is rendered on every
-# listed slot. Clicking any of those slots toggles selection for that piece.
-# `back-slot` and `clear-slot` control the navigation overlays.
+# ── Armor sub-menu layout ────────────────────────────────────────────────────
+# The 9×4 grid is hard-coded (slots 0..35):
+#   Row 0 (slots  0.. 8) → helmets,  columns are 9 armor sets.
+#   Row 1 (slots  9..17) → chestplates
+#   Row 2 (slots 18..26) → leggings
+#   Row 3 (slots 27..35) → boots
+# Only the navigation overlays below remain configurable.
 armor-menu:
-  size: 54
   back-slot:  45
   clear-slot: 49
-  pieces:
-    helmet:
-      slots:  [10, 11, 12]
-    chestplate:
-      slots:  [14, 15, 16]
-    leggings:
-      slots:  [19, 20, 21]
-    boots:
-      slots:  [23, 24, 25]
 
 # ── Chat messages ────────────────────────────────────────────────────────────
 messages:
@@ -107,8 +101,8 @@ messages:
   shield-slots-full:    "&cНет свободных слотов — все 36 заняты."
   armor-set:            "&aЭлемент брони &e{piece} &aобновлён."
   selected-shield:      "&aВыбран щит &e#{slot}&a."
-  selected-armor:       "&aВыбрана {piece} &7({material})&a."
-  deselected-armor:     "&7Снят выбор {piece} &8({material})&7."
+  selected-armor:       "&aВы выбрали этот вид: &e{name} &7({material})&a."
+  deselected-armor:     "&7Снят выбор: &f{name} &8({material})&7."
   cleared-shield:       "&7Косметический щит сброшен."
   cleared-armor:        "&7Косметическая {material} броня сброшена."
   cleared-all:          "&7Все косметические настройки сброшены."

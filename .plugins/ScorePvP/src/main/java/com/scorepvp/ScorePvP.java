@@ -30,6 +30,7 @@ public final class ScorePvP extends JavaPlugin {
     private PlayerDataManager    playerDataManager;
     private ArenaManager         arenaManager;
     private ArenaRestoreManager  arenaRestoreManager;
+    private ArenaBlockTracker    arenaBlockTracker;
     private MatchManager         matchManager;
     private DuelManager          duelManager;
     private StatsManager         statsManager;
@@ -81,6 +82,7 @@ public final class ScorePvP extends JavaPlugin {
         kitManager           = new KitManager(this);
         arenaManager         = new ArenaManager(this);
         arenaRestoreManager  = new ArenaRestoreManager(this);
+        arenaBlockTracker    = new ArenaBlockTracker(this);
         statsManager         = new StatsManager(this);
         matchManager         = new MatchManager(this);
 
@@ -157,6 +159,7 @@ public final class ScorePvP extends JavaPlugin {
         pm.registerEvents(new CombatStatsListener(this),        this);
         // Cosmetics GUIs
         pm.registerEvents(new CosmeticsListener(this),          this);
+        pm.registerEvents(arenaBlockTracker,                    this);
         // Dynamic menu editor
         menuEditorListener = new MenuEditorListener(this);
         pm.registerEvents(menuEditorListener,                   this);
@@ -241,6 +244,7 @@ public final class ScorePvP extends JavaPlugin {
     public PlayerDataManager    getPlayerDataManager()     { return playerDataManager; }
     public ArenaManager         getArenaManager()          { return arenaManager; }
     public ArenaRestoreManager  getArenaRestoreManager()   { return arenaRestoreManager; }
+    public ArenaBlockTracker    getArenaBlockTracker()     { return arenaBlockTracker; }
     public MatchManager         getMatchManager()          { return matchManager; }
     public DuelManager          getDuelManager()           { return duelManager; }
     public StatsManager         getStatsManager()          { return statsManager; }

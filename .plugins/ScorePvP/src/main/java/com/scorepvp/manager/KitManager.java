@@ -112,24 +112,44 @@ public class KitManager {
 
     // ── Named kit management ─────────────────────────────────────────────────
 
+    /**
+     * Normalises a user-supplied kit name so we never write garbage filenames.
+     * Lowercase, trim, replace whitespace with {@code _}, strip anything that
+     * isn't {@code [a-z0-9_-]}. Returns {@code null} when the result is empty
+     * (so the caller can send a usage hint instead of writing a blank file).
+     */
+    public static String sanitizeKitName(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim().toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("\\s+", "_")
+                .replaceAll("[^a-z0-9_-]", "");
+        // Reserved Windows / FS names that have caused issues in the past.
+        if (s.isEmpty() || s.equals(".") || s.equals("..")) return null;
+        return s;
+    }
+
     public boolean createNamedKit(String name) {
-        File kitFile = new File(plugin.getDataFolder(), "kits/" + name + ".yml");
+        String safe = sanitizeKitName(name);
+        if (safe == null) return false;
+        File kitFile = new File(plugin.getDataFolder(), "kits/" + safe + ".yml");
         if (kitFile.exists()) return false;
         kitFile.getParentFile().mkdirs();
         YamlConfiguration cfg = new YamlConfiguration();
         cfg.set("items", new ArrayList<>());
         try {
             cfg.save(kitFile);
-            plugin.getLogger().info("[ScorePvP] Kit '" + name + "' created.");
+            plugin.getLogger().info("[ScorePvP] Kit '" + safe + "' created.");
             return true;
         } catch (IOException e) {
-            plugin.getLogger().warning("[ScorePvP] Failed to create kit '" + name + "': " + e.getMessage());
+            plugin.getLogger().warning("[ScorePvP] Failed to create kit '" + safe + "': " + e.getMessage());
             return false;
         }
     }
 
     public boolean saveNamedKit(Player admin, String name) {
-        File kitFile = new File(plugin.getDataFolder(), "kits/" + name + ".yml");
+        String safe = sanitizeKitName(name);
+        if (safe == null) return false;
+        File kitFile = new File(plugin.getDataFolder(), "kits/" + safe + ".yml");
         kitFile.getParentFile().mkdirs();
 
         ItemStack[] full = snapshotInventory(admin);
@@ -139,11 +159,11 @@ public class KitManager {
         cfg.set("items", itemList);
         try {
             cfg.save(kitFile);
-            namedKitCache.put(name, full);
-            plugin.getLogger().info("[ScorePvP] Kit '" + name + "' saved by " + admin.getName());
+            namedKitCache.put(safe, full);
+            plugin.getLogger().info("[ScorePvP] Kit '" + safe + "' saved by " + admin.getName());
             return true;
         } catch (IOException e) {
-            plugin.getLogger().warning("[ScorePvP] Failed to save kit '" + name + "': " + e.getMessage());
+            plugin.getLogger().warning("[ScorePvP] Failed to save kit '" + safe + "': " + e.getMessage());
             return false;
         }
     }
@@ -320,10 +340,15 @@ public class KitManager {
             }
         }
 
-        replaceArmorSlot(items, 36, uid, CosmeticsManager.ArmorPiece.HELMET);
-        replaceArmorSlot(items, 37, uid, CosmeticsManager.ArmorPiece.CHESTPLATE);
-        replaceArmorSlot(items, 38, uid, CosmeticsManager.ArmorPiece.LEGGINGS);
-        replaceArmorSlot(items, 39, uid, CosmeticsManager.ArmorPiece.BOOTS);
+        // Bukkit PlayerInventory armor layout: slots 36..39 are
+        // [boots, leggings, chestplate, helmet] — NOT [helmet, chestplate,
+        // leggings, boots]. The previous mapping caused "I picked a helmet
+        // skin but in-game my boots changed" because slot 36 actually
+        // resolves to the boots slot on the live player inventory.
+        replaceArmorSlot(items, 36, uid, CosmeticsManager.ArmorPiece.BOOTS);
+        replaceArmorSlot(items, 37, uid, CosmeticsManager.ArmorPiece.LEGGINGS);
+        replaceArmorSlot(items, 38, uid, CosmeticsManager.ArmorPiece.CHESTPLATE);
+        replaceArmorSlot(items, 39, uid, CosmeticsManager.ArmorPiece.HELMET);
     }
 
     private void replaceArmorSlot(ItemStack[] items, int slot, UUID uid,

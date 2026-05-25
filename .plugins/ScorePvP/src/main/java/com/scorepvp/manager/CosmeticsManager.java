@@ -40,12 +40,20 @@ public class CosmeticsManager {
         public String key() { return key; }
     }
 
+    /** How many armor sets (columns) each material can hold. */
+    public static final int ARMOR_SETS = 9;
+
     private final ScorePvP plugin;
 
     /** slot -> shield ItemStack (slots 0..35). */
     private final Map<Integer, ItemStack> shields = new ConcurrentHashMap<>();
-    /** "diamond"|"netherite" -> piece -> ItemStack (only one stored per piece). */
-    private final Map<String, Map<ArmorPiece, ItemStack>> armor = new ConcurrentHashMap<>();
+    /**
+     * Armor storage keyed by {@code <material>.<setIndex>.<piece>} → ItemStack.
+     * Example: {@code "diamond.0.helmet"}. setIndex is 0..{@link #ARMOR_SETS}-1.
+     * Switched away from the old per-piece map so admins can ship up to 9
+     * distinct sets per material (helmet+chestplate+leggings+boots × 9).
+     */
+    private final Map<String, ItemStack> armorBySet = new ConcurrentHashMap<>();
     /** uuid -> selections */
     private final Map<UUID, PlayerSelection> selections = new ConcurrentHashMap<>();
 
@@ -61,8 +69,42 @@ public class CosmeticsManager {
     // ── Public API ───────────────────────────────────────────────────────────
 
     public Map<Integer, ItemStack> getShields() { return shields; }
+
+    /** Returns the stored armor item for the given (material, setIndex, piece), or null. */
+    public ItemStack getArmorPiece(ArmorMaterial mat, int setIndex, ArmorPiece piece) {
+        if (setIndex < 0 || setIndex >= ARMOR_SETS) return null;
+        return armorBySet.get(armorKey(mat, setIndex, piece));
+    }
+
+    /**
+     * Returns every (setIndex, piece) → ItemStack currently stored for the given
+     * material. Useful for the GUI which renders all 9 sets at once.
+     */
+    public Map<String, ItemStack> getAllArmorEntries(ArmorMaterial mat) {
+        Map<String, ItemStack> out = new LinkedHashMap<>();
+        for (Map.Entry<String, ItemStack> e : armorBySet.entrySet()) {
+            if (e.getKey().startsWith(mat.key() + ".")) out.put(e.getKey(), e.getValue());
+        }
+        return out;
+    }
+
+    /**
+     * Legacy compatibility — old code asked for "the" armor map per material.
+     * Returns the FIRST set (index 0) so existing call-sites keep compiling;
+     * new code should use {@link #getArmorPiece(ArmorMaterial, int, ArmorPiece)}.
+     */
+    @Deprecated
     public Map<ArmorPiece, ItemStack> getArmor(ArmorMaterial mat) {
-        return armor.computeIfAbsent(mat.key(), k -> new ConcurrentHashMap<>());
+        Map<ArmorPiece, ItemStack> out = new LinkedHashMap<>();
+        for (ArmorPiece p : ArmorPiece.values()) {
+            ItemStack it = getArmorPiece(mat, 0, p);
+            if (it != null) out.put(p, it);
+        }
+        return out;
+    }
+
+    public static String armorKey(ArmorMaterial mat, int setIndex, ArmorPiece piece) {
+        return mat.key() + "." + setIndex + "." + piece.name().toLowerCase();
     }
 
     /**
@@ -94,28 +136,44 @@ public class CosmeticsManager {
         return true;
     }
 
-    public void setArmorPiece(ArmorMaterial mat, ArmorPiece piece, ItemStack item) {
+    /**
+     * Stores an armor piece for (material, setIndex, piece). Used by admins
+     * via the new {@code /cosmetics admin armor set <set> <piece>} command.
+     */
+    public void setArmorPiece(ArmorMaterial mat, int setIndex, ArmorPiece piece, ItemStack item) {
         if (item == null) return;
-        Map<ArmorPiece, ItemStack> m = getArmor(mat);
-        m.put(piece, item.clone());
+        if (setIndex < 0 || setIndex >= ARMOR_SETS) return;
+        armorBySet.put(armorKey(mat, setIndex, piece), item.clone());
         saveArmor();
     }
 
+    /** Legacy single-set entry point. Stores into set 0. */
+    @Deprecated
+    public void setArmorPiece(ArmorMaterial mat, ArmorPiece piece, ItemStack item) {
+        setArmorPiece(mat, 0, piece, item);
+    }
+
     /**
-     * Removes the configured armor piece and invalidates any per-player
-     * selection that still references it. Returns true if a piece was
-     * actually removed.
+     * Removes a single piece from a single set. Returns true if a piece was
+     * actually removed. Also clears any player selection that referenced
+     * that set (since the set is now incomplete).
      */
-    public boolean removeArmorPiece(ArmorMaterial mat, ArmorPiece piece) {
-        Map<ArmorPiece, ItemStack> m = getArmor(mat);
-        if (m.remove(piece) == null) return false;
-        String key = mat.key() + "." + piece.name().toLowerCase();
+    public boolean removeArmorPiece(ArmorMaterial mat, int setIndex, ArmorPiece piece) {
+        if (setIndex < 0 || setIndex >= ARMOR_SETS) return false;
+        if (armorBySet.remove(armorKey(mat, setIndex, piece)) == null) return false;
         for (PlayerSelection sel : selections.values()) {
-            sel.armor.remove(key);
+            Integer cur = sel.armorSet.get(mat.key());
+            if (cur != null && cur == setIndex) sel.armorSet.remove(mat.key());
         }
         saveArmor();
         savePlayers();
         return true;
+    }
+
+    /** Legacy variant — removes from set 0. */
+    @Deprecated
+    public boolean removeArmorPiece(ArmorMaterial mat, ArmorPiece piece) {
+        return removeArmorPiece(mat, 0, piece);
     }
 
     public PlayerSelection getSelection(UUID uuid) {
@@ -130,14 +188,32 @@ public class CosmeticsManager {
         return s == null ? null : s.clone();
     }
 
-    /** Returns the configured cosmetic armor piece for the player, or null. */
+    /**
+     * Returns the cosmetic ItemStack the player should receive for the given
+     * armor slot — pulled from whichever set they currently have selected for
+     * this material, or null if no set is selected / the stored slot is empty.
+     */
     public ItemStack getSelectedArmor(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
-        PlayerSelection sel = selections.get(uuid);
-        if (sel == null) return null;
-        Boolean picked = sel.armor.get(mat.key() + "." + piece.name().toLowerCase());
-        if (picked == null || !picked) return null;
-        ItemStack item = getArmor(mat).get(piece);
+        int setIdx = getSelectedSet(uuid, mat);
+        if (setIdx < 0) return null;
+        ItemStack item = getArmorPiece(mat, setIdx, piece);
         return item == null ? null : item.clone();
+    }
+
+    /** Returns the selected armor-set index for this player/material, or -1. */
+    public int getSelectedSet(UUID uuid, ArmorMaterial mat) {
+        PlayerSelection sel = selections.get(uuid);
+        if (sel == null) return -1;
+        Integer v = sel.armorSet.get(mat.key());
+        return v == null ? -1 : v;
+    }
+
+    /** Sets the active armor set for this player/material. */
+    public void selectArmorSet(UUID uuid, ArmorMaterial mat, int setIndex) {
+        if (setIndex < 0 || setIndex >= ARMOR_SETS) return;
+        PlayerSelection sel = getSelection(uuid);
+        sel.armorSet.put(mat.key(), setIndex);
+        savePlayers();
     }
 
     public void selectShield(UUID uuid, int slot) {
@@ -152,25 +228,46 @@ public class CosmeticsManager {
         savePlayers();
     }
 
-    public void toggleArmor(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+    /**
+     * Toggles selection for a whole armor set: clicking any piece of a set
+     * either selects that set entirely or deselects it. Per-piece selection
+     * is gone — UX confusion was the bigger cost than the lost flexibility.
+     */
+    public void toggleArmorSet(UUID uuid, ArmorMaterial mat, int setIndex) {
+        if (setIndex < 0 || setIndex >= ARMOR_SETS) return;
         PlayerSelection sel = getSelection(uuid);
-        String key = mat.key() + "." + piece.name().toLowerCase();
-        Boolean cur = sel.armor.get(key);
-        sel.armor.put(key, !Boolean.TRUE.equals(cur));
+        Integer cur = sel.armorSet.get(mat.key());
+        if (cur != null && cur == setIndex) {
+            sel.armorSet.remove(mat.key());
+        } else {
+            sel.armorSet.put(mat.key(), setIndex);
+        }
         savePlayers();
+    }
+
+    /** Legacy single-piece toggle — now toggles set 0 as a best-effort fallback. */
+    @Deprecated
+    public void toggleArmor(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+        toggleArmorSet(uuid, mat, 0);
     }
 
     public void clearArmor(UUID uuid, ArmorMaterial mat) {
         PlayerSelection sel = getSelection(uuid);
-        sel.armor.keySet().removeIf(k -> k.startsWith(mat.key() + "."));
+        sel.armorSet.remove(mat.key());
         savePlayers();
     }
 
+    /** True if this set is currently selected for the player on this material. */
+    public boolean isSetSelected(UUID uuid, ArmorMaterial mat, int setIndex) {
+        return getSelectedSet(uuid, mat) == setIndex;
+    }
+
+    /** Legacy per-piece check — returns true iff that piece exists in the selected set. */
+    @Deprecated
     public boolean isArmorSelected(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
-        PlayerSelection sel = selections.get(uuid);
-        if (sel == null) return false;
-        Boolean v = sel.armor.get(mat.key() + "." + piece.name().toLowerCase());
-        return Boolean.TRUE.equals(v);
+        int setIdx = getSelectedSet(uuid, mat);
+        if (setIdx < 0) return false;
+        return getArmorPiece(mat, setIdx, piece) != null;
     }
 
     // ── Persistence ──────────────────────────────────────────────────────────
@@ -264,23 +361,46 @@ public class CosmeticsManager {
         if (!armorFile.exists()) return;
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(armorFile);
         for (ArmorMaterial mat : ArmorMaterial.values()) {
-            ConfigurationSection sec = cfg.getConfigurationSection(mat.key());
-            if (sec == null) continue;
-            Map<ArmorPiece, ItemStack> m = getArmor(mat);
-            for (ArmorPiece piece : ArmorPiece.values()) {
-                ItemStack s = sec.getItemStack(piece.name().toLowerCase());
-                if (s != null) m.put(piece, s);
+            ConfigurationSection matSec = cfg.getConfigurationSection(mat.key());
+            if (matSec == null) continue;
+
+            // New layout: <mat>.<setIndex>.<piece>  →  ItemStack
+            // Legacy layout (pre-9-sets):  <mat>.<piece>  →  ItemStack
+            // Probe by trying to parse a child key as an int. If it parses,
+            // assume new layout; otherwise treat as legacy and migrate to set 0.
+            boolean migrated = false;
+            for (String childKey : matSec.getKeys(false)) {
+                try {
+                    int setIdx = Integer.parseInt(childKey);
+                    ConfigurationSection setSec = matSec.getConfigurationSection(childKey);
+                    if (setSec == null) continue;
+                    for (ArmorPiece piece : ArmorPiece.values()) {
+                        ItemStack it = setSec.getItemStack(piece.name().toLowerCase());
+                        if (it != null) armorBySet.put(armorKey(mat, setIdx, piece), it);
+                    }
+                } catch (NumberFormatException nfe) {
+                    // legacy piece-level key e.g. "helmet" — migrate to set 0
+                    for (ArmorPiece piece : ArmorPiece.values()) {
+                        if (!piece.name().toLowerCase().equals(childKey)) continue;
+                        ItemStack it = matSec.getItemStack(childKey);
+                        if (it != null) {
+                            armorBySet.put(armorKey(mat, 0, piece), it);
+                            migrated = true;
+                        }
+                    }
+                }
+            }
+            if (migrated) {
+                plugin.getLogger().info("[ScorePvP] Migrated legacy armor entries for "
+                        + mat.key() + " → set 0.");
             }
         }
     }
 
     private void saveArmor() {
         YamlConfiguration cfg = new YamlConfiguration();
-        for (ArmorMaterial mat : ArmorMaterial.values()) {
-            Map<ArmorPiece, ItemStack> m = getArmor(mat);
-            for (Map.Entry<ArmorPiece, ItemStack> e : m.entrySet()) {
-                cfg.set(mat.key() + "." + e.getKey().name().toLowerCase(), e.getValue());
-            }
+        for (Map.Entry<String, ItemStack> e : armorBySet.entrySet()) {
+            cfg.set(e.getKey(), e.getValue());
         }
         try { cfg.save(armorFile); }
         catch (IOException ex) { plugin.getLogger().warning("cosmetics armor save failed: " + ex.getMessage()); }
@@ -294,12 +414,25 @@ public class CosmeticsManager {
                 UUID uuid = UUID.fromString(key);
                 PlayerSelection sel = new PlayerSelection();
                 sel.shieldSlot = cfg.getInt(key + ".shield", -1);
-                ConfigurationSection ds = cfg.getConfigurationSection(key + ".diamond");
-                if (ds != null) for (String p : ds.getKeys(false))
-                    sel.armor.put("diamond." + p, ds.getBoolean(p));
-                ConfigurationSection ns = cfg.getConfigurationSection(key + ".netherite");
-                if (ns != null) for (String p : ns.getKeys(false))
-                    sel.armor.put("netherite." + p, ns.getBoolean(p));
+
+                // New format:  <uuid>.<material>.set = <int>
+                // Legacy:      <uuid>.<material>.<piece> = true   (per-piece toggles)
+                for (ArmorMaterial mat : ArmorMaterial.values()) {
+                    String base = key + "." + mat.key();
+                    if (cfg.isInt(base + ".set")) {
+                        sel.armorSet.put(mat.key(), cfg.getInt(base + ".set"));
+                    } else if (cfg.isConfigurationSection(base)) {
+                        // Legacy fall-through — if ANY piece was selected, migrate
+                        // to "set 0 active".
+                        ConfigurationSection ms = cfg.getConfigurationSection(base);
+                        if (ms != null) for (String p : ms.getKeys(false)) {
+                            if (ms.getBoolean(p, false)) {
+                                sel.armorSet.put(mat.key(), 0);
+                                break;
+                            }
+                        }
+                    }
+                }
                 selections.put(uuid, sel);
             } catch (IllegalArgumentException ignored) {}
         }
@@ -310,16 +443,13 @@ public class CosmeticsManager {
         for (Map.Entry<UUID, PlayerSelection> e : selections.entrySet()) {
             PlayerSelection sel = e.getValue();
             // Skip empty selections — keeps the file lean
-            if (sel.shieldSlot < 0 && sel.armor.values().stream().noneMatch(Boolean.TRUE::equals)) {
-                continue;
-            }
+            if (sel.shieldSlot < 0 && sel.armorSet.isEmpty()) continue;
+
             String k = e.getKey().toString();
             cfg.set(k + ".shield", sel.shieldSlot);
-            for (Map.Entry<String, Boolean> a : sel.armor.entrySet()) {
-                if (!Boolean.TRUE.equals(a.getValue())) continue;
-                // a.getKey() is already "material.piece" — set directly so
-                // it nests under the player UUID as a configuration section.
-                cfg.set(k + "." + a.getKey(), true);
+            for (Map.Entry<String, Integer> a : sel.armorSet.entrySet()) {
+                if (a.getValue() == null || a.getValue() < 0) continue;
+                cfg.set(k + "." + a.getKey() + ".set", a.getValue());
             }
         }
         try { cfg.save(playersFile); }
@@ -330,6 +460,7 @@ public class CosmeticsManager {
 
     public static final class PlayerSelection {
         public int shieldSlot = -1;
-        public final Map<String, Boolean> armor = new LinkedHashMap<>();
+        /** material-key (e.g. "diamond") → selected set index, or absent = none. */
+        public final Map<String, Integer> armorSet = new LinkedHashMap<>();
     }
 }

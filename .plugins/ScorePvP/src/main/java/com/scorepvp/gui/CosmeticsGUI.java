@@ -16,7 +16,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,38 +54,36 @@ public class CosmeticsGUI {
     public String diamondTitle()   { return ColorUtil.color(plugin.getConfigManager().cosStr("diamond-menu-title")); }
     public String netheriteTitle() { return ColorUtil.color(plugin.getConfigManager().cosStr("netherite-menu-title")); }
 
-    // ── Armor layout (read from cosmetics.yml) ───────────────────────────────
+    // ── Armor layout: 9 columns × 4 rows (helmet/chest/legs/boots) ──────────
+    //
+    // Layout is fixed (not configurable) — the user requested an exact 9×4
+    // grid with helmet at the top of each column, so we hard-code it.
+    // Column = armor set index (0..8). Row = piece order. Slots 36..53 are
+    // for back/clear/filler.
 
-    public int armorSize() {
-        int s = plugin.getConfigManager().cosInt("armor-menu.size", 54);
-        if (s < 9 || s > 54 || s % 9 != 0) s = 54;
-        return s;
-    }
+    private static final int[] PIECE_ROW_BASE = {0, 9, 18, 27}; // row offsets
+
+    public int armorSize() { return 54; }
     public int armorBackSlot()  { return plugin.getConfigManager().cosInt("armor-menu.back-slot",  45); }
     public int armorClearSlot() { return plugin.getConfigManager().cosInt("armor-menu.clear-slot", 49); }
 
-    /** Returns all slots configured for a piece, in declaration order. */
-    public List<Integer> armorSlotsFor(ArmorPiece piece) {
-        List<Integer> slots = plugin.getConfigManager()
-                .cosIntList("armor-menu.pieces." + piece.name().toLowerCase() + ".slots");
-        if (slots.isEmpty()) {
-            // Fallback to the legacy single-slot layout so the menu never breaks.
-            return switch (piece) {
-                case HELMET     -> Arrays.asList(11);
-                case CHESTPLATE -> Arrays.asList(13);
-                case LEGGINGS   -> Arrays.asList(15);
-                case BOOTS      -> Arrays.asList(22);
-            };
-        }
-        return slots;
+    /** Maps (piece, setIndex 0..8) → inventory slot in the armor menu. */
+    public static int armorSlot(ArmorPiece piece, int setIndex) {
+        if (setIndex < 0 || setIndex >= 9) return -1;
+        return PIECE_ROW_BASE[piece.ordinal()] + setIndex;
     }
 
-    /** Reverse lookup: which piece (if any) is this slot bound to? */
-    public ArmorPiece armorPieceForSlotConfigured(int slot) {
-        for (ArmorPiece piece : ArmorPiece.values()) {
-            if (armorSlotsFor(piece).contains(slot)) return piece;
-        }
-        return null;
+    /** Reverse lookup: which (piece, setIndex) does this slot represent? null if none. */
+    public static int[] armorSetForSlot(int slot) {
+        if (slot < 0 || slot >= 36) return null;
+        int row = slot / 9;          // 0..3 = helmet/chest/legs/boots
+        int col = slot % 9;          // 0..8 = set index
+        return new int[]{row, col};
+    }
+
+    /** True if this slot in the armor menu is one of the 36 armor grid slots. */
+    public static boolean isArmorGridSlot(int slot) {
+        return slot >= 0 && slot < 36;
     }
 
     // ── Openers ──────────────────────────────────────────────────────────────
@@ -166,13 +163,31 @@ public class CosmeticsGUI {
         fill(inv, size);
 
         CosmeticsManager mgr = plugin.getCosmeticsManager();
-        Map<ArmorPiece, ItemStack> armor = mgr.getArmor(mat);
+        boolean editor = player.hasPermission("duels.cosmetics.admin");
+        int selectedSet = mgr.getSelectedSet(player.getUniqueId(), mat);
 
+        // 9 columns × 4 rows — column = set index, row = piece order.
         for (ArmorPiece piece : ArmorPiece.values()) {
-            List<Integer> slots = armorSlotsFor(piece);
-            for (int slot : slots) {
-                if (slot < 0 || slot >= size) continue;
-                setArmorSlot(inv, slot, piece, armor, mgr, player, mat);
+            for (int setIdx = 0; setIdx < CosmeticsManager.ARMOR_SETS; setIdx++) {
+                int slot = armorSlot(piece, setIdx);
+                ItemStack stored = mgr.getArmorPiece(mat, setIdx, piece);
+                if (stored == null) {
+                    if (editor) {
+                        inv.setItem(slot, new ItemBuilder(defaultArmorMaterial(mat, piece))
+                                .name(plugin.getConfigManager().cosStr("empty-armor-slot-name")
+                                        .replace("{piece}", pieceLabel(piece))
+                                        .replace("{set}",   String.valueOf(setIdx + 1)))
+                                .lore(applyPlaceholderToList(
+                                        applyPlaceholderToList(
+                                                plugin.getConfigManager().cosList("empty-armor-slot-lore"),
+                                                "{piece}", piece.name().toLowerCase()),
+                                        "{set}", String.valueOf(setIdx + 1)))
+                                .build());
+                    }
+                    // Non-admins see filler in empty slots.
+                    continue;
+                }
+                inv.setItem(slot, decorate(stored, setIdx == selectedSet));
             }
         }
 
@@ -191,29 +206,18 @@ public class CosmeticsGUI {
         player.openInventory(inv);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private void setArmorSlot(Inventory inv, int slot, ArmorPiece piece,
-                               Map<ArmorPiece, ItemStack> armor, CosmeticsManager mgr,
-                               Player player, ArmorMaterial mat) {
-        ItemStack stored = armor.get(piece);
-        boolean editor = player.hasPermission("duels.cosmetics.admin");
-
-        if (stored == null) {
-            if (editor) {
-                String pieceName = pieceLabel(piece);
-                inv.setItem(slot, new ItemBuilder(defaultArmorMaterial(mat, piece))
-                        .name(plugin.getConfigManager().cosStr("empty-armor-slot-name")
-                                .replace("{piece}", pieceName))
-                        .lore(applyPlaceholderToList(
-                                plugin.getConfigManager().cosList("empty-armor-slot-lore"),
-                                "{piece}", piece.name().toLowerCase()))
-                        .build());
-            }
-            return;
+    /** Read a stored item's display name (legacy &amp; section signs both) for "Вы выбрали ..." chat. */
+    public String displayNameOf(ItemStack item) {
+        if (item == null) return "";
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null || !meta.hasDisplayName()) {
+            return item.getType().name().toLowerCase().replace('_', ' ');
         }
-        inv.setItem(slot, decorate(stored, mgr.isArmorSelected(player.getUniqueId(), mat, piece)));
+        return LegacyComponentSerializer.legacyAmpersand()
+                .serialize(meta.displayName());
     }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private ItemStack decorate(ItemStack base, boolean selected) {
         ItemStack out = base.clone();
@@ -286,7 +290,4 @@ public class CosmeticsGUI {
         return out;
     }
 
-    /** @deprecated use {@link #armorPieceForSlotConfigured(int)} on the instance. */
-    @Deprecated
-    public static ArmorPiece armorPieceForSlot(int slot) { return null; }
 }

@@ -163,6 +163,14 @@ public class MatchManager {
         cleanupArenaDrops(match.getArena());
         plugin.getNameTagProvider().clearMatchNametags(match);
 
+        // Roll back any blocks broken/placed during the final round of a
+        // vanilla match. Tracker.restore() applies the diff in one tick
+        // and removes the entry, so no follow-up cleanup is needed.
+        if (match.getArena() != null && match.getArena().isVanilla()) {
+            com.scorepvp.manager.ArenaBlockTracker tracker = plugin.getArenaBlockTracker();
+            if (tracker != null) tracker.restore(match);
+        }
+
         MatchPlayer winner = match.getWinner();
         if (winner != null) plugin.getStatsManager().recordWin(winner.getUuid(), match.getMode().getId());
 
@@ -364,6 +372,14 @@ public class MatchManager {
         // Clean up dropped items within arena bounds
         cleanupArenaDrops(match.getArena());
         plugin.getNameTagProvider().clearMatchNametags(match);
+
+        // Roll back any blocks broken/placed during the final round of a
+        // vanilla match. Tracker.restore() applies the diff in one tick
+        // and removes the entry, so no follow-up cleanup is needed.
+        if (match.getArena() != null && match.getArena().isVanilla()) {
+            com.scorepvp.manager.ArenaBlockTracker tracker = plugin.getArenaBlockTracker();
+            if (tracker != null) tracker.restore(match);
+        }
 
         MatchPlayer winner = match.getWinner();
         MatchPlayer loser  = match.getLoser();

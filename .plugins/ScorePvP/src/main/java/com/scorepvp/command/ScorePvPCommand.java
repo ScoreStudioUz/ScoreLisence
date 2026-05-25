@@ -141,7 +141,16 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
                                     + " " + plugin.getConfigManager().rawMsg("admin.kit-create-usage"));
                             return true;
                         }
-                        String kitName = args[2].toLowerCase();
+                        // Accept multi-word kit names — admins occasionally type
+                        // "/spvp kit create my new kit" and used to silently get
+                        // a file called "my.yml".
+                        String rawName = String.join("_", java.util.Arrays.copyOfRange(args, 2, args.length));
+                        String kitName = com.scorepvp.manager.KitManager.sanitizeKitName(rawName);
+                        if (kitName == null) {
+                            sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
+                                    + " " + plugin.getConfigManager().rawMsg("admin.kit-create-usage"));
+                            return true;
+                        }
                         if (plugin.getKitManager().createNamedKit(kitName)) {
                             sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                                     + " " + plugin.getConfigManager().rawMsg("admin.kit-create-success", "{kit}", kitName));
@@ -160,7 +169,13 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
                                     + " " + plugin.getConfigManager().rawMsg("admin.kit-save-usage"));
                             return true;
                         }
-                        String kitName = args[2].toLowerCase();
+                        String rawName = String.join("_", java.util.Arrays.copyOfRange(args, 2, args.length));
+                        String kitName = com.scorepvp.manager.KitManager.sanitizeKitName(rawName);
+                        if (kitName == null) {
+                            sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
+                                    + " " + plugin.getConfigManager().rawMsg("admin.kit-save-usage"));
+                            return true;
+                        }
                         if (plugin.getKitManager().saveNamedKit(admin, kitName)) {
                             sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                                     + " " + plugin.getConfigManager().rawMsg("admin.kit-save-success", "{kit}", kitName));
