@@ -57,7 +57,7 @@ public class PlaceholderCache {
 
     public void refreshMode(String modeId) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            var db = plugin.getDatabase().get();
+            var db = plugin.getStorage().getMain();
             cache.put(key(modeId, Metric.WINS),  db.loadTopWins(modeId,  maxPosition));
             cache.put(key(modeId, Metric.KD),    db.loadTopKd(modeId,    maxPosition));
             cache.put(key(modeId, Metric.KILLS), db.loadTopKills(modeId, maxPosition));

@@ -5,7 +5,7 @@ import com.scorepvp.compat.BukkitNameTagProvider;
 import com.scorepvp.compat.LuckPermsHook;
 import com.scorepvp.compat.NameTagProvider;
 import com.scorepvp.compat.TabNameTagProvider;
-import com.scorepvp.database.DatabaseManager;
+import com.scorepvp.storage.StorageService;
 import com.scorepvp.gui.*;
 import com.scorepvp.item.CustomItemRegistry;
 import com.scorepvp.listener.*;
@@ -20,7 +20,7 @@ import java.io.File;
 public final class ScorePvP extends JavaPlugin {
 
     // ── Managers ──────────────────────────────────────────────────────────────
-    private DatabaseManager      databaseManager;
+    private StorageService       storageService;
     private ConfigManager        configManager;
     private HotbarManager        hotbarManager;
     private PartyManager         partyManager;
@@ -70,8 +70,7 @@ public final class ScorePvP extends JavaPlugin {
         }) saveResourceIfAbsent(r);
 
         configManager        = new ConfigManager(this);
-        databaseManager      = new DatabaseManager(this);
-        databaseManager.initialize();
+        storageService       = new StorageService(this);
 
         playerDataManager     = new PlayerDataManager();
         clientVersionManager  = new ClientVersionManager(this);
@@ -204,19 +203,21 @@ public final class ScorePvP extends JavaPlugin {
             if (playerDataManager != null) playerDataManager.remove(uuid);
         });
 
-        // 3. Sync-save all arenas before closing the database (prevents data loss on restart)
-        if (databaseManager != null && databaseManager.get() != null) {
+        // 3. Sync-save all arenas before shutdown (prevents data loss on restart).
+        //    Arenas are file-based now, so this is just a few yml writes.
+        if (storageService != null && arenaManager != null) {
+            java.io.File dir = storageService.getArenaDir();
             for (com.scorepvp.model.Arena arena : arenaManager.getAllArenas()) {
                 try {
-                    databaseManager.get().saveArena(arena);
+                    storageService.getArenaFiles().save(arena, dir);
                 } catch (Exception e) {
                     getLogger().severe("[ScorePvP] Failed to save arena #" + arena.getNumber() + " on shutdown: " + e.getMessage());
                 }
             }
         }
 
-        // 4. Shutdown DB pool last
-        if (databaseManager != null) databaseManager.shutdown();
+        // 4. Shutdown storage pools last
+        if (storageService != null) storageService.shutdown();
         getLogger().info("[ScorePvP] Disabled.");
     }
 
@@ -234,7 +235,7 @@ public final class ScorePvP extends JavaPlugin {
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────
-    public DatabaseManager      getDatabase()              { return databaseManager; }
+    public StorageService       getStorage()               { return storageService; }
     public ConfigManager        getConfigManager()         { return configManager; }
     public HotbarManager        getHotbarManager()         { return hotbarManager; }
     public PartyManager         getPartyManager()          { return partyManager; }

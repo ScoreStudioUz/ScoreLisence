@@ -3,6 +3,7 @@ package com.scorepvp.manager;
 import com.scorepvp.ScorePvP;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TierManager {
@@ -19,7 +20,7 @@ public class TierManager {
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
     public void loadAsync(UUID uuid) {
-        plugin.getDatabase().loadTiersAsync(uuid)
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getTiers().loadTiers(uuid))
                 .thenAccept(tiers -> cache.put(uuid, new ConcurrentHashMap<>(tiers)));
     }
 
@@ -48,7 +49,7 @@ public class TierManager {
     public boolean setTier(UUID uuid, String mode, String tier) {
         if (!plugin.getConfigManager().getTierOrder().contains(tier)) return false;
         cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(mode, tier);
-        plugin.getDatabase().saveTierAsync(uuid, mode, tier);
+        CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().saveTier(uuid, mode, tier));
         return true;
     }
 
@@ -60,7 +61,7 @@ public class TierManager {
         Map<String, String> tiers = cache.get(uuid);
         if (tiers == null || !tiers.containsKey(mode)) return false;
         tiers.remove(mode);
-        plugin.getDatabase().removeTierAsync(uuid, mode);
+        CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().removeTier(uuid, mode));
         return true;
     }
 

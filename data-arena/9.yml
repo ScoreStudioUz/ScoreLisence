@@ -1,0 +1,9 @@
+# Arena #9
+number: 9
+name: netherite1
+type: DEFAULT
+corner1: "netherite_arena,-1821.0,178.0,589.0,0.0,0.0"
+corner2: "netherite_arena,-2037.0,38.0,415.0,0.0,0.0"
+pos1: "netherite_arena,-1948.9369188817914,64.0,500.4007855499794,-89.70166,-0.29970878"
+pos2: "netherite_arena,-1900.4467747658784,64.0,500.6082470828351,90.148254,-1.1997116"
+centre: "netherite_arena,-1924.46407975633,64.0,500.3357620340126,179.99876,-1.4999925"

@@ -65,8 +65,8 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
             case "version" -> {
                 sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                         + " " + plugin.getConfigManager().rawMsg("admin.version", "{version}", plugin.getDescription().getVersion()));
-                String dbType = (plugin.getDatabase().get() instanceof
-                        com.scorepvp.database.MySQLDatabase
+                String dbType = (plugin.getStorage().getTiers()
+                        instanceof com.scorepvp.storage.MysqlTierStorage
                         ? plugin.getConfigManager().rawMsg("admin.version-db-mysql")
                         : plugin.getConfigManager().rawMsg("admin.version-db-sqlite"));
                 sender.sendMessage(plugin.getConfigManager().rawMsg("admin.version-db", "{db}", dbType));
@@ -254,7 +254,7 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
                 if (clearTarget.equalsIgnoreCase("all")) {
                     // /spvp clear all — clear ALL stats, tiers, playtime
                     java.util.concurrent.CompletableFuture.runAsync(() -> {
-                        plugin.getDatabase().get().clearAllStats();
+                        plugin.getStorage().getMain().clearAllStats();
                         org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
                             plugin.getStatsManager().clearAllCache();
                             plugin.getTierManager().clearAllCache();
@@ -273,7 +273,7 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
                         return true;
                     }
                     java.util.concurrent.CompletableFuture.runAsync(() -> {
-                        plugin.getDatabase().get().clearPlayerStats(targetUuid);
+                        plugin.getStorage().getMain().clearPlayerStats(targetUuid);
                         org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
                             plugin.getStatsManager().clearPlayerCache(targetUuid);
                             plugin.getTierManager().clearPlayerCache(targetUuid);

@@ -44,7 +44,7 @@ public class StatsManager {
         String k = key(uuid, mode);
         if (cache.containsKey(k)) return CompletableFuture.completedFuture(cache.get(k));
         return CompletableFuture.supplyAsync(() -> {
-            PlayerStats s = plugin.getDatabase().get().loadStats(uuid, mode);
+            PlayerStats s = plugin.getStorage().getMain().loadStats(uuid, mode);
             cache.put(k, s);
             return s;
         });
@@ -62,7 +62,7 @@ public class StatsManager {
         // Return a default immediately; async load will update the cache for next call
         PlayerStats def = new PlayerStats(uuid, mode);
         cache.put(k, def);
-        CompletableFuture.supplyAsync(() -> plugin.getDatabase().get().loadStats(uuid, mode))
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getMain().loadStats(uuid, mode))
                 .thenAccept(s -> cache.put(k, s));
         return def;
     }
@@ -101,7 +101,7 @@ public class StatsManager {
     }
 
     private void saveAsync(PlayerStats s) {
-        plugin.getDatabase().saveStatsAsync(s);
+        CompletableFuture.runAsync(() -> plugin.getStorage().getMain().saveStats(s));
     }
 
     // ── Clear (admin commands) ─────────────────────────────────────────────────
@@ -122,7 +122,7 @@ public class StatsManager {
     public void onLogin(UUID uuid) {
         loginTime.put(uuid, System.currentTimeMillis());
         // Async load persisted playtime
-        CompletableFuture.supplyAsync(() -> plugin.getDatabase().get().loadPlaytime(uuid))
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getMain().loadPlaytime(uuid))
                 .thenAccept(min -> playtime.put(uuid, min));
     }
 
@@ -142,7 +142,7 @@ public class StatsManager {
 
     private void flush(UUID uuid) {
         long total = getPlaytimeMinutes(uuid);
-        plugin.getDatabase().savePlaytimeAsync(uuid, total);
+        CompletableFuture.runAsync(() -> plugin.getStorage().getMain().savePlaytime(uuid, total));
     }
 
     /** Called by PlaytimeTask every 5 minutes to persist playtime for all online players. */
@@ -159,7 +159,7 @@ public class StatsManager {
         for (UUID uuid : loginTime.keySet()) {
             long total = getPlaytimeMinutes(uuid);
             try {
-                plugin.getDatabase().get().savePlaytime(uuid, total);
+                plugin.getStorage().getMain().savePlaytime(uuid, total);
             } catch (Exception e) {
                 plugin.getLogger().severe("[ScorePvP] Failed to save playtime for " + uuid + ": " + e.getMessage());
             }
@@ -167,7 +167,7 @@ public class StatsManager {
         // Save all cached stats synchronously
         for (PlayerStats s : cache.values()) {
             try {
-                plugin.getDatabase().get().saveStats(s);
+                plugin.getStorage().getMain().saveStats(s);
             } catch (Exception e) {
                 plugin.getLogger().severe("[ScorePvP] Failed to save stats for " + s.getUuid() + ": " + e.getMessage());
             }

@@ -31,18 +31,22 @@ public class ArenaManager {
 
     public void loadAll() {
         arenas.clear();
-        plugin.getDatabase().get().loadAllArenas()
+        java.io.File dir = plugin.getStorage().getArenaDir();
+        plugin.getStorage().getArenaFiles().loadAll(dir)
                 .forEach(a -> {
                     arenas.put(a.getNumber(), a);
-                    boolean hasUnresolved = a.getRawCorner1() != null || a.getRawCorner2() != null
-                            || a.getRawPos1() != null || a.getRawPos2() != null || a.getRawCentre() != null;
+                    boolean hasUnresolved = (a.getCorner1() == null && a.getRawCorner1() != null)
+                            || (a.getCorner2() == null && a.getRawCorner2() != null)
+                            || (a.getPos1() == null && a.getRawPos1() != null)
+                            || (a.getPos2() == null && a.getRawPos2() != null)
+                            || (a.getCentre() == null && a.getRawCentre() != null);
                     plugin.getLogger().info("[ScorePvP]   Arena #" + a.getNumber()
                             + " '" + a.getName() + "' type=" + a.getType()
                             + " configured=" + a.isFullyConfigured()
                             + " ffaReady=" + a.isFfaReady()
                             + (hasUnresolved ? " (has unresolved locations — world may not be loaded yet)" : ""));
                 });
-        plugin.getLogger().info("[ScorePvP] Loaded " + arenas.size() + " arenas from database.");
+        plugin.getLogger().info("[ScorePvP] Loaded " + arenas.size() + " arenas from data-arena/.");
 
         // Schedule a delayed re-resolution of arena locations after worlds are fully loaded
         org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, this::resolveUnresolvedLocations, 40L);
@@ -296,14 +300,8 @@ public class ArenaManager {
                         .replace("{p1}", a.getPos1() != null ? "&a\u2714" : "&c\u2718")
                         .replace("{p2}", a.getPos2() != null ? "&a\u2714" : "&c\u2718")
                         .replace("{centre}", a.getCentre() != null ? "&a\u2714" : "&c\u2718")));
-        if (a.isVanilla()) {
-            String snapVal = a.hasSnapshot()
-                    ? plugin.getConfigManager().rawStr("arena.info-snapshot-yes")
-                    : plugin.getConfigManager().rawStr("arena.info-snapshot-no")
-                            .replace("{number}", String.valueOf(number));
-            player.sendMessage(com.scorepvp.util.ColorUtil.color(
-                    plugin.getConfigManager().rawStr("arena.info-snapshot").replace("{value}", snapVal)));
-        }
+        // VANILLA arena snapshots are no longer stored in DB — ArenaBlockTracker
+        // restores arenas via live diff after each round. Nothing to display here.
     }
 
     // ── Arena search — allowed-arenas filter ──────────────────────────────────
@@ -354,17 +352,18 @@ public class ArenaManager {
 
     public void saveArena(Arena arena) {
         arenas.put(arena.getNumber(), arena);
-        plugin.getLogger().info("[ScorePvP] Saving arena #" + arena.getNumber()
-                + " '" + arena.getName() + "' to database...");
-        plugin.getDatabase().saveArenaAsync(arena)
-                .thenRun(() -> plugin.getLogger().info("[ScorePvP] Arena #" + arena.getNumber() + " saved successfully."))
+        java.io.File dir = plugin.getStorage().getArenaDir();
+        java.util.concurrent.CompletableFuture.runAsync(
+                () -> plugin.getStorage().getArenaFiles().save(arena, dir))
+                .thenRun(() -> plugin.getLogger().info("[ScorePvP] Arena #" + arena.getNumber() + " saved (" + arena.getNumber() + ".yml)."))
                 .exceptionally(ex -> { plugin.getLogger().severe("[ScorePvP] Failed to save arena #" + arena.getNumber() + ": " + ex.getMessage()); return null; });
     }
 
     public void deleteArena(int number) {
         arenas.remove(number);
+        java.io.File dir = plugin.getStorage().getArenaDir();
         java.util.concurrent.CompletableFuture.runAsync(
-                () -> plugin.getDatabase().get().deleteArena(number));
+                () -> plugin.getStorage().getArenaFiles().delete(number, dir));
     }
 
     public Arena            getArena(int number)  { return arenas.get(number); }

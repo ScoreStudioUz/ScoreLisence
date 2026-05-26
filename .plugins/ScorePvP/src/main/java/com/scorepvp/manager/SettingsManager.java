@@ -5,6 +5,7 @@ import com.scorepvp.model.PlayerSettings;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SettingsManager {
@@ -17,13 +18,13 @@ public class SettingsManager {
     }
 
     public void loadAsync(UUID uuid) {
-        plugin.getDatabase().loadSettingsAsync(uuid)
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getMain().loadSettings(uuid))
                 .thenAccept(s -> cache.put(uuid, s));
     }
 
     public void saveAsync(UUID uuid) {
         PlayerSettings s = cache.get(uuid);
-        if (s != null) plugin.getDatabase().saveSettingsAsync(s);
+        if (s != null) CompletableFuture.runAsync(() -> plugin.getStorage().getMain().saveSettings(s));
     }
 
     public void unload(UUID uuid) {

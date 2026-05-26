@@ -28,7 +28,7 @@ public class FriendsManager {
 
     public void loadAsync(UUID uuid) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            List<Friendship> friends = plugin.getDatabase().get().loadFriends(uuid);
+            List<Friendship> friends = plugin.getStorage().getMain().loadFriends(uuid);
             cache.put(uuid, new ArrayList<>(friends));
         });
     }
@@ -102,7 +102,7 @@ public class FriendsManager {
         cache.computeIfAbsent(target.getUniqueId(), k -> new ArrayList<>()).add(f);
         cache.computeIfAbsent(sender.getUniqueId(), k -> new ArrayList<>()).add(f);
         Bukkit.getScheduler().runTaskAsynchronously(plugin,
-                () -> plugin.getDatabase().get().saveFriendship(f));
+                () -> plugin.getStorage().getMain().saveFriendship(f));
 
         sender.sendMessage(cfg.msg("friends.request-sent", "{player}", target.getName()));
 
@@ -135,7 +135,7 @@ public class FriendsManager {
         Friendship f = opt.get();
         f.accept();
         Bukkit.getScheduler().runTaskAsynchronously(plugin,
-                () -> plugin.getDatabase().get().saveFriendship(f));
+                () -> plugin.getStorage().getMain().saveFriendship(f));
 
         acceptor.sendMessage(cfg.msg("friends.accepted", "{player}", senderName));
         if (sender != null) sender.sendMessage(cfg.msg("friends.request-accepted", "{player}", acceptor.getName()));
@@ -222,7 +222,7 @@ public class FriendsManager {
             if (list != null) list.removeIf(f -> f.involves(a) && f.involves(b));
         }
         Bukkit.getScheduler().runTaskAsynchronously(plugin,
-                () -> plugin.getDatabase().get().deleteFriendship(a, b));
+                () -> plugin.getStorage().getMain().deleteFriendship(a, b));
     }
 
     private UUID findUuidByName(String name) {

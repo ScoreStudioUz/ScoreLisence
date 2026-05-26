@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class KitManager {
 
-    private static final String DATA_DIR = "data";
+    private static final String DATA_DIR = "data-player";
 
     private final ScorePvP plugin;
 

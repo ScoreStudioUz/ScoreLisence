@@ -10,19 +10,23 @@ language: "ru"
 # Показывать ли [ScorePvP] перед сообщениями в чате
 use-plugin-prefix: true
 
-database:
-  # Тип базы данных: mysql или sqlite
-  # mysql  — основная; при недоступности автоматически переключается на SQLite
-  # sqlite — локальная БД, не требует сервера
-  type: sqlite
-  mysql:
-    host: "localhost"
-    port: 3306
-    database: "scorepvp"
-    username: "root"
-    password: "password"
-    pool-size: 10
-    connection-timeout: 5000
+# ── Storage ───────────────────────────────────────────────────────────────────
+# Split storage: tiers могут жить в общей MySQL на всю сеть серверов,
+# а stats / playtime / settings / friends всегда локально в SQLite (scorepvp.db).
+# Арены — файлы data-arena/<n>.yml. Личные ванильные киты — data-player/<uuid>.yml.
+storage:
+  tiers:
+    # sqlite — локальный файл tiers.db
+    # mysql  — общий сервер; при ошибке стартапа автоматически откатывается на SQLite
+    type: sqlite
+    mysql:
+      host: "localhost"
+      port: 3306
+      database: "scorepvp_tiers"
+      username: "root"
+      password: "password"
+      pool-size: 4
+      connection-timeout: 5000
 
 # Spawn warp — slot 9 (hotbar index 8)
 warp:

@@ -6,7 +6,14 @@ import org.bukkit.Location;
  * Represents a PvP arena.
  *
  * Fully configured = corners + pos1 + pos2 + centre + name + type set.
- * Vanilla type additionally requires a saved block snapshot.
+ *
+ * <h2>Why no `hasSnapshot` anymore</h2>
+ * Earlier versions tracked a "saved block snapshot" flag because VANILLA
+ * arenas needed a pre-recorded baseline to restore after each round. That
+ * baseline lived in a {@code arena_snapshots} SQLite table and bloated the
+ * DB to 500MB. We now restore via {@link com.scorepvp.manager.ArenaBlockTracker}
+ * — it diffs blocks live and replays the inverse at round end, so no
+ * baseline is needed.
  */
 public class Arena {
 
@@ -26,7 +33,7 @@ public class Arena {
     private Location pos2;
     private Location centre;
 
-    // Raw serialized strings preserved from DB (used when world is not loaded yet
+    // Raw serialized strings preserved from disk (used when world is not loaded yet
     // or when world is already unloaded during shutdown)
     private String rawCorner1;
     private String rawCorner2;
@@ -35,7 +42,6 @@ public class Arena {
     private String rawCentre;
 
     private Status   status    = Status.FREE;
-    private boolean  hasSnapshot = false;    // true after /arena N save
 
     public Arena(int number) {
         this.number = number;
@@ -45,14 +51,13 @@ public class Arena {
 
     /**
      * Fully configured: has corners, all three positions, a name, and a type.
-     * For VANILLA arenas, a saved snapshot is also required.
+     * VANILLA and DEFAULT now share the same readiness rule — snapshots
+     * are no longer required (live tracker handles restoration).
      */
     public boolean isFullyConfigured() {
-        boolean base = corner1 != null && corner2 != null
-                    && pos1 != null && pos2 != null && centre != null
-                    && !name.isEmpty();
-        if (type == ArenaType.VANILLA) return base && hasSnapshot;
-        return base;
+        return corner1 != null && corner2 != null
+            && pos1 != null && pos2 != null && centre != null
+            && !name.isEmpty();
     }
 
     /** Legacy alias kept for compatibility. */
@@ -75,7 +80,6 @@ public class Arena {
     public Location  getPos2()                 { return pos2; }
     public Location  getCentre()               { return centre; }
     public Status    getStatus()               { return status; }
-    public boolean   hasSnapshot()             { return hasSnapshot; }
 
     public void setName(String n)              { this.name = n == null ? "" : n.toLowerCase(); }
     public void setType(ArenaType t)           { this.type = t; }
@@ -84,7 +88,6 @@ public class Arena {
     public void setPos1(Location l)            { this.pos1 = l; if (l != null) this.rawPos1 = serializeLoc(l); }
     public void setPos2(Location l)            { this.pos2 = l; if (l != null) this.rawPos2 = serializeLoc(l); }
     public void setCentre(Location l)          { this.centre = l; if (l != null) this.rawCentre = serializeLoc(l); }
-    public void setHasSnapshot(boolean b)      { this.hasSnapshot = b; }
 
     /** Serializes location to string immediately while the World reference is still valid. */
     private static String serializeLoc(Location l) {
@@ -93,7 +96,7 @@ public class Arena {
                 + "," + l.getYaw() + "," + l.getPitch();
     }
 
-    // Raw string getters/setters — used to preserve DB data when world is not loaded
+    // Raw string getters/setters — used to preserve persisted data when world is not loaded
     public String getRawCorner1()              { return rawCorner1; }
     public String getRawCorner2()              { return rawCorner2; }
     public String getRawPos1()                 { return rawPos1; }
