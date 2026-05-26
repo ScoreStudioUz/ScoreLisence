@@ -8,6 +8,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.*;
 
 import java.util.HashMap;
@@ -36,6 +37,9 @@ public class BukkitNameTagProvider implements NameTagProvider {
 
     /** playerUUID → their original scoreboard (saved before match) */
     private final Map<UUID, Scoreboard> savedPlayerBoards = new HashMap<>();
+
+    /** matchId → periodic task that refreshes each fighter's ping suffix. */
+    private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
 
     public BukkitNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
@@ -91,6 +95,28 @@ public class BukkitNameTagProvider implements NameTagProvider {
                 healthObj.getScore(p.getName()).setScore((int) Math.ceil(p.getHealth()));
             }
         }
+
+        // Refresh ping suffixes every second — ping is volatile and the player
+        // wants to see the OPPONENT's current value, not what it was at match start.
+        UUID matchId = match.getMatchId();
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
+                () -> refreshPingSuffixes(matchId), 20L, 20L);
+        pingTasks.put(matchId, task);
+    }
+
+    /** Called every second per match: re-stamps each fighter's team suffix with their live ping. */
+    private void refreshPingSuffixes(UUID matchId) {
+        Scoreboard board = matchScoreboards.get(matchId);
+        if (board == null) return;
+        Match match = plugin.getMatchManager().getMatchById(matchId);
+        if (match == null) return;
+        for (UUID uuid : match.getAllUuids()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null) continue;
+            Team team = board.getEntryTeam(p.getName());
+            if (team == null) continue;
+            team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(p)));
+        }
     }
 
     @Override
@@ -108,6 +134,8 @@ public class BukkitNameTagProvider implements NameTagProvider {
             }
         }
 
+        BukkitTask task = pingTasks.remove(match.getMatchId());
+        if (task != null) task.cancel();
         matchScoreboards.remove(match.getMatchId());
     }
 
@@ -144,6 +172,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
             blueTeam.color(NamedTextColor.BLUE);
             String prefix = formatter.buildPrefix(fighter1.getUuid(), modeId, "&9", false);
             blueTeam.prefix(LEGACY.deserialize(prefix));
+            blueTeam.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(fighter1.getUuid()))));
             blueTeam.addEntry(fighter1.getName());
         }
 
@@ -152,6 +181,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
             redTeam.color(NamedTextColor.RED);
             String prefix = formatter.buildPrefix(fighter2.getUuid(), modeId, "&c", false);
             redTeam.prefix(LEGACY.deserialize(prefix));
+            redTeam.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(fighter2.getUuid()))));
             redTeam.addEntry(fighter2.getName());
         }
     }
@@ -169,6 +199,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
 
             String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
             team.prefix(LEGACY.deserialize(prefix));
+            team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid()))));
             team.addEntry(mp.getName());
         }
     }

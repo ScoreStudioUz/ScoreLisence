@@ -9,6 +9,7 @@ import me.neznamy.tab.api.nametag.NameTagManager;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -44,6 +45,9 @@ public class TabNameTagProvider implements NameTagProvider {
     /** matchId → set of player UUIDs that had health objective injected */
     private final Map<UUID, Set<UUID>> healthInjected = new HashMap<>();
 
+    /** matchId → periodic task that refreshes each fighter's ping suffix. */
+    private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
+
     public TabNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
@@ -71,7 +75,7 @@ public class TabNameTagProvider implements NameTagProvider {
 
                 String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
                 ntm.setPrefix(tp, prefix);
-                ntm.setSuffix(tp, "");
+                ntm.setSuffix(tp, formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid())));
             }
         } else {
             MatchPlayer f1 = match.getFighter1();
@@ -86,7 +90,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     });
                     String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
                     ntm.setPrefix(tp1, prefix);
-                    ntm.setSuffix(tp1, "");
+                    ntm.setSuffix(tp1, formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid())));
                 }
             }
             if (f2 != null) {
@@ -98,7 +102,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     });
                     String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
                     ntm.setPrefix(tp2, prefix);
-                    ntm.setSuffix(tp2, "");
+                    ntm.setSuffix(tp2, formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid())));
                 }
             }
         }
@@ -117,6 +121,28 @@ public class TabNameTagProvider implements NameTagProvider {
             }
             healthInjected.put(match.getMatchId(), injected);
         }
+
+        // Re-stamp ping suffix every second so opponents see the LIVE ping,
+        // not what was sampled at match start.
+        UUID matchId = match.getMatchId();
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
+                () -> refreshPingSuffixes(matchId), 20L, 20L);
+        pingTasks.put(matchId, task);
+    }
+
+    /** Per-second refresh of every fighter's TAB suffix with their live ping. */
+    private void refreshPingSuffixes(UUID matchId) {
+        NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
+        if (ntm == null) return;
+        Match match = plugin.getMatchManager().getMatchById(matchId);
+        if (match == null || match.getState() == Match.State.FINISHED) return;
+        for (UUID uuid : match.getAllUuids()) {
+            TabPlayer tp = TabAPI.getInstance().getPlayer(uuid);
+            if (tp == null) continue;
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null) continue;
+            ntm.setSuffix(tp, formatter.buildPingSuffix(p));
+        }
     }
 
     @Override
@@ -124,6 +150,8 @@ public class TabNameTagProvider implements NameTagProvider {
         NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
         Map<UUID, String[]> saved = savedTags.remove(match.getMatchId());
         Set<UUID> injected = healthInjected.remove(match.getMatchId());
+        BukkitTask task = pingTasks.remove(match.getMatchId());
+        if (task != null) task.cancel();
 
         for (UUID uuid : match.getAllUuids()) {
             Player player = Bukkit.getPlayer(uuid);
@@ -195,7 +223,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp == null) continue;
                     String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
                     ntm.setPrefix(tp, prefix);
-                    ntm.setSuffix(tp, "");
+                    ntm.setSuffix(tp, formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid())));
                 }
             } else {
                 MatchPlayer f1 = match.getFighter1();
@@ -205,7 +233,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp1 != null) {
                         String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
                         ntm.setPrefix(tp1, prefix);
-                        ntm.setSuffix(tp1, "");
+                        ntm.setSuffix(tp1, formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid())));
                     }
                 }
                 if (f2 != null) {
@@ -213,7 +241,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp2 != null) {
                         String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
                         ntm.setPrefix(tp2, prefix);
-                        ntm.setSuffix(tp2, "");
+                        ntm.setSuffix(tp2, formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid())));
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package com.scorepvp.compat;
 
 import com.scorepvp.ScorePvP;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
@@ -70,5 +71,23 @@ public class NameTagFormatter {
         if (!includeLpPrefix || luckPerms == null) return "";
         String prefix = luckPerms.getPrefix(uuid);
         return prefix.isEmpty() ? "" : prefix + " ";
+    }
+
+    /**
+     * Returns the team suffix shown after the player's name, e.g. {@code " &a40ms"}.
+     * Each fighter sees the OPPONENT's ping next to their name above their head —
+     * the whole point of putting it here instead of in the attacker's own action
+     * bar. Ping is color-graded by the same thresholds the HUD uses.
+     */
+    public String buildPingSuffix(Player p) {
+        if (p == null) return "";
+        int ping = p.getPing();
+        int goodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
+        int midMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
+        String good = plugin.getConfig().getString("hud.ping.good-color", "&a");
+        String mid  = plugin.getConfig().getString("hud.ping.mid-color", "&6");
+        String bad  = plugin.getConfig().getString("hud.ping.bad-color", "&c");
+        String colour = ping <= goodMax ? good : (ping <= midMax ? mid : bad);
+        return " " + colour + ping + "ms";
     }
 }
