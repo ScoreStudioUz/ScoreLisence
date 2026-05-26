@@ -187,8 +187,20 @@ menus:
 nametag:
   # ВНИМАНИЕ: если TAB уже показывает LP-префикс — поставьте false, иначе будет дубль
   include-luckperms-prefix: false
+  # ── Здоровье под именем (BELOW_NAME slot) ──
+  # Каждый видит HP каждого бойца в матче рядом со своим символом.
   health-below-name: true
+  # Символ-объективы (отображается как заголовок BELOW_NAME).
+  # Можно поменять на &4♥ / &c❥ / &cHP и т.п.
   health-symbol: "&c❤"
+  # ── Пинг противника (team suffix после имени) ──
+  # Шаблон того что пишется после имени игрока. Плейсхолдеры:
+  #   {color} — цвет по порогам из hud.ping (good/mid/bad)
+  #   {ping}  — число пинга (мс)
+  # Пустая строка отключает показ пинга над головой.
+  ping-suffix-format: " {color}{ping}ms"
+  # Как часто (в тиках) перерисовывать пинг-суффикс. 20 = раз в секунду.
+  ping-refresh-ticks: 20
   # Форматы для дуэлей и FFA
   duel-format: "%lp_prefix%%tier_color%[%tier%] %team_color%| "
   ffa-format: "%lp_prefix%%tier_color%[%tier%] &f| "
@@ -198,10 +210,12 @@ nametag:
 
 # ── HUD / Action Bar ───────────────────────────────────────────────────────────
 hud:
-  # Пороги цвета пинга в action-bar HUD.
+  # Пороги цвета пинга:
   #   0..good-max     → good-color   (по умолчанию зелёный)
   #   good-max..mid   → mid-color    (по умолчанию оранжевый)
   #   > mid           → bad-color    (по умолчанию красный)
+  # Используются и для team-suffix пинга (nametag.ping-suffix-format),
+  # и для собственного HUD-индикатора пинга в action bar.
   ping:
     good-max: 80
     mid-max: 150

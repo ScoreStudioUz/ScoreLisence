@@ -63,7 +63,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleAdmin(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(ColorUtil.color("&e/cosmetics admin <shield|armor> ..."));
+            usage(player, "messages.usage-admin-root");
             return true;
         }
 
@@ -72,7 +72,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
         if (type.equals("shield")) {
             if (args.length < 3) {
-                player.sendMessage(ColorUtil.color("&e/cosmetics admin shield <add|remove>"));
+                usage(player, "messages.usage-admin-shield");
                 return true;
             }
             String action = args[2].toLowerCase();
@@ -89,7 +89,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             }
             if (action.equals("remove")) {
                 if (args.length < 4) {
-                    player.sendMessage(ColorUtil.color("&e/cosmetics admin shield remove <slot>"));
+                    usage(player, "messages.usage-admin-shield-remove");
                     return true;
                 }
                 int slot;
@@ -104,19 +104,19 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
         if (type.equals("armor")) {
             if (args.length < 3) {
-                player.sendMessage(ColorUtil.color("&e/cosmetics admin armor <set|remove> ..."));
+                usage(player, "messages.usage-admin-armor");
                 return true;
             }
             String action = args[2].toLowerCase();
 
             if (action.equals("set")) {
                 if (args.length < 5) {
-                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor set <set#1-9> <helmet|chestplate|leggings|boots>"));
+                    usage(player, "messages.usage-admin-armor-set");
                     return true;
                 }
                 int setIdx = parseSetIndex(args[3]);
                 if (setIdx < 0) {
-                    player.sendMessage(ColorUtil.color("&cНомер набора должен быть 1..9."));
+                    tell(player, "messages.invalid-set-index");
                     return true;
                 }
                 ArmorPiece piece = parsePiece(args[4]);
@@ -136,7 +136,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
             if (action.equals("remove")) {
                 if (args.length < 6) {
-                    player.sendMessage(ColorUtil.color("&e/cosmetics admin armor remove <diamond|netherite> <set#1-9> <piece>"));
+                    usage(player, "messages.usage-admin-armor-remove");
                     return true;
                 }
                 ArmorMaterial mat;
@@ -147,7 +147,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                 }
                 int setIdx = parseSetIndex(args[4]);
                 if (setIdx < 0) {
-                    player.sendMessage(ColorUtil.color("&cНомер набора должен быть 1..9."));
+                    tell(player, "messages.invalid-set-index");
                     return true;
                 }
                 ArmorPiece piece = parsePiece(args[5]);
@@ -162,7 +162,7 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        player.sendMessage(ColorUtil.color("&e/cosmetics admin <shield|armor>"));
+        usage(player, "messages.usage-admin");
         return true;
     }
 
@@ -219,6 +219,11 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
         String prefix = plugin.getConfigManager().cosStr("messages.prefix");
         String body   = plugin.getConfigManager().cosStr(key).replace(ph, value);
         p.sendMessage(ColorUtil.color(prefix + body));
+    }
+
+    /** Usage hints are sent WITHOUT the [Косметика] prefix — they're help, not an error. */
+    private void usage(Player p, String key) {
+        p.sendMessage(ColorUtil.color(plugin.getConfigManager().cosStr(key)));
     }
 
     // ── Tab completion ───────────────────────────────────────────────────────

@@ -81,6 +81,9 @@ public class NameTagFormatter {
      */
     public String buildPingSuffix(Player p) {
         if (p == null) return "";
+        // Whole feature can be disabled by clearing the template in config.
+        String template = plugin.getConfig().getString("nametag.ping-suffix-format", " {color}{ping}ms");
+        if (template == null || template.isEmpty()) return "";
         int ping = p.getPing();
         int goodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
         int midMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
@@ -88,6 +91,8 @@ public class NameTagFormatter {
         String mid  = plugin.getConfig().getString("hud.ping.mid-color", "&6");
         String bad  = plugin.getConfig().getString("hud.ping.bad-color", "&c");
         String colour = ping <= goodMax ? good : (ping <= midMax ? mid : bad);
-        return " " + colour + ping + "ms";
+        return template
+                .replace("{color}", colour)
+                .replace("{ping}", Integer.toString(ping));
     }
 }

@@ -96,11 +96,12 @@ public class BukkitNameTagProvider implements NameTagProvider {
             }
         }
 
-        // Refresh ping suffixes every second — ping is volatile and the player
+        // Refresh ping suffixes periodically — ping is volatile and the player
         // wants to see the OPPONENT's current value, not what it was at match start.
         UUID matchId = match.getMatchId();
+        long period = Math.max(1, plugin.getConfig().getLong("nametag.ping-refresh-ticks", 20L));
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> refreshPingSuffixes(matchId), 20L, 20L);
+                () -> refreshPingSuffixes(matchId), period, period);
         pingTasks.put(matchId, task);
     }
 

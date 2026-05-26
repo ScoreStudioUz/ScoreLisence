@@ -109,6 +109,16 @@ messages:
   invalid-slot:         "&cНеверный слот."
   invalid-piece:        "&cНеверная часть брони."
   invalid-armor-material: "&cЭтот предмет не алмазная и не незеритовая броня."
+  invalid-set-index:    "&cНомер набора должен быть 1..9."
+  # ── /cosmetics admin … usage hints ───────────────────────────────────────
+  # Эти строки печатаются без префикса (это hint, не ошибка).
+  usage-admin-root:        "&e/cosmetics admin <shield|armor> ..."
+  usage-admin-shield:      "&e/cosmetics admin shield <add|remove>"
+  usage-admin-shield-remove: "&e/cosmetics admin shield remove <slot>"
+  usage-admin-armor:       "&e/cosmetics admin armor <set|remove> ..."
+  usage-admin-armor-set:   "&e/cosmetics admin armor set <set#1-9> <helmet|chestplate|leggings|boots>"
+  usage-admin-armor-remove: "&e/cosmetics admin armor remove <diamond|netherite> <set#1-9> <piece>"
+  usage-admin:             "&e/cosmetics admin <shield|armor>"
 
 # ── Display names used by the listener in chat ───────────────────────────────
 piece-names:

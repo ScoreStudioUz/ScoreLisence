@@ -122,11 +122,12 @@ public class TabNameTagProvider implements NameTagProvider {
             healthInjected.put(match.getMatchId(), injected);
         }
 
-        // Re-stamp ping suffix every second so opponents see the LIVE ping,
+        // Re-stamp ping suffix every N ticks so opponents see the LIVE ping,
         // not what was sampled at match start.
         UUID matchId = match.getMatchId();
+        long period = Math.max(1, plugin.getConfig().getLong("nametag.ping-refresh-ticks", 20L));
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> refreshPingSuffixes(matchId), 20L, 20L);
+                () -> refreshPingSuffixes(matchId), period, period);
         pingTasks.put(matchId, task);
     }
 
