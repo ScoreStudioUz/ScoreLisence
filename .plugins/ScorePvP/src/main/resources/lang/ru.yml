@@ -645,9 +645,9 @@ friends-help:
 tier-help:
   title: "&eTier-команды (только admin):"
   lines:
-    - "  &b/tier set <игрок> <режим> <тир>"
-    - "  &b/tier remove <игрок> <режим>"
-    - "  &b/tier info <игрок>"
+    - "  &b/tier set <игрок> <режим> <тир>   &7— назначить тир (работает и для офлайн)"
+    - "  &b/tier unset <игрок> <режим>       &7— снять тир (alias: remove)"
+    - "  &b/tier info <игрок>                &7— показать все тиры"
 
 # ── Placeholders ─────────────────────────────────────────────────────────────
 placeholders:

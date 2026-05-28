@@ -31,6 +31,11 @@ public class PlayerJoinQuitListener implements Listener {
         plugin.getKitManager().loadAsync(uuid);
         plugin.getFriendsManager().loadAsync(uuid);
 
+        // Keep the tiers-DB name index warm so /tier set <name> can target
+        // this player even after they log out, on the very first join. The
+        // write fires once per join and is async — no startup tax.
+        plugin.getTierManager().rememberNameAsync(uuid, e.getPlayer().getName());
+
         // Track playtime session
         plugin.getStatsManager().onLogin(uuid);
 

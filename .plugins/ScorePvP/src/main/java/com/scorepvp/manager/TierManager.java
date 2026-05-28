@@ -1,6 +1,9 @@
 package com.scorepvp.manager;
 
 import com.scorepvp.ScorePvP;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +27,16 @@ public class TierManager {
                 .thenAccept(tiers -> cache.put(uuid, new ConcurrentHashMap<>(tiers)));
     }
 
+    /**
+     * Records this player's current name into the name → uuid index so admins
+     * can target them with {@code /tier set <name> …} after they log out.
+     * Called on join — does NOT load tiers (that's {@link #loadAsync}'s job).
+     */
+    public void rememberNameAsync(UUID uuid, String name) {
+        CompletableFuture.runAsync(() ->
+                plugin.getStorage().getTiers().rememberName(uuid, name));
+    }
+
     /** Tiers are saved immediately on change — no pending writes to flush on unload. */
     public void unload(UUID uuid) {
         cache.remove(uuid);
@@ -40,16 +53,53 @@ public class TierManager {
         return Collections.unmodifiableMap(cache.getOrDefault(uuid, Map.of()));
     }
 
+    /**
+     * Returns the (uuid, name) of a player that admins may target with a tier
+     * command, even when that player is currently offline. Resolution order:
+     * <ol>
+     *   <li>online player (case-insensitive)</li>
+     *   <li>tiers DB name index (set on every prior join via {@link #rememberNameAsync})</li>
+     *   <li>Bukkit's offline-player cache (last-played-before only — never
+     *       queries Mojang, so admins can't accidentally tier random Mojang
+     *       accounts the server has never seen)</li>
+     * </ol>
+     * Returns {@code null} if no match is found anywhere.
+     */
+    public Resolved resolveTarget(String name) {
+        if (name == null || name.isBlank()) return null;
+
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) return new Resolved(online.getUniqueId(), online.getName());
+
+        UUID indexed = plugin.getStorage().getTiers().findUuidByName(name);
+        if (indexed != null) return new Resolved(indexed, name);
+
+        @SuppressWarnings("deprecation")
+        OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(name);
+        if (cached != null && cached.hasPlayedBefore()) {
+            return new Resolved(cached.getUniqueId(),
+                    cached.getName() != null ? cached.getName() : name);
+        }
+        return null;
+    }
+
+    /** Pair returned by {@link #resolveTarget}. */
+    public record Resolved(UUID uuid, String name) {}
+
     // ── Write ─────────────────────────────────────────────────────────────────
 
     /**
-     * Sets a tier for the given player in the given mode.
+     * Sets a tier for the given player in the given mode. Works whether or
+     * not the player is currently online — the new tier is persisted to the
+     * tiers DB and (if they later join) picked up by {@link #loadAsync}.
+     *
      * @return false if the tier string is not in the configured tier order.
      */
-    public boolean setTier(UUID uuid, String mode, String tier) {
+    public boolean setTier(UUID uuid, String name, String mode, String tier) {
         if (!plugin.getConfigManager().getTierOrder().contains(tier)) return false;
         cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(mode, tier);
-        CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().saveTier(uuid, mode, tier));
+        CompletableFuture.runAsync(() ->
+                plugin.getStorage().getTiers().saveTier(uuid, mode, tier, name));
         // If the target is in an active match, repaint the nametag so the new
         // tier appears next to their name immediately — otherwise the tier
         // only shows up on the next match (or after rejoin).
@@ -58,16 +108,26 @@ public class TierManager {
     }
 
     /**
-     * Removes a tier for the given player in the given mode.
-     * @return false if the player had no tier in that mode.
+     * Removes a tier for the given player in the given mode. Works for
+     * offline players too — the cache entry may be missing, but the DB
+     * delete still fires.
+     *
+     * @return true if a tier was actually removed (cache or DB) — best-effort,
+     *         since for offline players we don't synchronously read the DB
+     *         before deleting; we just trust the admin.
      */
     public boolean removeTier(UUID uuid, String mode) {
         Map<String, String> tiers = cache.get(uuid);
-        if (tiers == null || !tiers.containsKey(mode)) return false;
-        tiers.remove(mode);
-        CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().removeTier(uuid, mode));
+        boolean hadInCache = tiers != null && tiers.containsKey(mode);
+        if (hadInCache) tiers.remove(mode);
+        CompletableFuture.runAsync(() ->
+                plugin.getStorage().getTiers().removeTier(uuid, mode));
         refreshActiveNametag(uuid);
-        return true;
+        // For online players we can tell the caller whether the tier actually
+        // existed; for offline ones we return true (best-effort) so the admin
+        // doesn't see a misleading "no such tier" error when there was one in
+        // the DB but it wasn't cached.
+        return hadInCache || Bukkit.getPlayer(uuid) == null;
     }
 
     /** Tells the active nametag provider to redraw nametags for the match this UUID is in. */

@@ -15,10 +15,11 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * MySQL-backed tier storage. Same schema as {@link SqliteTierStorage} but
- * targets a remote MySQL server (so a network of servers can share tiers).
+ * MySQL-backed tier storage. Same schema shape as {@link SqliteTierStorage} —
+ * two tables: {@code player_tiers} and {@code player_names}. The name table
+ * lets admins target offline players with {@code /tier set <name> …}.
  *
- * Connection params come from {@code storage.tiers.mysql.*} in config.yml.
+ * <p>Connection params come from {@code storage.tiers.mysql.*} in config.yml.
  */
 public class MysqlTierStorage implements TierStorage {
 
@@ -59,6 +60,15 @@ public class MysqlTierStorage implements TierStorage {
                     PRIMARY KEY (uuid, mode)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """);
+            // utf8mb4 + utf8mb4_general_ci for case-insensitive name lookup.
+            s.execute("""
+                CREATE TABLE IF NOT EXISTS player_names (
+                    uuid VARCHAR(36) NOT NULL,
+                    name VARCHAR(32) NOT NULL,
+                    PRIMARY KEY (uuid),
+                    INDEX idx_player_names_name (name)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            """);
         }
     }
 
@@ -79,15 +89,19 @@ public class MysqlTierStorage implements TierStorage {
     }
 
     @Override
-    public void saveTier(UUID uuid, String mode, String tier) {
-        try (Connection c = ds.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO player_tiers (uuid, mode, tier) VALUES (?, ?, ?) " +
-                     "ON DUPLICATE KEY UPDATE tier = VALUES(tier)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, mode);
-            ps.setString(3, tier);
-            ps.executeUpdate();
+    public void saveTier(UUID uuid, String mode, String tier, String playerName) {
+        try (Connection c = ds.getConnection()) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "INSERT INTO player_tiers (uuid, mode, tier) VALUES (?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE tier = VALUES(tier)")) {
+                ps.setString(1, uuid.toString());
+                ps.setString(2, mode);
+                ps.setString(3, tier);
+                ps.executeUpdate();
+            }
+            if (playerName != null && !playerName.isBlank()) {
+                upsertName(c, uuid, playerName);
+            }
         } catch (SQLException e) {
             log.warning("[ScorePvP] saveTier(" + uuid + "," + mode + ") failed: " + e.getMessage());
         }
@@ -103,6 +117,42 @@ public class MysqlTierStorage implements TierStorage {
             ps.executeUpdate();
         } catch (SQLException e) {
             log.warning("[ScorePvP] removeTier(" + uuid + "," + mode + ") failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public UUID findUuidByName(String playerName) {
+        if (playerName == null || playerName.isBlank()) return null;
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT uuid FROM player_names WHERE name = ? LIMIT 1")) {
+            ps.setString(1, playerName);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return UUID.fromString(rs.getString("uuid"));
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            log.warning("[ScorePvP] findUuidByName(" + playerName + ") failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public void rememberName(UUID uuid, String playerName) {
+        if (playerName == null || playerName.isBlank()) return;
+        try (Connection c = ds.getConnection()) {
+            upsertName(c, uuid, playerName);
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] rememberName(" + uuid + "," + playerName + ") failed: " + e.getMessage());
+        }
+    }
+
+    private void upsertName(Connection c, UUID uuid, String playerName) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "INSERT INTO player_names (uuid, name) VALUES (?, ?) " +
+                "ON DUPLICATE KEY UPDATE name = VALUES(name)")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, playerName);
+            ps.executeUpdate();
         }
     }
 

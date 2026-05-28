@@ -15,7 +15,10 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * SQLite-backed tier storage. One file ({@code tiers.db}) with one table.
+ * SQLite-backed tier storage. One file ({@code tiers.db}) with two tables:
+ * {@code player_tiers} for the tier rows (uuid, mode, tier) and
+ * {@code player_names} for the name → uuid index used to target offline
+ * players from {@code /tier set <name> …}.
  * Slim by design — tiers churn rarely and never explode in row count.
  */
 public class SqliteTierStorage implements TierStorage {
@@ -50,6 +53,20 @@ public class SqliteTierStorage implements TierStorage {
                     PRIMARY KEY (uuid, mode)
                 )
             """);
+            // Separate names table keeps the (uuid, mode, tier) primary key
+            // intact and lets us update the name without rewriting every
+            // tier row. NOCASE makes the lookup case-insensitive, which is
+            // what admins expect when typing /tier set MrBroccoli vs mrbroccoli.
+            s.execute("""
+                CREATE TABLE IF NOT EXISTS player_names (
+                    uuid VARCHAR(36) PRIMARY KEY,
+                    name VARCHAR(32) NOT NULL COLLATE NOCASE
+                )
+            """);
+            s.execute("""
+                CREATE INDEX IF NOT EXISTS idx_player_names_name
+                ON player_names(name COLLATE NOCASE)
+            """);
         } catch (SQLException e) {
             log.severe("[ScorePvP] tiers.db schema creation failed: " + e.getMessage());
         }
@@ -72,15 +89,19 @@ public class SqliteTierStorage implements TierStorage {
     }
 
     @Override
-    public void saveTier(UUID uuid, String mode, String tier) {
-        try (Connection c = ds.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO player_tiers (uuid, mode, tier) VALUES (?, ?, ?) " +
-                     "ON CONFLICT(uuid, mode) DO UPDATE SET tier = excluded.tier")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, mode);
-            ps.setString(3, tier);
-            ps.executeUpdate();
+    public void saveTier(UUID uuid, String mode, String tier, String playerName) {
+        try (Connection c = ds.getConnection()) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "INSERT INTO player_tiers (uuid, mode, tier) VALUES (?, ?, ?) " +
+                    "ON CONFLICT(uuid, mode) DO UPDATE SET tier = excluded.tier")) {
+                ps.setString(1, uuid.toString());
+                ps.setString(2, mode);
+                ps.setString(3, tier);
+                ps.executeUpdate();
+            }
+            if (playerName != null && !playerName.isBlank()) {
+                upsertName(c, uuid, playerName);
+            }
         } catch (SQLException e) {
             log.warning("[ScorePvP] saveTier(" + uuid + "," + mode + ") failed: " + e.getMessage());
         }
@@ -96,6 +117,43 @@ public class SqliteTierStorage implements TierStorage {
             ps.executeUpdate();
         } catch (SQLException e) {
             log.warning("[ScorePvP] removeTier(" + uuid + "," + mode + ") failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public UUID findUuidByName(String playerName) {
+        if (playerName == null || playerName.isBlank()) return null;
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT uuid FROM player_names WHERE name = ? COLLATE NOCASE LIMIT 1")) {
+            ps.setString(1, playerName);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return UUID.fromString(rs.getString("uuid"));
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            log.warning("[ScorePvP] findUuidByName(" + playerName + ") failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public void rememberName(UUID uuid, String playerName) {
+        if (playerName == null || playerName.isBlank()) return;
+        try (Connection c = ds.getConnection()) {
+            upsertName(c, uuid, playerName);
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] rememberName(" + uuid + "," + playerName + ") failed: " + e.getMessage());
+        }
+    }
+
+    /** Shared name-upsert helper used by both saveTier and rememberName. */
+    private void upsertName(Connection c, UUID uuid, String playerName) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "INSERT INTO player_names (uuid, name) VALUES (?, ?) " +
+                "ON CONFLICT(uuid) DO UPDATE SET name = excluded.name")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, playerName);
+            ps.executeUpdate();
         }
     }
 

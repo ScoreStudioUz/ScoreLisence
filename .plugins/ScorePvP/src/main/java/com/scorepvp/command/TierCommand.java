@@ -36,13 +36,16 @@ public class TierCommand implements CommandExecutor, TabCompleter {
         String sub        = args[0].toLowerCase();
         String targetName = args[1];
 
-        // Resolve player — must be online for tier operations (for cache to work)
-        Player target = Bukkit.getPlayerExact(targetName);
+        // Resolve player — online OR known-offline. Offline resolution goes
+        // through TierManager so we look at the tiers-DB name index first and
+        // only fall back to Bukkit's cache for accounts the server has seen.
+        TierManager.Resolved target = tm.resolveTarget(targetName);
         if (target == null) {
             sender.sendMessage(plugin.getConfigManager().msg("player-not-found", "{player}", targetName));
             return true;
         }
-        UUID uuid = target.getUniqueId();
+        UUID uuid       = target.uuid();
+        String realName = target.name();
 
         switch (sub) {
             case "set" -> {
@@ -59,19 +62,21 @@ public class TierCommand implements CommandExecutor, TabCompleter {
                             .msg("tier.mode-not-found", "{mode}", mode));
                     return true;
                 }
-                if (!tm.setTier(uuid, mode, tier)) {
+                if (!tm.setTier(uuid, realName, mode, tier)) {
                     sender.sendMessage(plugin.getConfigManager()
                             .msg("tier.not-found", "{tier}", tier));
                     return true;
                 }
                 sender.sendMessage(plugin.getConfigManager().msg("tier.set",
-                        "{tier}", tier, "{player}", targetName, "{mode}", mode));
+                        "{tier}", tier, "{player}", realName, "{mode}", mode));
             }
 
-            case "remove" -> {
+            // 'remove' kept as a backwards-compatible alias; 'unset' is the
+            // new canonical name (matches the rest of the admin UX).
+            case "remove", "unset" -> {
                 if (args.length < 3) {
                     sender.sendMessage(plugin.getConfigManager()
-                            .msg("invalid-usage", "{usage}", "/tier remove <игрок> <режим>"));
+                            .msg("invalid-usage", "{usage}", "/tier unset <игрок> <режим>"));
                     return true;
                 }
                 String mode = args[2];
@@ -86,13 +91,13 @@ public class TierCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 sender.sendMessage(plugin.getConfigManager().msg("tier.removed",
-                        "{player}", targetName, "{mode}", mode));
+                        "{player}", realName, "{mode}", mode));
             }
 
             case "info" -> {
                 Map<String, String> tiers = tm.getAllTiers(uuid);
                 sender.sendMessage(plugin.getConfigManager()
-                        .msg("tier.info", "{player}", targetName));
+                        .msg("tier.info", "{player}", realName));
                 if (tiers.isEmpty()) {
                     sender.sendMessage(plugin.getConfigManager().rawMsg("tier.no-tiers"));
                 } else {
@@ -123,14 +128,14 @@ public class TierCommand implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("scorepvp.admin")) return List.of();
 
         return switch (args.length) {
-            case 1 -> filter(List.of("set", "remove", "info"), args[0]);
+            case 1 -> filter(List.of("set", "unset", "remove", "info"), args[0]);
             case 2 -> Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
                         .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
                         .collect(Collectors.toList());
             case 3 -> {
                 String sub = args[0].toLowerCase();
-                if (sub.equals("set") || sub.equals("remove"))
+                if (sub.equals("set") || sub.equals("unset") || sub.equals("remove"))
                     yield filter(new ArrayList<>(plugin.getConfigManager().getModeMap().keySet()), args[2]);
                 yield List.of();
             }
