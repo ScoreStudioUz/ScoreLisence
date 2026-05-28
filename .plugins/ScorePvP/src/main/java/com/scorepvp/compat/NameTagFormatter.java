@@ -74,23 +74,43 @@ public class NameTagFormatter {
     }
 
     /**
-     * Returns the team suffix shown after the player's name, e.g. {@code " &a40ms"}.
-     * Each fighter sees the OPPONENT's ping next to their name above their head.
-     * HP no longer lives in the suffix — it is rendered on the BELOW_NAME
-     * objective (numeric score + {@code nametag.health-symbol} title), so
-     * having it in the suffix as well duplicated the value.
-     *
-     * Placeholders inside {@code nametag.ping-suffix-format}:
-     *   {color} — ping color (good/mid/bad from hud.ping.*)
-     *   {ping}  — ping in ms
+     * @deprecated Suffix больше не используется — и HP, и пинг переехали на
+     * BELOW_NAME через {@link #buildBelowName(Player)}. Метод оставлен только
+     * чтобы провайдеры могли явно "очистить" хвост у ника (вернуть пустую
+     * строку), пока полностью не перейдут на новый API.
      */
+    @Deprecated
     public String buildPingSuffix(Player p) {
+        return "";
+    }
+
+    /**
+     * Строит то, что игрок видит ПОД своим ником (BELOW_NAME slot).
+     * Один и тот же шаблон используется и в duel-, и в FFA-режиме — каждый
+     * наблюдатель видит HP+ping ТОГО игрока, над чьим телом висит строка
+     * (а не свой собственный пинг). Технически это достигается через
+     * {@code Score.numberFormat(FixedFormat)} — на каждое имя в objective
+     * вешается готовый Component, маскирующий score-число.
+     *
+     * Возвращает legacy-string с &-кодами (потребитель сам гонит её через
+     * {@code LegacyComponentSerializer.legacyAmpersand().deserialize(...)}).
+     *
+     * Плейсхолдеры:
+     *   {hp}, {max_hp}, {hp_color}, {hp_symbol}, {ping}, {ping_color}.
+     */
+    public String buildBelowName(Player p) {
         if (p == null) return "";
-        // Whole feature can be disabled by clearing the template in config.
-        String template = plugin.getConfig().getString("nametag.ping-suffix-format",
-                " {color}{ping}ms");
+        String template = plugin.getConfig().getString("nametag.below-name-format",
+                "{hp_color}{hp}{hp_symbol} &7| {ping_color}{ping}ms");
         if (template == null || template.isEmpty()) return "";
 
+        // HP
+        int hp    = (int) Math.ceil(p.getHealth());
+        int maxHp = (int) Math.ceil(p.getMaxHealth());
+        String hpColor = hpColorFor(p);
+        String hpSymbol = plugin.getConfig().getString("nametag.health-symbol", "&c❤");
+
+        // Ping
         int ping = p.getPing();
         int pGoodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
         int pMidMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
@@ -100,7 +120,24 @@ public class NameTagFormatter {
         String pingColor = ping <= pGoodMax ? pGood : (ping <= pMidMax ? pMid : pBad);
 
         return template
-                .replace("{color}", pingColor)
-                .replace("{ping}",  Integer.toString(ping));
+                .replace("{hp}",         Integer.toString(hp))
+                .replace("{max_hp}",     Integer.toString(maxHp))
+                .replace("{hp_color}",   hpColor)
+                .replace("{hp_symbol}",  hpSymbol)
+                .replace("{ping}",       Integer.toString(ping))
+                .replace("{ping_color}", pingColor);
+    }
+
+    /** HP-цвет по порогам hud.health.* (зелёный → жёлтый → красный). */
+    private String hpColorFor(Player p) {
+        double frac = p.getHealth() / Math.max(1.0, p.getMaxHealth());
+        double full = plugin.getConfig().getDouble("hud.health.full-min", 0.66);
+        double mid  = plugin.getConfig().getDouble("hud.health.mid-min",  0.33);
+        String fullColor = plugin.getConfig().getString("hud.health.full-color", "&a");
+        String midColor  = plugin.getConfig().getString("hud.health.mid-color",  "&e");
+        String lowColor  = plugin.getConfig().getString("hud.health.low-color",  "&c");
+        if (frac >= full) return fullColor;
+        if (frac >= mid)  return midColor;
+        return lowColor;
     }
 }

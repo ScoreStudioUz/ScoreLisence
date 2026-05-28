@@ -3,6 +3,7 @@ package com.scorepvp.compat;
 import com.scorepvp.ScorePvP;
 import com.scorepvp.model.Match;
 import com.scorepvp.model.MatchPlayer;
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import me.neznamy.tab.api.TabAPI;
 import me.neznamy.tab.api.TabPlayer;
 import me.neznamy.tab.api.nametag.NameTagManager;
@@ -13,19 +14,31 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.*;
 
 /**
- * NameTag provider that uses the TAB plugin API for prefix/suffix management.
+ * NameTag provider that uses the TAB plugin API for prefix management.
+ * <p>
+ * Layout above each fighter's head:
+ *   line 1 — nickname with match prefix (delegated to TAB's NameTagManager)
+ *   line 2 — BELOW_NAME, formatted by {@link NameTagFormatter#buildBelowName}
+ *            into "{hp}{hp_symbol} | {ping}ms" — same string for every viewer
+ *            (per-entry rendering achieved via Paper Score#numberFormat).
+ * <p>
+ * Why we mix TAB (prefix) and Bukkit (BELOW_NAME): TAB owns line 1 because
+ * it carries our tier / team color and we don't want to fight TAB for the
+ * Team packet. Line 2 is a vanilla scoreboard objective injected into each
+ * player's EXISTING scoreboard, so it doesn't touch TAB's state.
  * <p>
  * Key design principles:
  * - NEVER calls player.setScoreboard() — avoids overriding TAB's scoreboard
  * - NEVER calls player.playerListName() — lets TAB manage the tab list
- * - Health BELOW_NAME is injected into the player's EXISTING scoreboard
- * - On setup: saves original TAB prefix/suffix, then sets match-specific ones
- * - On clear: restores original TAB values, unregisters health objective
+ * - On setup: saves original TAB prefix, then sets match-specific one; TAB
+ *   suffix is forced to empty (HP/ping live on BELOW_NAME now).
+ * - On clear: restores original TAB values, unregisters BELOW_NAME objective.
  */
 public class TabNameTagProvider implements NameTagProvider {
 
@@ -36,27 +49,25 @@ public class TabNameTagProvider implements NameTagProvider {
 
     private final ScorePvP plugin;
     private final NameTagFormatter formatter;
-    private final boolean healthEnabled;
-    private final String healthSymbol;
+    private final boolean belowNameEnabled;
 
     /** matchId → { playerUUID → [originalPrefix, originalSuffix] } */
     private final Map<UUID, Map<UUID, String[]>> savedTags = new HashMap<>();
 
-    /** matchId → set of player UUIDs that had health objective injected */
-    private final Map<UUID, Set<UUID>> healthInjected = new HashMap<>();
+    /** matchId → set of player UUIDs that had the BELOW_NAME objective injected */
+    private final Map<UUID, Set<UUID>> belowInjected = new HashMap<>();
 
-    /** matchId → periodic task that refreshes each fighter's ping suffix. */
-    private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
+    /** matchId → periodic task that refreshes each fighter's BELOW_NAME line. */
+    private final Map<UUID, BukkitTask> refreshTasks = new HashMap<>();
 
-    /** playerUUID → last suffix text we sent through TAB. Skips redundant
-     *  setSuffix() calls that would otherwise re-broadcast every tick in FFA. */
-    private final Map<UUID, String> lastSuffixByPlayer = new HashMap<>();
+    /** targetUUID → last BELOW_NAME text written for that player. Skips
+     *  numberFormat() writes when the rendered text hasn't changed. */
+    private final Map<UUID, String> lastBelowByPlayer = new HashMap<>();
 
     public TabNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
-        this.healthEnabled = plugin.getConfig().getBoolean("nametag.health-below-name", true);
-        this.healthSymbol = plugin.getConfig().getString("nametag.health-symbol", "&c\u2764");
+        this.belowNameEnabled = plugin.getConfig().getBoolean("nametag.health-below-name", true);
     }
 
     @Override
@@ -79,7 +90,8 @@ public class TabNameTagProvider implements NameTagProvider {
 
                 String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
                 ntm.setPrefix(tp, prefix);
-                ntm.setSuffix(tp, formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid())));
+                // Suffix forced empty — HP+ping moved to BELOW_NAME.
+                ntm.setSuffix(tp, "");
             }
         } else {
             MatchPlayer f1 = match.getFighter1();
@@ -94,7 +106,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     });
                     String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
                     ntm.setPrefix(tp1, prefix);
-                    ntm.setSuffix(tp1, formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid())));
+                    ntm.setSuffix(tp1, "");
                 }
             }
             if (f2 != null) {
@@ -106,57 +118,70 @@ public class TabNameTagProvider implements NameTagProvider {
                     });
                     String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
                     ntm.setPrefix(tp2, prefix);
-                    ntm.setSuffix(tp2, formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid())));
+                    ntm.setSuffix(tp2, "");
                 }
             }
         }
 
         savedTags.put(match.getMatchId(), saved);
 
-        // Inject health objective into each player's EXISTING scoreboard
-        if (healthEnabled) {
+        // Inject BELOW_NAME objective into each player's EXISTING scoreboard
+        if (belowNameEnabled) {
             Set<UUID> injected = new HashSet<>();
             for (UUID uuid : match.getAllUuids()) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null && player.isOnline()) {
-                    injectHealthObjective(player);
+                    injectBelowName(player, match);
                     injected.add(uuid);
                 }
             }
-            healthInjected.put(match.getMatchId(), injected);
+            belowInjected.put(match.getMatchId(), injected);
         }
 
-        // Re-stamp ping suffix every N ticks so opponents see the LIVE ping,
-        // not what was sampled at match start.
+        // Re-stamp BELOW_NAME every N ticks so ping (and regenerating HP)
+        // stay live for every viewer.
         UUID matchId = match.getMatchId();
         long period = Math.max(1, plugin.getConfig().getLong("nametag.ping-refresh-ticks", 20L));
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> refreshPingSuffixes(matchId), period, period);
-        pingTasks.put(matchId, task);
+                () -> refreshBelowName(matchId), period, period);
+        refreshTasks.put(matchId, task);
     }
 
-    /** Per-second refresh of every fighter's TAB suffix with their live ping. */
-    private void refreshPingSuffixes(UUID matchId) {
-        NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
-        if (ntm == null) return;
+    /** Per-second refresh of every fighter's BELOW_NAME line on every viewer's board. */
+    private void refreshBelowName(UUID matchId) {
         Match match = plugin.getMatchManager().getMatchById(matchId);
         if (match == null || match.getState() == Match.State.FINISHED) return;
-        for (UUID uuid : match.getAllUuids()) {
-            TabPlayer tp = TabAPI.getInstance().getPlayer(uuid);
-            if (tp == null) continue;
-            Player p = Bukkit.getPlayer(uuid);
-            if (p == null) continue;
-            applySuffixIfChanged(ntm, tp, p);
+        Set<UUID> injected = belowInjected.get(matchId);
+        if (injected == null) return;
+
+        for (UUID viewer : injected) {
+            Player viewerPlayer = Bukkit.getPlayer(viewer);
+            if (viewerPlayer == null) continue;
+            Scoreboard board = viewerPlayer.getScoreboard();
+            Objective obj = board.getObjective(HEALTH_OBJ_NAME);
+            if (obj == null) {
+                injectBelowName(viewerPlayer, match);
+                obj = board.getObjective(HEALTH_OBJ_NAME);
+                if (obj == null) continue;
+            }
+            for (UUID uuid : match.getAllUuids()) {
+                Player target = Bukkit.getPlayer(uuid);
+                if (target == null) continue;
+                writeBelowName(obj, target);
+            }
         }
     }
 
-    /** Diff-checked setSuffix. */
-    private void applySuffixIfChanged(NameTagManager ntm, TabPlayer tp, Player p) {
-        String next = formatter.buildPingSuffix(p);
-        String prev = lastSuffixByPlayer.get(p.getUniqueId());
+    /** Pushes one player's BELOW_NAME line into ONE objective (one viewer's scoreboard). */
+    private void writeBelowName(Objective obj, Player target) {
+        String next = formatter.buildBelowName(target);
+        String prev = lastBelowByPlayer.get(target.getUniqueId());
+        Score score = obj.getScore(target.getName());
+        int hp = (int) Math.ceil(target.getHealth());
+        if (score.getScore() != hp) score.setScore(hp);
         if (next.equals(prev)) return;
-        lastSuffixByPlayer.put(p.getUniqueId(), next);
-        ntm.setSuffix(tp, next);
+        lastBelowByPlayer.put(target.getUniqueId(), next);
+        score.numberFormat(NumberFormat.fixed(LEGACY.deserialize(next)));
     }
 
     @Override
@@ -164,10 +189,10 @@ public class TabNameTagProvider implements NameTagProvider {
         UUID id = player.getUniqueId();
         NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
         Map<UUID, String[]> saved = savedTags.get(match.getMatchId());
-        Set<UUID> injected = healthInjected.get(match.getMatchId());
+        Set<UUID> injected = belowInjected.get(match.getMatchId());
 
         if (player.isOnline() && injected != null && injected.contains(id)) {
-            removeHealthObjective(player);
+            removeBelowName(player);
             injected.remove(id);
         }
         if (ntm != null && saved != null) {
@@ -180,27 +205,25 @@ public class TabNameTagProvider implements NameTagProvider {
                 }
             }
         }
-        lastSuffixByPlayer.remove(id);
+        lastBelowByPlayer.remove(id);
     }
 
     @Override
     public void clearMatchNametags(Match match) {
         NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
         Map<UUID, String[]> saved = savedTags.remove(match.getMatchId());
-        Set<UUID> injected = healthInjected.remove(match.getMatchId());
-        BukkitTask task = pingTasks.remove(match.getMatchId());
+        Set<UUID> injected = belowInjected.remove(match.getMatchId());
+        BukkitTask task = refreshTasks.remove(match.getMatchId());
         if (task != null) task.cancel();
-        for (UUID uuid : match.getAllUuids()) lastSuffixByPlayer.remove(uuid);
+        for (UUID uuid : match.getAllUuids()) lastBelowByPlayer.remove(uuid);
 
         for (UUID uuid : match.getAllUuids()) {
             Player player = Bukkit.getPlayer(uuid);
 
-            // Remove health objective from player's scoreboard
             if (player != null && player.isOnline() && injected != null && injected.contains(uuid)) {
-                removeHealthObjective(player);
+                removeBelowName(player);
             }
 
-            // Restore TAB prefix/suffix
             if (ntm != null && saved != null && saved.containsKey(uuid)) {
                 TabPlayer tp = TabAPI.getInstance().getPlayer(uuid);
                 if (tp != null) {
@@ -216,31 +239,23 @@ public class TabNameTagProvider implements NameTagProvider {
     public void updateHealth(Player player) {
         Match match = plugin.getMatchManager().getMatch(player.getUniqueId());
         if (match == null) return;
+        if (!belowNameEnabled) return;
+        Set<UUID> injected = belowInjected.get(match.getMatchId());
+        if (injected == null) return;
 
-        if (healthEnabled) {
-            Set<UUID> injected = healthInjected.get(match.getMatchId());
-            if (injected != null) {
-                // Only push THIS player's HP score, to every fighter's scoreboard.
-                // Previously this was an N×N loop (every fighter's board × every
-                // fighter's HP) which made FFA lag scale quadratically with the
-                // hit rate. One damage event = one score per viewer now.
-                int hp = (int) Math.ceil(player.getHealth());
-                for (UUID viewer : match.getAllUuids()) {
-                    Player viewerPlayer = Bukkit.getPlayer(viewer);
-                    if (viewerPlayer == null) continue;
-                    Scoreboard board = viewerPlayer.getScoreboard();
-                    Objective obj = board.getObjective(HEALTH_OBJ_NAME);
-                    if (obj == null) {
-                        injectHealthObjective(viewerPlayer);
-                        obj = board.getObjective(HEALTH_OBJ_NAME);
-                        if (obj == null) continue;
-                    }
-                    obj.getScore(player.getName()).setScore(hp);
-                }
+        // Push this player's HP+ping line into every viewer's scoreboard.
+        for (UUID viewer : injected) {
+            Player viewerPlayer = Bukkit.getPlayer(viewer);
+            if (viewerPlayer == null) continue;
+            Scoreboard board = viewerPlayer.getScoreboard();
+            Objective obj = board.getObjective(HEALTH_OBJ_NAME);
+            if (obj == null) {
+                injectBelowName(viewerPlayer, match);
+                obj = board.getObjective(HEALTH_OBJ_NAME);
+                if (obj == null) continue;
             }
+            writeBelowName(obj, player);
         }
-        // Suffix no longer carries HP (it lives on BELOW_NAME), so we don't
-        // re-stamp on damage. The periodic ping task handles refreshes.
     }
 
     @Override
@@ -262,7 +277,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp == null) continue;
                     String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
                     ntm.setPrefix(tp, prefix);
-                    ntm.setSuffix(tp, formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid())));
+                    ntm.setSuffix(tp, "");
                 }
             } else {
                 MatchPlayer f1 = match.getFighter1();
@@ -272,7 +287,7 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp1 != null) {
                         String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
                         ntm.setPrefix(tp1, prefix);
-                        ntm.setSuffix(tp1, formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid())));
+                        ntm.setSuffix(tp1, "");
                     }
                 }
                 if (f2 != null) {
@@ -280,19 +295,18 @@ public class TabNameTagProvider implements NameTagProvider {
                     if (tp2 != null) {
                         String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
                         ntm.setPrefix(tp2, prefix);
-                        ntm.setSuffix(tp2, formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid())));
+                        ntm.setSuffix(tp2, "");
                     }
                 }
             }
 
-            // Re-inject health objectives
-            if (healthEnabled) {
-                Set<UUID> injected = healthInjected.get(matchId);
+            if (belowNameEnabled) {
+                Set<UUID> injected = belowInjected.get(matchId);
                 if (injected != null) {
                     for (UUID uuid : injected) {
                         Player player = Bukkit.getPlayer(uuid);
                         if (player != null && player.isOnline()) {
-                            injectHealthObjective(player);
+                            injectBelowName(player, match);
                         }
                     }
                 }
@@ -300,38 +314,30 @@ public class TabNameTagProvider implements NameTagProvider {
         }
     }
 
-    // ── Health objective helpers ──────────────────────────────────────────────────
+    // ── BELOW_NAME helpers ────────────────────────────────────────────────────
 
-    private void injectHealthObjective(Player player) {
-        Scoreboard board = player.getScoreboard();
+    /** Registers (or refreshes) the BELOW_NAME objective on a single viewer's
+     *  scoreboard and seeds every match-member's line. */
+    private void injectBelowName(Player viewer, Match match) {
+        Scoreboard board = viewer.getScoreboard();
         Objective obj = board.getObjective(HEALTH_OBJ_NAME);
         if (obj == null) {
-            // DUMMY criteria — we push values manually on damage so the
-            // BELOW_NAME score is correct from the very first frame instead
-            // of waiting for a damage tick from the HEALTH criteria.
+            // Title is a single space — irrelevant, every score has its own
+            // numberFormat that overrides the rendering.
             obj = board.registerNewObjective(
                     HEALTH_OBJ_NAME, Criteria.DUMMY,
-                    LEGACY.deserialize(healthSymbol)
+                    net.kyori.adventure.text.Component.text(" ")
             );
         }
         obj.setDisplaySlot(DisplaySlot.BELOW_NAME);
-        // Seed scores for every player in the match so the value is non-zero
-        // immediately. The MatchListener.onDamageMonitor handler keeps it in
-        // sync after that.
-        Match match = plugin.getMatchManager().getMatch(player.getUniqueId());
-        if (match != null) {
-            for (UUID uuid : match.getAllUuids()) {
-                Player p = Bukkit.getPlayer(uuid);
-                if (p != null) {
-                    obj.getScore(p.getName()).setScore((int) Math.ceil(p.getHealth()));
-                }
-            }
-        } else {
-            obj.getScore(player.getName()).setScore((int) Math.ceil(player.getHealth()));
+        for (UUID uuid : match.getAllUuids()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null) continue;
+            writeBelowName(obj, p);
         }
     }
 
-    private void removeHealthObjective(Player player) {
+    private void removeBelowName(Player player) {
         Scoreboard board = player.getScoreboard();
         Objective obj = board.getObjective(HEALTH_OBJ_NAME);
         if (obj != null) {

@@ -187,23 +187,28 @@ menus:
 nametag:
   # ВНИМАНИЕ: если TAB уже показывает LP-префикс — поставьте false, иначе будет дубль
   include-luckperms-prefix: false
-  # ── Здоровье под именем (BELOW_NAME slot) ──
-  # Каждый видит HP каждого бойца в матче рядом со своим символом.
+  # ── Под именем (BELOW_NAME slot) ──
+  # Под ником каждого бойца отображается строка вида: "20 ❤ | 50ms"
+  # — это ЕГО хп и ЕГО пинг (а не пинг наблюдателя). Реализовано через
+  # Paper Score.numberFormat(FixedFormat): score-число (HP) маскируется
+  # FixedFormat'ом, в котором сидит готовый Component с HP+ping.
+  # Свой собственный пинг игрок видит в action bar (match.actionbar-hit).
   health-below-name: true
-  # Символ-объективы (отображается как заголовок BELOW_NAME).
-  # Можно поменять на &4♥ / &c❥ / &cHP и т.п.
-  health-symbol: "&c❤"
-  # ── Суффикс над именем (только пинг) ──
-  # HP показывается под ником через BELOW_NAME-objective (см. health-below-name),
-  # поэтому из суффикса вынесено всё кроме пинга — иначе HP дублировалось.
+  # Шаблон того, что отрисовывается на BELOW_NAME под ником.
   # Плейсхолдеры:
-  #   {color} — цвет пинга по порогам hud.ping (good/mid/bad)
-  #   {ping}  — число пинга (мс)
-  # Пустая строка отключает суффикс целиком.
-  ping-suffix-format: " {color}{ping}ms"
-  # Как часто (в тиках) перерисовывать суффикс по таймеру. 20 = раз в секунду.
-  # Дополнительно суффикс обновляется при КАЖДОМ событии урона — чтобы HP
-  # рядом с именем не отставало в бою.
+  #   {hp}          — целое HP игрока, под чьим ником рендерится строка
+  #   {max_hp}      — целое макс-HP того же игрока
+  #   {hp_color}    — цвет HP по hud.health.* (зелёный/жёлтый/красный)
+  #   {hp_symbol}   — символ сердца из health-symbol (по умолчанию ❤)
+  #   {ping}        — пинг ТОГО ЖЕ игрока в миллисекундах
+  #   {ping_color}  — цвет пинга по hud.ping.* (good/mid/bad)
+  # Пустая строка → BELOW_NAME выключается совсем.
+  below-name-format: "{hp_color}{hp}{hp_symbol} &7| {ping_color}{ping}ms"
+  # Символ сердца, используется как {hp_symbol} в below-name-format.
+  health-symbol: "&c❤"
+  # Как часто (в тиках) перерисовывать BELOW_NAME (для актуального пинга).
+  # 20 = раз в секунду. Дополнительно строка обновляется на каждом
+  # событии урона — чтобы HP не отставало в бою.
   ping-refresh-ticks: 20
   # Форматы для дуэлей и FFA
   duel-format: "%lp_prefix%%tier_color%[%tier%] %team_color%| "
@@ -218,8 +223,8 @@ hud:
   #   0..good-max     → good-color   (по умолчанию зелёный)
   #   good-max..mid   → mid-color    (по умолчанию оранжевый)
   #   > mid           → bad-color    (по умолчанию красный)
-  # Используются и для team-suffix пинга (nametag.ping-suffix-format),
-  # и для собственного HUD-индикатора пинга в action bar.
+  # Используются для below-name строки (nametag.below-name-format) и
+  # для собственного HUD-индикатора пинга в action bar.
   ping:
     good-max: 80
     mid-max: 150

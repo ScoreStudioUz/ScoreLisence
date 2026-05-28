@@ -3,6 +3,7 @@ package com.scorepvp.compat;
 import com.scorepvp.ScorePvP;
 import com.scorepvp.model.Match;
 import com.scorepvp.model.MatchPlayer;
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -19,8 +20,19 @@ import java.util.UUID;
  * Default nametag provider using Bukkit Scoreboard Team API.
  * Used when the TAB plugin is not present.
  * <p>
- * Saves each player's scoreboard before replacing it and restores
- * the original on match end (instead of always restoring mainScoreboard).
+ * Layout above each fighter's head:
+ *   line 1 — nickname (with optional team / tier prefix)
+ *   line 2 — BELOW_NAME, formatted via {@link NameTagFormatter#buildBelowName}
+ *            as "{hp_color}{hp}{hp_symbol} | {ping_color}{ping}ms" — that is
+ *            THAT player's own HP and ping, identical for every viewer.
+ * <p>
+ * The trick: BELOW_NAME normally renders "{score} {objective_title}", where
+ * title is shared across all entries. Paper 1.20.4+ added per-score
+ * {@code Score#numberFormat(NumberFormat)} — we override each entry's score
+ * with a {@link NumberFormat#fixed(net.kyori.adventure.text.ComponentLike)
+ * fixed Component} so every name gets its own line independent of the title.
+ * The numeric score itself becomes irrelevant (we leave it equal to HP just
+ * for clarity if someone inspects the scoreboard).
  */
 public class BukkitNameTagProvider implements NameTagProvider {
 
@@ -29,8 +41,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
 
     private final ScorePvP plugin;
     private final NameTagFormatter formatter;
-    private final boolean healthEnabled;
-    private final String healthSymbol;
+    private final boolean belowNameEnabled;
 
     /** matchId → the scoreboard created for that match */
     private final Map<UUID, Scoreboard> matchScoreboards = new HashMap<>();
@@ -38,21 +49,18 @@ public class BukkitNameTagProvider implements NameTagProvider {
     /** playerUUID → their original scoreboard (saved before match) */
     private final Map<UUID, Scoreboard> savedPlayerBoards = new HashMap<>();
 
-    /** matchId → periodic task that refreshes each fighter's ping suffix. */
-    private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
+    /** matchId → periodic task that refreshes each fighter's BELOW_NAME line. */
+    private final Map<UUID, BukkitTask> refreshTasks = new HashMap<>();
 
-    /** playerUUID → last suffix string we pushed. Skips the team.suffix() call
-     *  when the rendered text hasn't changed — every team.suffix() write is a
-     *  ScoreboardTeamUpdate packet broadcast to every viewer of that scoreboard,
-     *  so in FFA with N players + per-damage refresh this was the single biggest
-     *  source of packet pressure. */
-    private final Map<UUID, String> lastSuffixByPlayer = new HashMap<>();
+    /** playerUUID → last BELOW_NAME text string we pushed.
+     *  Skips numberFormat() writes when the rendered text hasn't changed —
+     *  every write is a SetScore packet broadcast to every viewer. */
+    private final Map<UUID, String> lastBelowByPlayer = new HashMap<>();
 
     public BukkitNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
-        this.healthEnabled = plugin.getConfig().getBoolean("nametag.health-below-name", true);
-        this.healthSymbol = plugin.getConfig().getString("nametag.health-symbol", "&c\u2764");
+        this.belowNameEnabled = plugin.getConfig().getBoolean("nametag.health-below-name", true);
     }
 
     public Scoreboard getMatchScoreboard(UUID matchId) {
@@ -64,12 +72,17 @@ public class BukkitNameTagProvider implements NameTagProvider {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 
         Objective healthObj = null;
-        if (healthEnabled) {
-            // DUMMY criteria so we can seed the initial value immediately
-            // (HEALTH criteria leaves it at 0 until the first damage event).
+        if (belowNameEnabled) {
+            // DUMMY criteria — we drive the value (and the visible text via
+            // numberFormat) manually. HEALTH criteria would fight us for the
+            // raw score number.
+            //
+            // The objective title is intentionally a single space: when a
+            // per-score numberFormat is set, that overrides the rendered
+            // chunk completely, so the title's color/symbol no longer matters.
             healthObj = scoreboard.registerNewObjective(
                     "health", Criteria.DUMMY,
-                    LEGACY.deserialize(healthSymbol)
+                    Component.text(" ")
             );
             healthObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
         }
@@ -93,48 +106,57 @@ public class BukkitNameTagProvider implements NameTagProvider {
 
         matchScoreboards.put(match.getMatchId(), scoreboard);
 
-        // Seed every fighter's HP on the BELOW_NAME score so it shows the
-        // correct value from the very first frame instead of "0".
+        // Seed every fighter's BELOW_NAME line ("20❤ | 50ms" etc.) so it
+        // shows correct data from the very first frame instead of "0".
         if (healthObj != null) {
             for (UUID uuid : match.getAllUuids()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null) continue;
-                healthObj.getScore(p.getName()).setScore((int) Math.ceil(p.getHealth()));
+                writeBelowName(healthObj, p);
             }
         }
 
-        // Refresh ping suffixes periodically — ping is volatile and the player
-        // wants to see the OPPONENT's current value, not what it was at match start.
+        // Refresh BELOW_NAME line periodically — ping changes constantly and
+        // HP can change without a damage event (regen, /heal). Damage-driven
+        // updates go through updateHealth().
         UUID matchId = match.getMatchId();
         long period = Math.max(1, plugin.getConfig().getLong("nametag.ping-refresh-ticks", 20L));
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> refreshPingSuffixes(matchId), period, period);
-        pingTasks.put(matchId, task);
+                () -> refreshBelowName(matchId), period, period);
+        refreshTasks.put(matchId, task);
     }
 
-    /** Called every second per match: re-stamps each fighter's team suffix with their live ping. */
-    private void refreshPingSuffixes(UUID matchId) {
+    /** Per-second refresh of every fighter's BELOW_NAME line. */
+    private void refreshBelowName(UUID matchId) {
         Scoreboard board = matchScoreboards.get(matchId);
         if (board == null) return;
         Match match = plugin.getMatchManager().getMatchById(matchId);
         if (match == null) return;
+        Objective obj = board.getObjective("health");
+        if (obj == null) return;
         for (UUID uuid : match.getAllUuids()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p == null) continue;
-            Team team = board.getEntryTeam(p.getName());
-            if (team == null) continue;
-            applySuffixIfChanged(team, p);
+            writeBelowName(obj, p);
         }
     }
 
-    /** Only sends a team.suffix() packet when the rendered text actually changed.
-     *  FFA + frequent damage triggered a O(N²) packet storm without this. */
-    private void applySuffixIfChanged(Team team, Player p) {
-        String next = formatter.buildPingSuffix(p);
-        String prev = lastSuffixByPlayer.get(p.getUniqueId());
+    /**
+     * Diff-checked write of a player's BELOW_NAME line via
+     * {@link NumberFormat#fixed}. Only fires a packet when the rendered
+     * legacy-string actually changed.
+     */
+    private void writeBelowName(Objective obj, Player p) {
+        String next = formatter.buildBelowName(p);
+        String prev = lastBelowByPlayer.get(p.getUniqueId());
+        Score score = obj.getScore(p.getName());
+        // Keep the raw int in sync with HP for /scoreboard inspectors;
+        // the displayed text is fully governed by numberFormat below.
+        int hp = (int) Math.ceil(p.getHealth());
+        if (score.getScore() != hp) score.setScore(hp);
         if (next.equals(prev)) return;
-        lastSuffixByPlayer.put(p.getUniqueId(), next);
-        team.suffix(LEGACY.deserialize(next));
+        lastBelowByPlayer.put(p.getUniqueId(), next);
+        score.numberFormat(NumberFormat.fixed(LEGACY.deserialize(next)));
     }
 
     @Override
@@ -152,24 +174,21 @@ public class BukkitNameTagProvider implements NameTagProvider {
             }
         }
 
-        BukkitTask task = pingTasks.remove(match.getMatchId());
+        BukkitTask task = refreshTasks.remove(match.getMatchId());
         if (task != null) task.cancel();
         matchScoreboards.remove(match.getMatchId());
-        for (UUID uuid : match.getAllUuids()) lastSuffixByPlayer.remove(uuid);
+        for (UUID uuid : match.getAllUuids()) lastBelowByPlayer.remove(uuid);
     }
 
     @Override
     public void clearMatchNametagsForPlayer(Match match, Player player) {
         UUID id = player.getUniqueId();
-        // Restore the player's pre-match scoreboard (or fall back to main).
         Scoreboard saved = savedPlayerBoards.remove(id);
         Scoreboard mainBoard = Bukkit.getScoreboardManager().getMainScoreboard();
         if (player.isOnline()) {
             player.setScoreboard(saved != null ? saved : mainBoard);
             player.playerListName(null);
         }
-        // Remove their entry from any team in the still-active match scoreboard
-        // so the remaining players don't see ghost entries in their team list.
         Scoreboard board = matchScoreboards.get(match.getMatchId());
         if (board != null) {
             Team team = board.getEntryTeam(player.getName());
@@ -177,7 +196,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
             Objective hp = board.getObjective("health");
             if (hp != null) board.resetScores(player.getName());
         }
-        lastSuffixByPlayer.remove(id);
+        lastBelowByPlayer.remove(id);
     }
 
     @Override
@@ -193,20 +212,14 @@ public class BukkitNameTagProvider implements NameTagProvider {
         }
 
         Objective obj = board.getObjective("health");
-        if (obj != null) {
-            // Only push the damaged player's HP score — every score write is a
-            // packet broadcast and FFA was sending N writes per hit.
-            obj.getScore(player.getName()).setScore((int) Math.ceil(player.getHealth()));
-        }
-        // Suffix no longer carries HP (it lives on BELOW_NAME), so we don't
-        // re-stamp the suffix here. The periodic ping task handles refreshes.
+        if (obj != null) writeBelowName(obj, player);
     }
 
     @Override
     public void onExternalReload() {
         // Tier or settings change → re-stamp prefixes for every active match.
-        // We re-write the team prefix/suffix in place rather than rebuilding
-        // the scoreboard from scratch, so the player's view doesn't flash.
+        // We re-write the team prefix in place rather than rebuilding the
+        // scoreboard from scratch, so the player's view doesn't flash.
         for (Map.Entry<UUID, Scoreboard> entry : matchScoreboards.entrySet()) {
             Match match = plugin.getMatchManager().getMatchById(entry.getKey());
             if (match == null || match.getState() == Match.State.FINISHED) continue;
@@ -222,7 +235,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
                     if (team == null) continue;
                     String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
                     team.prefix(LEGACY.deserialize(prefix));
-                    team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid()))));
+                    team.suffix(Component.empty());
                 }
             } else {
                 MatchPlayer f1 = match.getFighter1();
@@ -232,7 +245,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
                     if (t != null) {
                         String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
                         t.prefix(LEGACY.deserialize(prefix));
-                        t.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid()))));
+                        t.suffix(Component.empty());
                     }
                 }
                 if (f2 != null) {
@@ -240,7 +253,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
                     if (t != null) {
                         String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
                         t.prefix(LEGACY.deserialize(prefix));
-                        t.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid()))));
+                        t.suffix(Component.empty());
                     }
                 }
             }
@@ -258,7 +271,8 @@ public class BukkitNameTagProvider implements NameTagProvider {
             blueTeam.color(NamedTextColor.BLUE);
             String prefix = formatter.buildPrefix(fighter1.getUuid(), modeId, "&9", false);
             blueTeam.prefix(LEGACY.deserialize(prefix));
-            blueTeam.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(fighter1.getUuid()))));
+            // Suffix intentionally empty — HP+ping live on BELOW_NAME now.
+            blueTeam.suffix(Component.empty());
             blueTeam.addEntry(fighter1.getName());
         }
 
@@ -267,7 +281,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
             redTeam.color(NamedTextColor.RED);
             String prefix = formatter.buildPrefix(fighter2.getUuid(), modeId, "&c", false);
             redTeam.prefix(LEGACY.deserialize(prefix));
-            redTeam.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(fighter2.getUuid()))));
+            redTeam.suffix(Component.empty());
             redTeam.addEntry(fighter2.getName());
         }
     }
@@ -285,7 +299,7 @@ public class BukkitNameTagProvider implements NameTagProvider {
 
             String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
             team.prefix(LEGACY.deserialize(prefix));
-            team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid()))));
+            team.suffix(Component.empty());
             team.addEntry(mp.getName());
         }
     }
