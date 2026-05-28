@@ -32,4 +32,12 @@ public interface NameTagProvider {
      * Implementations should re-apply all active match nametags.
      */
     default void onExternalReload() {}
+
+    /**
+     * Clears match nametag/team state for a SINGLE player (e.g. a spectator
+     * leaving mid-match) without tearing down the rest of the match's
+     * scoreboard. Implementations should restore that player's scoreboard,
+     * list name, and team membership to lobby defaults.
+     */
+    default void clearMatchNametagsForPlayer(Match match, Player player) {}
 }

@@ -247,6 +247,35 @@ public class KitManager {
                 if (meta.isUnbreakable()) {
                     entry.put("unbreakable", true);
                 }
+                // Potion (incl. splash / lingering / tipped arrow) metadata —
+                // without this strength II splash was saved as a plain water
+                // bottle. Persists the base potion type + custom effects so
+                // the deserializer can rebuild the exact stack.
+                if (meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+                    try {
+                        org.bukkit.potion.PotionType baseType = pm.getBasePotionType();
+                        if (baseType != null) {
+                            entry.put("potion-base-type", baseType.name());
+                        }
+                    } catch (Throwable ignored) { /* base type may be absent on some Paper builds */ }
+                    if (pm.hasColor() && pm.getColor() != null) {
+                        entry.put("potion-color", pm.getColor().asRGB());
+                    }
+                    if (pm.hasCustomEffects()) {
+                        List<Map<String, Object>> effList = new ArrayList<>();
+                        for (org.bukkit.potion.PotionEffect ef : pm.getCustomEffects()) {
+                            Map<String, Object> ee = new LinkedHashMap<>();
+                            ee.put("type", ef.getType().getKey().getKey());
+                            ee.put("duration", ef.getDuration());
+                            ee.put("amplifier", ef.getAmplifier());
+                            ee.put("ambient", ef.isAmbient());
+                            ee.put("particles", ef.hasParticles());
+                            ee.put("icon", ef.hasIcon());
+                            effList.add(ee);
+                        }
+                        entry.put("potion-effects", effList);
+                    }
+                }
             }
             list.add(entry);
         }
@@ -316,7 +345,14 @@ public class KitManager {
     private void applyDefaultKit(Player player, String kitName) {
         ItemStack[] items = loadDefaultKit(kitName);
         applyCosmeticsToKit(player, items);
-        player.getInventory().setContents(items);
+        // applyAllContents lays out the 41-slot array correctly:
+        //   slots  0..35 → storage (hotbar + main inv)
+        //   slots 36..39 → armor (boots, leggings, chestplate, helmet)
+        //   slot     40  → offhand
+        // The old setContents(items) call truncated to 36 slots on some
+        // Paper builds, so swords/bows/arrows in slots 0..8 silently
+        // disappeared while armor (already in 36..39) appeared fine.
+        applyAllContents(player, items);
     }
 
     /**
@@ -465,10 +501,67 @@ public class KitManager {
                 builder.unbreakable();
             }
 
-            result[slot] = builder.build();
+            ItemStack built = builder.build();
+            // Restore potion data if present so strength II / splash strength
+            // etc. round-trip correctly — without this we lost everything past
+            // the material and the stack came back as plain water.
+            if (map.containsKey("potion-base-type")
+                    || map.containsKey("potion-effects")
+                    || map.containsKey("potion-color")) {
+                applyPotionMeta(built, map);
+            }
+            result[slot] = built;
         }
 
         return result;
+    }
+
+    private void applyPotionMeta(ItemStack stack, Map<?, ?> map) {
+        if (!(stack.getItemMeta() instanceof org.bukkit.inventory.meta.PotionMeta pm)) return;
+        Object baseType = map.get("potion-base-type");
+        if (baseType != null) {
+            try {
+                pm.setBasePotionType(org.bukkit.potion.PotionType.valueOf(
+                        String.valueOf(baseType).toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                plugin.getLogger().warning("[ScorePvP] Unknown potion-base-type: " + baseType);
+            }
+        }
+        Object colorObj = map.get("potion-color");
+        if (colorObj != null) {
+            try { pm.setColor(org.bukkit.Color.fromRGB(Integer.parseInt(String.valueOf(colorObj)))); }
+            catch (NumberFormatException ignored) {}
+        }
+        if (map.get("potion-effects") instanceof List<?> effs) {
+            for (Object o : effs) {
+                if (!(o instanceof Map<?, ?> em)) continue;
+                Object typeKey = em.get("type");
+                if (typeKey == null) continue;
+                org.bukkit.potion.PotionEffectType type;
+                try {
+                    type = org.bukkit.Registry.EFFECT.get(
+                            org.bukkit.NamespacedKey.minecraft(String.valueOf(typeKey).toLowerCase()));
+                } catch (Throwable ignored) { type = null; }
+                if (type == null) {
+                    plugin.getLogger().warning("[ScorePvP] Unknown potion effect type: " + typeKey);
+                    continue;
+                }
+                int duration = readInt(em.get("duration"), 200);
+                int amplifier = readInt(em.get("amplifier"), 0);
+                boolean ambient   = Boolean.TRUE.equals(em.get("ambient"));
+                boolean particles = !Boolean.FALSE.equals(em.get("particles"));
+                boolean icon      = !Boolean.FALSE.equals(em.get("icon"));
+                pm.addCustomEffect(new org.bukkit.potion.PotionEffect(
+                        type, duration, amplifier, ambient, particles, icon), true);
+            }
+        }
+        stack.setItemMeta(pm);
+    }
+
+    private static int readInt(Object o, int fallback) {
+        if (o == null) return fallback;
+        try { return Integer.parseInt(String.valueOf(o)); }
+        catch (NumberFormatException ex) { return fallback; }
     }
 
     private ItemStack buildSkullFromUrl(String textureUrl, ItemBuilder builder) {

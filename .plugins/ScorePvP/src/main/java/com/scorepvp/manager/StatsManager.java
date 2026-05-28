@@ -132,10 +132,25 @@ public class StatsManager {
         loginTime.remove(uuid);
     }
 
-    /** Returns current total playtime in minutes, including active session. */
+    /**
+     * Returns current total playtime in minutes, including active session.
+     * If the cache has not yet been populated for this player (async load
+     * still in flight, or player is offline), falls back to a synchronous
+     * DB read — otherwise placeholders would show 0 right after join.
+     */
     public long getPlaytimeMinutes(UUID uuid) {
-        long base    = playtime.getOrDefault(uuid, 0L);
-        Long login   = loginTime.get(uuid);
+        Long base = playtime.get(uuid);
+        if (base == null) {
+            // Sync fallback — cheap (one row by PK), only triggered when
+            // the async load hasn't finished or the player is offline.
+            try {
+                base = plugin.getStorage().getMain().loadPlaytime(uuid);
+            } catch (Exception e) {
+                base = 0L;
+            }
+            playtime.put(uuid, base);
+        }
+        Long login = loginTime.get(uuid);
         if (login == null) return base;
         return base + (System.currentTimeMillis() - login) / 60_000L;
     }

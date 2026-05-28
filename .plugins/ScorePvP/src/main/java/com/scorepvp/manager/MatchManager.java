@@ -159,17 +159,11 @@ public class MatchManager {
         match.setState(Match.State.FINISHED);
         match.getArena().setFree();
 
-        // Clean up dropped items within arena bounds
-        cleanupArenaDrops(match.getArena());
         plugin.getNameTagProvider().clearMatchNametags(match);
-
-        // Roll back any blocks broken/placed during the final round of a
-        // vanilla match. Tracker.restore() applies the diff in one tick
-        // and removes the entry, so no follow-up cleanup is needed.
-        if (match.getArena() != null && match.getArena().isVanilla()) {
-            com.scorepvp.manager.ArenaBlockTracker tracker = plugin.getArenaBlockTracker();
-            if (tracker != null) tracker.restore(match);
-        }
+        // Arena cleanup (block-restore + drop wipe + projectiles) is deferred
+        // to AFTER the players are teleported back to the lobby — see the
+        // runTaskLater further down. Otherwise the blocks were popping back
+        // under their feet while they were still reading the victory title.
 
         MatchPlayer winner = match.getWinner();
         if (winner != null) plugin.getStatsManager().recordWin(winner.getUuid(), match.getMode().getId());
@@ -202,6 +196,12 @@ public class MatchManager {
                 if (inParty) plugin.getHotbarManager().updatePartySlot(p, true);
                 else         plugin.getHotbarManager().restoreHotbar(p);
                 p.updateInventory();
+            }
+            // Players are now on spawn — wipe drops / arrows / projectiles AND
+            // restore arena blocks. See endMatch for the rationale.
+            cleanupArenaDrops(match.getArena());
+            if (match.getArena().isVanilla()) {
+                plugin.getArenaRestoreManager().startRestore(match, null);
             }
             byId.remove(match.getMatchId());
             plugin.getRoundStatsManager().clearMatch(match.getMatchId());
@@ -349,12 +349,31 @@ public class MatchManager {
             Player deadPlayer = player(dead.getUuid());
             if (deadPlayer != null) deadPlayer.setGameMode(GameMode.SPECTATOR);
 
-            if (match.getArena().isVanilla()) {
-                plugin.getArenaRestoreManager().startRestore(match, () -> startRound(match));
-            } else {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> startRound(match),
-                        plugin.getConfig().getLong("match.round-end-delay-ticks", 60));
-            }
+            // Alive winner gets adventure mode between rounds so they can't
+            // grief the arena (place/break blocks, open containers) during
+            // the round-end celebration. resetFighter() puts them back into
+            // SURVIVAL when the next round starts.
+            Player aliveWinner = player(killer.getUuid());
+            if (aliveWinner != null) aliveWinner.setGameMode(GameMode.ADVENTURE);
+
+            // Restore arena AT the moment the new round is about to start
+            // (after round-end-delay-ticks) so players see the round-end
+            // message first, then the world snaps back to a clean state in
+            // the same tick the new round spawns them in. Tracker restore is
+            // 1-tick anyway — the delay is purely so the players read the
+            // outcome before the blocks reset under their feet.
+            long roundEndDelay = plugin.getConfig().getLong("match.round-end-delay-ticks", 60);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                // Wipe loose drops / arrows / live projectiles in the arena
+                // BEFORE the next round spawns the players, so leftover ender
+                // pearls from round 1 can't land on the new round's fighters.
+                cleanupArenaDrops(match.getArena());
+                if (match.getArena().isVanilla()) {
+                    plugin.getArenaRestoreManager().startRestore(match, () -> startRound(match));
+                } else {
+                    startRound(match);
+                }
+            }, roundEndDelay);
         }
     }
 
@@ -369,17 +388,11 @@ public class MatchManager {
         match.setForfeit(forfeit);
         match.getArena().setFree();
 
-        // Clean up dropped items within arena bounds
-        cleanupArenaDrops(match.getArena());
         plugin.getNameTagProvider().clearMatchNametags(match);
-
-        // Roll back any blocks broken/placed during the final round of a
-        // vanilla match. Tracker.restore() applies the diff in one tick
-        // and removes the entry, so no follow-up cleanup is needed.
-        if (match.getArena() != null && match.getArena().isVanilla()) {
-            com.scorepvp.manager.ArenaBlockTracker tracker = plugin.getArenaBlockTracker();
-            if (tracker != null) tracker.restore(match);
-        }
+        // Arena cleanup (block-restore + drop wipe + projectiles) is deferred
+        // to AFTER the players are teleported back to the lobby — see the
+        // runTaskLater further down. Otherwise the blocks were popping back
+        // under their feet while they were still reading the victory title.
 
         MatchPlayer winner = match.getWinner();
         MatchPlayer loser  = match.getLoser();
@@ -453,6 +466,13 @@ public class MatchManager {
                 else         plugin.getHotbarManager().restoreHotbar(p);
                 p.updateInventory();
             }
+            // Players are now on spawn — wipe drops / arrows / projectiles AND
+            // restore arena blocks. Doing it AFTER the teleport means players
+            // don't see geometry pop under their feet during the victory title.
+            cleanupArenaDrops(match.getArena());
+            if (match.getArena().isVanilla()) {
+                plugin.getArenaRestoreManager().startRestore(match, null);
+            }
             byId.remove(match.getMatchId());
             plugin.getRoundStatsManager().clearMatch(match.getMatchId());
         }, 60L);
@@ -479,7 +499,21 @@ public class MatchManager {
         if (match == null || match.isFighter(spec.getUniqueId())) return;
         match.removeSpectator(spec.getUniqueId());
         byPlayer.remove(spec.getUniqueId());
-        spec.setGameMode(GameMode.SURVIVAL);
+
+        // Strip the match scoreboard / TAB team off this player BEFORE we
+        // reset their state — otherwise the duel-prefix ("[T1] | …") stayed
+        // glued to their name in the lobby.
+        try {
+            plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, spec);
+        } catch (Throwable ignored) { /* fallback: provider may not implement it */ }
+
+        // Fully reset the player so nothing leaks from the match: hp, food,
+        // potion effects, fire, invulnerability, walk/fly flags. Same set as
+        // resetFighter so a leaving spectator can't carry a god-mode or
+        // sub-speed state back into the lobby.
+        resetFighter(spec);
+        clearInventory(spec);
+
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         if (spawn != null) spec.teleport(spawn);
         plugin.getHotbarManager().restoreHotbar(spec);
@@ -500,6 +534,13 @@ public class MatchManager {
                         "{player}", mp.getName()));
                 if (match.isFinished()) endFfaMatch(match);
             } else {
+                // Spectator-on-quit cleanup — strip their team entry from the
+                // active match scoreboard so other viewers don't see a ghost.
+                Player p = Bukkit.getPlayer(uuid);
+                if (p != null) {
+                    try { plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, p); }
+                    catch (Throwable ignored) {}
+                }
                 match.removeSpectator(uuid);
                 byPlayer.remove(uuid);
             }
@@ -524,6 +565,11 @@ public class MatchManager {
             }
             endMatch(match, true);
         } else {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null) {
+                try { plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, p); }
+                catch (Throwable ignored) {}
+            }
             match.removeSpectator(uuid);
             byPlayer.remove(uuid);
         }
@@ -551,6 +597,19 @@ public class MatchManager {
     private void resetFighter(Player p) {
         if (p == null) return;
         p.setGameMode(GameMode.SURVIVAL);
+        // Inside a match every fighter must be hittable, regardless of op
+        // status / external god-mode plugins (Essentials god, NPCs marked
+        // invulnerable, etc). Otherwise admins were silently un-PvP-able.
+        p.setInvulnerable(false);
+        // After SPECTATOR → SURVIVAL transition, Bukkit sometimes leaves the
+        // player with `allowFlight = true` / `flying = true` from the previous
+        // tick. That manifested as "I can't move after the match" — they were
+        // floating in unloaded space, no gravity, controls dead. Force-reset
+        // both flags so the next tick they're a normal walking survival player.
+        p.setFlying(false);
+        p.setAllowFlight(false);
+        p.setWalkSpeed(0.2f);
+        p.setFlySpeed(0.1f);
         p.setHealth(p.getMaxHealth());
         p.setFoodLevel(20);
         p.setSaturation(20f);
@@ -600,8 +659,17 @@ public class MatchManager {
         plugin.getConfigManager().sendBlockMessage(p, langPath, placeholders);
     }
 
-    /** Removes all dropped items within arena bounds after a match ends. */
-    private void cleanupArenaDrops(com.scorepvp.model.Arena arena) {
+    /**
+     * Removes all dropped items, arrows, and live projectiles within arena
+     * bounds. Called between rounds AND at full match end.
+     *
+     * Why projectiles too: a player can throw an ender pearl upward at the end
+     * of round 1; if it falls during round 2 they teleport mid-fight. Same for
+     * stuck arrows / tridents / fireworks left behind. We wipe ANY Projectile
+     * inside the box plus any AbstractArrow that already stuck into geometry
+     * (those are no longer Projectile-instanceof on Paper once stuck).
+     */
+    public void cleanupArenaDrops(com.scorepvp.model.Arena arena) {
         Location c1 = arena.getCorner1();
         Location c2 = arena.getCorner2();
         if (c1 == null || c2 == null || c1.getWorld() == null) return;
@@ -614,7 +682,9 @@ public class MatchManager {
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
         c1.getWorld().getEntities().stream()
-                .filter(e -> e instanceof org.bukkit.entity.Item)
+                .filter(e -> e instanceof org.bukkit.entity.Item
+                        || e instanceof org.bukkit.entity.AbstractArrow
+                        || e instanceof org.bukkit.entity.Projectile)
                 .filter(e -> {
                     Location loc = e.getLocation();
                     int x = loc.getBlockX(), y = loc.getBlockY(), z = loc.getBlockZ();

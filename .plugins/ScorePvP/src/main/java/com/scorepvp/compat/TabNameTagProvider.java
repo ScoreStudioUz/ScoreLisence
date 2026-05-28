@@ -48,6 +48,10 @@ public class TabNameTagProvider implements NameTagProvider {
     /** matchId → periodic task that refreshes each fighter's ping suffix. */
     private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
 
+    /** playerUUID → last suffix text we sent through TAB. Skips redundant
+     *  setSuffix() calls that would otherwise re-broadcast every tick in FFA. */
+    private final Map<UUID, String> lastSuffixByPlayer = new HashMap<>();
+
     public TabNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
@@ -142,8 +146,41 @@ public class TabNameTagProvider implements NameTagProvider {
             if (tp == null) continue;
             Player p = Bukkit.getPlayer(uuid);
             if (p == null) continue;
-            ntm.setSuffix(tp, formatter.buildPingSuffix(p));
+            applySuffixIfChanged(ntm, tp, p);
         }
+    }
+
+    /** Diff-checked setSuffix. */
+    private void applySuffixIfChanged(NameTagManager ntm, TabPlayer tp, Player p) {
+        String next = formatter.buildPingSuffix(p);
+        String prev = lastSuffixByPlayer.get(p.getUniqueId());
+        if (next.equals(prev)) return;
+        lastSuffixByPlayer.put(p.getUniqueId(), next);
+        ntm.setSuffix(tp, next);
+    }
+
+    @Override
+    public void clearMatchNametagsForPlayer(Match match, Player player) {
+        UUID id = player.getUniqueId();
+        NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
+        Map<UUID, String[]> saved = savedTags.get(match.getMatchId());
+        Set<UUID> injected = healthInjected.get(match.getMatchId());
+
+        if (player.isOnline() && injected != null && injected.contains(id)) {
+            removeHealthObjective(player);
+            injected.remove(id);
+        }
+        if (ntm != null && saved != null) {
+            String[] orig = saved.remove(id);
+            if (orig != null) {
+                TabPlayer tp = TabAPI.getInstance().getPlayer(id);
+                if (tp != null) {
+                    ntm.setPrefix(tp, orig[0]);
+                    ntm.setSuffix(tp, orig[1]);
+                }
+            }
+        }
+        lastSuffixByPlayer.remove(id);
     }
 
     @Override
@@ -153,6 +190,7 @@ public class TabNameTagProvider implements NameTagProvider {
         Set<UUID> injected = healthInjected.remove(match.getMatchId());
         BukkitTask task = pingTasks.remove(match.getMatchId());
         if (task != null) task.cancel();
+        for (UUID uuid : match.getAllUuids()) lastSuffixByPlayer.remove(uuid);
 
         for (UUID uuid : match.getAllUuids()) {
             Player player = Bukkit.getPlayer(uuid);
@@ -176,33 +214,33 @@ public class TabNameTagProvider implements NameTagProvider {
 
     @Override
     public void updateHealth(Player player) {
-        if (!healthEnabled) return;
-
         Match match = plugin.getMatchManager().getMatch(player.getUniqueId());
         if (match == null) return;
 
-        Set<UUID> injected = healthInjected.get(match.getMatchId());
-        if (injected == null || !injected.contains(player.getUniqueId())) return;
-
-        // Push the latest HP for every fighter in the match — the objective
-        // is DUMMY so it does not auto-track health. Pushing on every damage
-        // event keeps the BELOW_NAME score in sync.
-        for (UUID uuid : match.getAllUuids()) {
-            Player target = Bukkit.getPlayer(uuid);
-            if (target == null) continue;
-            Scoreboard board = target.getScoreboard();
-            Objective obj = board.getObjective(HEALTH_OBJ_NAME);
-            if (obj == null) {
-                injectHealthObjective(target);
-                obj = board.getObjective(HEALTH_OBJ_NAME);
-                if (obj == null) continue;
-            }
-            for (UUID other : match.getAllUuids()) {
-                Player o = Bukkit.getPlayer(other);
-                if (o == null) continue;
-                obj.getScore(o.getName()).setScore((int) Math.ceil(o.getHealth()));
+        if (healthEnabled) {
+            Set<UUID> injected = healthInjected.get(match.getMatchId());
+            if (injected != null) {
+                // Only push THIS player's HP score, to every fighter's scoreboard.
+                // Previously this was an N×N loop (every fighter's board × every
+                // fighter's HP) which made FFA lag scale quadratically with the
+                // hit rate. One damage event = one score per viewer now.
+                int hp = (int) Math.ceil(player.getHealth());
+                for (UUID viewer : match.getAllUuids()) {
+                    Player viewerPlayer = Bukkit.getPlayer(viewer);
+                    if (viewerPlayer == null) continue;
+                    Scoreboard board = viewerPlayer.getScoreboard();
+                    Objective obj = board.getObjective(HEALTH_OBJ_NAME);
+                    if (obj == null) {
+                        injectHealthObjective(viewerPlayer);
+                        obj = board.getObjective(HEALTH_OBJ_NAME);
+                        if (obj == null) continue;
+                    }
+                    obj.getScore(player.getName()).setScore(hp);
+                }
             }
         }
+        // Suffix no longer carries HP (it lives on BELOW_NAME), so we don't
+        // re-stamp on damage. The periodic ping task handles refreshes.
     }
 
     @Override

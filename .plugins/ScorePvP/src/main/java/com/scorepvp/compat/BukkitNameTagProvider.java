@@ -41,6 +41,13 @@ public class BukkitNameTagProvider implements NameTagProvider {
     /** matchId → periodic task that refreshes each fighter's ping suffix. */
     private final Map<UUID, BukkitTask> pingTasks = new HashMap<>();
 
+    /** playerUUID → last suffix string we pushed. Skips the team.suffix() call
+     *  when the rendered text hasn't changed — every team.suffix() write is a
+     *  ScoreboardTeamUpdate packet broadcast to every viewer of that scoreboard,
+     *  so in FFA with N players + per-damage refresh this was the single biggest
+     *  source of packet pressure. */
+    private final Map<UUID, String> lastSuffixByPlayer = new HashMap<>();
+
     public BukkitNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
@@ -116,8 +123,18 @@ public class BukkitNameTagProvider implements NameTagProvider {
             if (p == null) continue;
             Team team = board.getEntryTeam(p.getName());
             if (team == null) continue;
-            team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(p)));
+            applySuffixIfChanged(team, p);
         }
+    }
+
+    /** Only sends a team.suffix() packet when the rendered text actually changed.
+     *  FFA + frequent damage triggered a O(N²) packet storm without this. */
+    private void applySuffixIfChanged(Team team, Player p) {
+        String next = formatter.buildPingSuffix(p);
+        String prev = lastSuffixByPlayer.get(p.getUniqueId());
+        if (next.equals(prev)) return;
+        lastSuffixByPlayer.put(p.getUniqueId(), next);
+        team.suffix(LEGACY.deserialize(next));
     }
 
     @Override
@@ -138,6 +155,29 @@ public class BukkitNameTagProvider implements NameTagProvider {
         BukkitTask task = pingTasks.remove(match.getMatchId());
         if (task != null) task.cancel();
         matchScoreboards.remove(match.getMatchId());
+        for (UUID uuid : match.getAllUuids()) lastSuffixByPlayer.remove(uuid);
+    }
+
+    @Override
+    public void clearMatchNametagsForPlayer(Match match, Player player) {
+        UUID id = player.getUniqueId();
+        // Restore the player's pre-match scoreboard (or fall back to main).
+        Scoreboard saved = savedPlayerBoards.remove(id);
+        Scoreboard mainBoard = Bukkit.getScoreboardManager().getMainScoreboard();
+        if (player.isOnline()) {
+            player.setScoreboard(saved != null ? saved : mainBoard);
+            player.playerListName(null);
+        }
+        // Remove their entry from any team in the still-active match scoreboard
+        // so the remaining players don't see ghost entries in their team list.
+        Scoreboard board = matchScoreboards.get(match.getMatchId());
+        if (board != null) {
+            Team team = board.getEntryTeam(player.getName());
+            if (team != null) team.removeEntry(player.getName());
+            Objective hp = board.getObjective("health");
+            if (hp != null) board.resetScores(player.getName());
+        }
+        lastSuffixByPlayer.remove(id);
     }
 
     @Override
@@ -153,12 +193,57 @@ public class BukkitNameTagProvider implements NameTagProvider {
         }
 
         Objective obj = board.getObjective("health");
-        if (obj == null) return;
-        // Push HP for every fighter so the BELOW_NAME score stays current.
-        for (UUID uuid : match.getAllUuids()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p == null) continue;
-            obj.getScore(p.getName()).setScore((int) Math.ceil(p.getHealth()));
+        if (obj != null) {
+            // Only push the damaged player's HP score — every score write is a
+            // packet broadcast and FFA was sending N writes per hit.
+            obj.getScore(player.getName()).setScore((int) Math.ceil(player.getHealth()));
+        }
+        // Suffix no longer carries HP (it lives on BELOW_NAME), so we don't
+        // re-stamp the suffix here. The periodic ping task handles refreshes.
+    }
+
+    @Override
+    public void onExternalReload() {
+        // Tier or settings change → re-stamp prefixes for every active match.
+        // We re-write the team prefix/suffix in place rather than rebuilding
+        // the scoreboard from scratch, so the player's view doesn't flash.
+        for (Map.Entry<UUID, Scoreboard> entry : matchScoreboards.entrySet()) {
+            Match match = plugin.getMatchManager().getMatchById(entry.getKey());
+            if (match == null || match.getState() == Match.State.FINISHED) continue;
+            String modeId = match.getMode().getId();
+            Scoreboard board = entry.getValue();
+
+            if (match.isFfa()) {
+                int idx = 0;
+                for (MatchPlayer mp : match.getFfaFighters()) {
+                    String teamName = "ffa_" + idx++;
+                    if (teamName.length() > 16) teamName = teamName.substring(0, 16);
+                    Team team = board.getTeam(teamName);
+                    if (team == null) continue;
+                    String prefix = formatter.buildPrefix(mp.getUuid(), modeId, "", true);
+                    team.prefix(LEGACY.deserialize(prefix));
+                    team.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(mp.getUuid()))));
+                }
+            } else {
+                MatchPlayer f1 = match.getFighter1();
+                MatchPlayer f2 = match.getFighter2();
+                if (f1 != null) {
+                    Team t = board.getTeam("blue");
+                    if (t != null) {
+                        String prefix = formatter.buildPrefix(f1.getUuid(), modeId, "&9", false);
+                        t.prefix(LEGACY.deserialize(prefix));
+                        t.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(f1.getUuid()))));
+                    }
+                }
+                if (f2 != null) {
+                    Team t = board.getTeam("red");
+                    if (t != null) {
+                        String prefix = formatter.buildPrefix(f2.getUuid(), modeId, "&c", false);
+                        t.prefix(LEGACY.deserialize(prefix));
+                        t.suffix(LEGACY.deserialize(formatter.buildPingSuffix(Bukkit.getPlayer(f2.getUuid()))));
+                    }
+                }
+            }
         }
     }
 

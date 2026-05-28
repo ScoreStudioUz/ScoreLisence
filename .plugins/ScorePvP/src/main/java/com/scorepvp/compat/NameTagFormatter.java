@@ -75,24 +75,32 @@ public class NameTagFormatter {
 
     /**
      * Returns the team suffix shown after the player's name, e.g. {@code " &a40ms"}.
-     * Each fighter sees the OPPONENT's ping next to their name above their head —
-     * the whole point of putting it here instead of in the attacker's own action
-     * bar. Ping is color-graded by the same thresholds the HUD uses.
+     * Each fighter sees the OPPONENT's ping next to their name above their head.
+     * HP no longer lives in the suffix — it is rendered on the BELOW_NAME
+     * objective (numeric score + {@code nametag.health-symbol} title), so
+     * having it in the suffix as well duplicated the value.
+     *
+     * Placeholders inside {@code nametag.ping-suffix-format}:
+     *   {color} — ping color (good/mid/bad from hud.ping.*)
+     *   {ping}  — ping in ms
      */
     public String buildPingSuffix(Player p) {
         if (p == null) return "";
         // Whole feature can be disabled by clearing the template in config.
-        String template = plugin.getConfig().getString("nametag.ping-suffix-format", " {color}{ping}ms");
+        String template = plugin.getConfig().getString("nametag.ping-suffix-format",
+                " {color}{ping}ms");
         if (template == null || template.isEmpty()) return "";
+
         int ping = p.getPing();
-        int goodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
-        int midMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
-        String good = plugin.getConfig().getString("hud.ping.good-color", "&a");
-        String mid  = plugin.getConfig().getString("hud.ping.mid-color", "&6");
-        String bad  = plugin.getConfig().getString("hud.ping.bad-color", "&c");
-        String colour = ping <= goodMax ? good : (ping <= midMax ? mid : bad);
+        int pGoodMax = plugin.getConfig().getInt("hud.ping.good-max", 80);
+        int pMidMax  = plugin.getConfig().getInt("hud.ping.mid-max", 150);
+        String pGood = plugin.getConfig().getString("hud.ping.good-color", "&a");
+        String pMid  = plugin.getConfig().getString("hud.ping.mid-color", "&6");
+        String pBad  = plugin.getConfig().getString("hud.ping.bad-color", "&c");
+        String pingColor = ping <= pGoodMax ? pGood : (ping <= pMidMax ? pMid : pBad);
+
         return template
-                .replace("{color}", colour)
-                .replace("{ping}", Integer.toString(ping));
+                .replace("{color}", pingColor)
+                .replace("{ping}",  Integer.toString(ping));
     }
 }

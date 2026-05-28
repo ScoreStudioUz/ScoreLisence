@@ -50,6 +50,10 @@ public class TierManager {
         if (!plugin.getConfigManager().getTierOrder().contains(tier)) return false;
         cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(mode, tier);
         CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().saveTier(uuid, mode, tier));
+        // If the target is in an active match, repaint the nametag so the new
+        // tier appears next to their name immediately — otherwise the tier
+        // only shows up on the next match (or after rejoin).
+        refreshActiveNametag(uuid);
         return true;
     }
 
@@ -62,7 +66,17 @@ public class TierManager {
         if (tiers == null || !tiers.containsKey(mode)) return false;
         tiers.remove(mode);
         CompletableFuture.runAsync(() -> plugin.getStorage().getTiers().removeTier(uuid, mode));
+        refreshActiveNametag(uuid);
         return true;
+    }
+
+    /** Tells the active nametag provider to redraw nametags for the match this UUID is in. */
+    private void refreshActiveNametag(UUID uuid) {
+        com.scorepvp.model.Match match = plugin.getMatchManager().getMatch(uuid);
+        if (match == null || match.getState() == com.scorepvp.model.Match.State.FINISHED) return;
+        // onExternalReload re-applies prefixes for every active match — simplest
+        // way to push the new tier without inventing a new provider method.
+        plugin.getNameTagProvider().onExternalReload();
     }
 
     // ── Clear (admin commands) ─────────────────────────────────────────────────

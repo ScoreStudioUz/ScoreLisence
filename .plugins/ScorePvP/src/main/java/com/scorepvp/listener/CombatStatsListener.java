@@ -168,36 +168,25 @@ public class CombatStatsListener implements Listener {
     }
 
     private String buildActionbarLine(UUID matchId, UUID uuid) {
-        RoundStatsManager.PlayerRoundStats s = plugin.getRoundStatsManager().getOrNull(matchId, uuid);
         RoundStatsManager.LastHit lh = plugin.getRoundStatsManager().lastHit(uuid);
-        int combo = s == null ? 0 : s.currentCombo;
-        int best = s == null ? 0 : s.bestCombo;
         double dist = lh == null ? 0d : lh.distance;
-        double dmg = lh == null ? 0d : lh.damage;
+        double dmg  = lh == null ? 0d : lh.damage;
 
         Player pl = Bukkit.getPlayer(uuid);
-        int hp = pl != null ? (int) Math.ceil(pl.getHealth()) : 0;
-        int maxHp = 20;
-        if (pl != null) {
-            org.bukkit.attribute.AttributeInstance attr =
-                    pl.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
-            if (attr != null) maxHp = (int) Math.ceil(attr.getValue());
-        }
+        int ping = pl != null ? pl.getPing() : 0;
 
-        // Ping is intentionally NOT included here — see NameTagFormatter,
-        // which renders each fighter's ping as a team suffix above their head
-        // so every player sees the OPPONENT's ping, not their own.
+        // Combo / hits / misses / accuracy were removed from the action bar by
+        // request — the bar now shows only the attacker's own ping plus the
+        // live distance/damage of their last hit. HP is already on the hearts
+        // bar so it isn't rendered here either.
         String template = plugin.getConfigManager().rawStr("match.actionbar-hit");
         if (template == null || template.isEmpty()) {
-            template = "&fКомбо: &b×{combo} &8; &fЛучшее комбо: &6♛{best} &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg} &8; &fHP: &c{hp}&8/&c{max_hp}";
+            template = "&fПинг: &a{ping}ms &8; &fДистанция: &a▲{dist} &8; &fУрон: &c♥{dmg}";
         }
         return ColorUtil.color(template
-                .replace("{combo}", Integer.toString(combo))
-                .replace("{best}",  Integer.toString(best))
-                .replace("{dist}",  String.format(java.util.Locale.ROOT, "%.1f", dist))
-                .replace("{dmg}",   String.format(java.util.Locale.ROOT, "%.2f", dmg))
-                .replace("{hp}",    Integer.toString(hp))
-                .replace("{max_hp}", Integer.toString(maxHp)));
+                .replace("{ping}", Integer.toString(ping))
+                .replace("{dist}", String.format(java.util.Locale.ROOT, "%.1f", dist))
+                .replace("{dmg}",  String.format(java.util.Locale.ROOT, "%.2f", dmg)));
     }
 
     private Component deserialize(String s) {

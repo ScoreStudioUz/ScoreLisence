@@ -43,6 +43,13 @@ public class PlayerJoinQuitListener implements Listener {
                 e.getPlayer().getInventory().setItemInOffHand(null);
                 e.getPlayer().getActivePotionEffects().forEach(
                         eff -> e.getPlayer().removePotionEffect(eff.getType()));
+                // Force SURVIVAL on lobby join — server default may be ADVENTURE,
+                // and that silently blocks PvP block-place/block-break inside
+                // matches. We always want players in SURVIVAL outside spectator state.
+                if (e.getPlayer().getGameMode() != org.bukkit.GameMode.SURVIVAL
+                        && e.getPlayer().getGameMode() != org.bukkit.GameMode.CREATIVE) {
+                    e.getPlayer().setGameMode(org.bukkit.GameMode.SURVIVAL);
+                }
 
                 boolean inParty = plugin.getPartyManager().isInParty(uuid);
                 if (inParty) {
