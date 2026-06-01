@@ -5,7 +5,7 @@
 # Язык плагина: ru / uz
 # ru — Русский
 # uz — O'zbekcha (SmallCaps)
-language: "ru"
+language: ru
 
 # Показывать ли [ScorePvP] перед сообщениями в чате
 use-plugin-prefix: true
@@ -18,38 +18,38 @@ storage:
   tiers:
     # sqlite — локальный файл tiers.db
     # mysql  — общий сервер; при ошибке стартапа автоматически откатывается на SQLite
-    type: sqlite
+    type: mysql
     mysql:
-      host: "localhost"
+      host: mysql-uztiers.alwaysdata.net
       port: 3306
-      database: "scorepvp_tiers"
-      username: "root"
-      password: "password"
+      database: uztiers_tiers
+      username: uztiers
+      password: shohjahon1
       pool-size: 4
       connection-timeout: 5000
 
 # Spawn warp — slot 9 (hotbar index 8)
 warp:
-  world: "world"
+  world: spawn
   x: 0.5
-  y: 64.0
+  y: 101.0
   z: 0.5
-  yaw: 0.0
-  pitch: 0.0
+  yaw: 88.7997817993164
+  pitch: -0.9000831246376038
 
 # TP Spawn — where players teleport after a match ends (Duel, FFA, PvP)
 # If not set, falls back to the warp location above.
 tp-spawn:
-  world: ""
+  world: spawn
   x: 0.5
-  y: 64.0
+  y: 101.0
   z: 0.5
-  yaw: 0.0
-  pitch: 0.0
+  yaw: 88.7997817993164
+  pitch: -0.9000831246376038
 
 # Chest region — only players in this box interact with managed chests
 chest-region:
-  world: "world"
+  world: world
   min-x: -50
   min-y: 60
   min-z: -50
@@ -61,57 +61,53 @@ chest-region:
 hotbar:
   slot-0:
     material: IRON_SWORD
-    name: "&c&lБоевые режимы"
+    name: '&c&lPvP rejimlar'
     lore:
-      - "&7Нажмите для открытия меню"
+    - '&7Ovhish uchun bosing'
   slot-1:
     material: NETHER_STAR
-    name: "&b&lПати"
+    name: '&b&lGuruh'
     lore:
-      - "&7Нажмите для управления пати"
+    - '&7Guruh yaratish uchun bosing'
   slot-7:
     material: GRINDSTONE
-    name: "&e&lНастройки"
+    name: '&e&lSozlamalar'
     lore:
-      - "&7Нажмите для открытия настроек"
+    - '&7Sozlamalarni ochish uchun bosing'
   slot-8:
     material: ENDER_PEARL
-    name: "&a&lВанильный режим"
+    name: '&a&lKit sozlamalari'
     lore:
-      - "&7Телепортация в ванильный регион"
+    - '&7Teleport bo''lish uchun bosing'
 
 # Tier hierarchy (weak → strong)
 tiers:
   order:
-    - LT5
-    - HT5
-    - LT4
-    - HT4
-    - LT3
-    - HT3
-    - LT2
-    - HT2
-    - LT1
-    - HT1
+  - LT5
+  - HT5
+  - LT4
+  - HT4
+  - LT3
+  - HT3
+  - LT2
+  - HT2
+  - LT1
+  - HT1
   colors:
-    LT5: "&7"
-    HT5: "&f"
-    LT4: "&a"
-    HT4: "&2"
-    LT3: "&b"
-    HT3: "&3"
-    LT2: "&e"
-    HT2: "&6"
-    LT1: "&c"
-    HT1: "&4"
+    LT5: '&7'
+    HT5: '&f'
+    LT4: '&a'
+    HT4: '&2'
+    LT3: '&b'
+    HT3: '&3'
+    LT2: '&e'
+    HT2: '&6'
+    LT1: '&c'
+    HT1: '&4'
 
 # ── Party settings ─────────────────────────────────────────────────────────────
 party:
-  max-members: 10
-  invite-expire-seconds: 60
   ffa-min-members: 2
-  disband-on-owner-disconnect: true
-  chat-prefix: "&8[&bParty&8] "
 
 # ── Match settings ─────────────────────────────────────────────────────────────
 match:
@@ -119,24 +115,9 @@ match:
   round-end-delay-ticks: 60
   finish-delay-ticks: 60
 
-# ── Commands (configurable, like DeluxeMenus) ──────────────────────────────────
-commands:
-  party-ffa-menu: "party ffa"
-  pvp-menu: "pvpmenu"
-  profile: "profile"
-  duel: "duel"
-  spec: "spec"
-  leave: "leave"
-  arena: "arena"
-
-# ── Arena restore (vanilla type) ──────────────────────────────────────────────
+# ── Arena (vanilla restore via diff-tracker + watchdog) ────────────────────────
 arena:
-  vanilla-restore-delay-ticks: 60
-  restore-blocks-per-tick: 500
-  restore-async: true
-  restore-notify-players: true
-  save-tile-entities: true
-  retry-search-ticks: 100        # ticks between arena search retries
+  retry-search-ticks: 100 # ticks between arena search retries
   match-timeout-minutes: 30
   stuck-arena-check-minutes: 5
   search-timeout-seconds: 60
@@ -146,37 +127,21 @@ friends:
   max-friends: 100
   request-expire-seconds: 120
   notify-on-join: true
-  button-accept-color: "&a"
-  button-deny-color: "&c"
+  button-accept-color: '&a'
+  button-deny-color: '&c'
 
 # ── PlaceholderAPI ────────────────────────────────────────────────────────────
 placeholders:
   top-cache-update-seconds: 300
   top-max-position: 10
   update-on-match-end: true
-  placeholder-unknown-value: "—"
-
-  match-timeout-minutes: 30
-  stuck-arena-check-minutes: 5
-  search-timeout-seconds: 60
-
-
-
+  placeholder-unknown-value: —
 
 # ── Version check ──────────────────────────────────────────────────────────────
 version-check:
   use-viaversion: true
   fallback-to-server-version: true
 
-
-# ── Menu display config ────────────────────────────────────────────────────────
-menus:
-  pvp-menu:
-    unavailable-mode:
-      material: RED_STAINED_GLASS_PANE
-      use-original-icon: false
-      name-suffix: " &8[&cНедоступно]"
-      show-required-version: true
 
 # ── Nametag display (над головой во время матча) ──────────────────────────────
 # Плейсхолдеры: %lp_prefix%, %tier_color%, %tier%, %team_color%
@@ -203,19 +168,19 @@ nametag:
   #   {ping}        — пинг ТОГО ЖЕ игрока в миллисекундах
   #   {ping_color}  — цвет пинга по hud.ping.* (good/mid/bad)
   # Пустая строка → BELOW_NAME выключается совсем.
-  below-name-format: "{hp_color}{hp}{hp_symbol} &7| {ping_color}{ping}ms"
+  below-name-format: '{hp_color}{hp}{hp_symbol} &7| {ping_color}{ping}ms'
   # Символ сердца, используется как {hp_symbol} в below-name-format.
-  health-symbol: "&c❤"
+  health-symbol: '&c❤'
   # Как часто (в тиках) перерисовывать BELOW_NAME (для актуального пинга).
   # 20 = раз в секунду. Дополнительно строка обновляется на каждом
   # событии урона — чтобы HP не отставало в бою.
   ping-refresh-ticks: 20
   # Форматы для дуэлей и FFA
-  duel-format: "%lp_prefix%%tier_color%[%tier%] %team_color%| "
-  ffa-format: "%lp_prefix%%tier_color%[%tier%] &f| "
+  duel-format: '%lp_prefix%%tier_color%[%tier%] %team_color%| '
+  ffa-format: '%lp_prefix%%tier_color%[%tier%] &f| '
   # Форматы когда у игрока нет тира
-  no-tier-duel-format: "%lp_prefix%%team_color%"
-  no-tier-ffa-format: "%lp_prefix%"
+  no-tier-duel-format: '%lp_prefix%%team_color%'
+  no-tier-ffa-format: '%lp_prefix%'
 
 # ── HUD / Action Bar ───────────────────────────────────────────────────────────
 hud:
@@ -226,34 +191,34 @@ hud:
   # Используются для below-name строки (nametag.below-name-format) и
   # для собственного HUD-индикатора пинга в action bar.
   ping:
-    good-max: 80
+    good-max: 100
     mid-max: 150
-    good-color: "&a"
-    mid-color: "&6"
-    bad-color: "&c"
+    good-color: '&a'
+    mid-color: '&6'
+    bad-color: '&c'
   # Цветовой градиент здоровья (доля HP/max_HP).
   # full-min ≤ frac          → full-color (по умолчанию зелёный)
   # mid-min  ≤ frac < full   → mid-color  (по умолчанию жёлтый)
   # frac < mid-min           → low-color  (по умолчанию красный)
   health:
     full-min: 0.66
-    mid-min:  0.33
-    full-color: "&a"
-    mid-color:  "&e"
-    low-color:  "&c"
+    mid-min: 0.33
+    full-color: '&a'
+    mid-color: '&e'
+    low-color: '&c'
 
 # ── Custom Items ───────────────────────────────────────────────────────────────
 custom-items:
   golden-head:
     enabled: true
     # Base64 texture value (player head skin)
-    base64-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU1YmY2MDM2Mzg2YjJlYjAwZmMyZTYzNWU1NzViNzRlMmI1YTBjNjljYmI1MzY5MWFlZGZkYjZhMGMzNjAwOSJ9fX0="
+    base64-texture: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU1YmY2MDM2Mzg2YjJlYjAwZmMyZTYzNWU1NzViNzRlMmI1YTBjNjljYmI1MzY5MWFlZGZkYjZhMGMzNjAwOSJ9fX0=
     # Cooldown in seconds
     cooldown-seconds: 10
     effects:
       regeneration:
-        amplifier: 2      # III = amplifier 2
+        amplifier: 2 # III = amplifier 2
         duration-seconds: 5
       absorption:
-        amplifier: 0      # I = amplifier 0
+        amplifier: 0 # I = amplifier 0
         duration-seconds: 120

@@ -3,39 +3,38 @@
 #  Configurable like DeluxeMenus: titles, items, lore
 # ============================================================
 
-title: "&0Профиль: &b{player}"
+title: "&0Profil: &b{player}"
 size: 36
 
 # Filler glass pane
 filler:
-  material: GRAY_STAINED_GLASS_PANE
-  name: "&r"
+  material: RED_STAINED_GLASS_PANE
+  name: "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
 
 # Skull slot (player head with skin)
 skull:
   slot: 4
   name: "&b{player}"
   lore:
-    - "&7Статус: {status}"
-    - "&7UUID: &8{uuid}..."
+    - "&7Holat: {status}"
 
 # Playtime slot (clock)
 playtime:
   slot: 3
   material: CLOCK
-  name: "&eВремя в игре"
+  name: "&eO'yin vaqti"
   lore:
-    - "&7{hours}ч {minutes}мин"
+    - "&7{hours}s {minutes}min"
 
 # Overall stats slot (paper)
 stats:
   slot: 5
   material: PAPER
-  name: "&eОбщая статистика"
+  name: "&eUmumiy statistika"
   lore:
-    - "&7Побед: &a{wins}"
-    - "&7Поражений: &c{losses}"
-    - "&7Высший тир: {tier}"
+    - "&7G'alaba: &a{wins}"
+    - "&7Mag'lubiyat: &c{losses}"
+    - "&7Eng baland tier: {tier}"
 
 # Mode tier item slots
 mode-slots:
@@ -56,7 +55,7 @@ mode-slots:
 
 # Mode item display (per mode in profile)
 mode-lore:
-  - "&7Тир: {tier}"
-  - "&7Побед: &a{wins}"
-  - "&7Поражений: &c{losses}"
+  - "&7Tier: {tier}"
+  - "&7G'alaba: &a{wins}"
+  - "&7ПMag'lubiyat: &c{losses}"
   - "&7K/D: &e{kd}"

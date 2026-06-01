@@ -32,12 +32,16 @@ public class ProfileGUI {
     private String fillerName;
     private int skullSlot;
     private String skullName;
+    private List<String> skullLore;
     private int playtimeSlot;
     private Material playtimeMaterial;
     private String playtimeName;
+    private List<String> playtimeLore;
     private int statsSlot;
     private Material statsMaterial;
     private String statsName;
+    private List<String> statsLoreTpl;
+    private List<String> modeLore;
     private int[] modeSlots;
 
     private final ScorePvP plugin;
@@ -50,38 +54,44 @@ public class ProfileGUI {
     public void loadConfig() {
         File file = new File(plugin.getDataFolder(), "item_menus/profile.yml");
         if (!file.exists()) {
-            titleTemplate = "&0Профиль: &b{player}";
-            guiSize = 36;
-            fillerMaterial = Material.GRAY_STAINED_GLASS_PANE;
-            fillerName = "&r";
-            skullSlot = 4; skullName = "&b{player}";
-            playtimeSlot = 3; playtimeMaterial = Material.CLOCK; playtimeName = "&eВремя в игре";
-            statsSlot = 5; statsMaterial = Material.PAPER; statsName = "&eОбщая статистика";
-            modeSlots = new int[]{10,11,12,13,14,15,16,19,20,21,22,23,24,25};
+            applyDefaults();
             return;
         }
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
-        titleTemplate = cfg.getString("title", "&0Профиль: &b{player}");
-        guiSize = cfg.getInt("size", 36);
-        try { fillerMaterial = Material.valueOf(cfg.getString("filler.material", "GRAY_STAINED_GLASS_PANE")); }
-        catch (IllegalArgumentException e) { fillerMaterial = Material.GRAY_STAINED_GLASS_PANE; }
-        fillerName = cfg.getString("filler.name", "&r");
-        skullSlot = cfg.getInt("skull.slot", 4);
-        skullName = cfg.getString("skull.name", "&b{player}");
-        playtimeSlot = cfg.getInt("playtime.slot", 3);
-        try { playtimeMaterial = Material.valueOf(cfg.getString("playtime.material", "CLOCK")); }
-        catch (IllegalArgumentException e) { playtimeMaterial = Material.CLOCK; }
-        playtimeName = cfg.getString("playtime.name", "&eВремя в игре");
-        statsSlot = cfg.getInt("stats.slot", 5);
-        try { statsMaterial = Material.valueOf(cfg.getString("stats.material", "PAPER")); }
-        catch (IllegalArgumentException e) { statsMaterial = Material.PAPER; }
-        statsName = cfg.getString("stats.name", "&eОбщая статистика");
+        applyDefaults();
+        titleTemplate = cfg.getString("title", titleTemplate);
+        guiSize = cfg.getInt("size", guiSize);
+        try { fillerMaterial = Material.valueOf(cfg.getString("filler.material", fillerMaterial.name())); }
+        catch (IllegalArgumentException ignored) {}
+        fillerName = cfg.getString("filler.name", fillerName);
+        skullSlot = cfg.getInt("skull.slot", skullSlot);
+        skullName = cfg.getString("skull.name", skullName);
+        if (cfg.contains("skull.lore")) skullLore = cfg.getStringList("skull.lore");
+        playtimeSlot = cfg.getInt("playtime.slot", playtimeSlot);
+        try { playtimeMaterial = Material.valueOf(cfg.getString("playtime.material", playtimeMaterial.name())); }
+        catch (IllegalArgumentException ignored) {}
+        playtimeName = cfg.getString("playtime.name", playtimeName);
+        if (cfg.contains("playtime.lore")) playtimeLore = cfg.getStringList("playtime.lore");
+        statsSlot = cfg.getInt("stats.slot", statsSlot);
+        try { statsMaterial = Material.valueOf(cfg.getString("stats.material", statsMaterial.name())); }
+        catch (IllegalArgumentException ignored) {}
+        statsName = cfg.getString("stats.name", statsName);
+        if (cfg.contains("stats.lore")) statsLoreTpl = cfg.getStringList("stats.lore");
+        if (cfg.contains("mode-lore")) modeLore = cfg.getStringList("mode-lore");
         List<Integer> slots = cfg.getIntegerList("mode-slots");
-        if (slots.isEmpty()) {
-            modeSlots = new int[]{10,11,12,13,14,15,16,19,20,21,22,23,24,25};
-        } else {
-            modeSlots = slots.stream().mapToInt(Integer::intValue).toArray();
-        }
+        if (!slots.isEmpty()) modeSlots = slots.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private void applyDefaults() {
+        titleTemplate = "&0Профиль: &b{player}";
+        guiSize = 36;
+        fillerMaterial = Material.GRAY_STAINED_GLASS_PANE;
+        fillerName = "&r";
+        skullSlot = 4;   skullName = "&b{player}";   skullLore = null;
+        playtimeSlot = 3; playtimeMaterial = Material.CLOCK; playtimeName = "&eВремя в игре"; playtimeLore = null;
+        statsSlot = 5;   statsMaterial = Material.PAPER; statsName = "&eОбщая статистика"; statsLoreTpl = null;
+        modeLore = null;
+        modeSlots = new int[]{10,11,12,13,14,15,16,19,20,21,22,23,24,25};
     }
 
     public void open(Player viewer, OfflinePlayer target) {
@@ -112,11 +122,14 @@ public class ProfileGUI {
         long minutes = plugin.getStatsManager().getPlaytimeMinutes(targetUuid);
         long hours   = minutes / 60;
         long mins    = minutes % 60;
+        List<String> ptLore = playtimeLore != null ? playtimeLore
+                : List.of(plugin.getConfigManager().rawStr("profile.playtime-lore"));
         inv.setItem(playtimeSlot, new ItemBuilder(playtimeMaterial)
-                .name(plugin.getConfigManager().rawStr("profile.playtime-name"))
-                .lore(plugin.getConfigManager().rawStr("profile.playtime-lore")
-                        .replace("{hours}", String.valueOf(hours))
-                        .replace("{minutes}", String.valueOf(mins)))
+                .name(playtimeName)
+                .lore(ptLore.stream()
+                        .map(l -> l.replace("{hours}", String.valueOf(hours))
+                                   .replace("{minutes}", String.valueOf(mins)))
+                        .toList())
                 .build());
 
         // Slot 5 — paper (overall stats: wins, losses, highest tier)
@@ -145,13 +158,19 @@ public class ProfileGUI {
                 ? plugin.getConfigManager().getTierColor(highestTier) + "[" + highestTier + "]"
                 : plugin.getConfigManager().rawStr("profile.unranked");
 
-        List<String> statsLore = new ArrayList<>();
-        statsLore.add(plugin.getConfigManager().rawStr("profile.stats-wins").replace("{wins}", String.valueOf(totalWins)));
-        statsLore.add(plugin.getConfigManager().rawStr("profile.stats-losses").replace("{losses}", String.valueOf(totalLosses)));
-        statsLore.add(plugin.getConfigManager().rawStr("profile.highest-tier").replace("{tier}", highestTierDisplay));
+        List<String> statsTpl = statsLoreTpl != null ? statsLoreTpl : List.of(
+                plugin.getConfigManager().rawStr("profile.stats-wins"),
+                plugin.getConfigManager().rawStr("profile.stats-losses"),
+                plugin.getConfigManager().rawStr("profile.highest-tier"));
+        final int fWins = totalWins, fLosses = totalLosses;
+        List<String> statsLore = statsTpl.stream()
+                .map(l -> l.replace("{wins}", String.valueOf(fWins))
+                           .replace("{losses}", String.valueOf(fLosses))
+                           .replace("{tier}", highestTierDisplay))
+                .toList();
 
         inv.setItem(statsSlot, new ItemBuilder(statsMaterial)
-                .name(plugin.getConfigManager().rawStr("profile.stats-name"))
+                .name(statsName)
                 .lore(statsLore)
                 .build());
 
@@ -169,11 +188,18 @@ public class ProfileGUI {
             PlayerStats stats = plugin.getStatsManager().get(targetUuid, mode.getId());
             String tierDisplay = plugin.getConfigManager().getTierColor(tier) + "[" + tier + "]";
 
-            List<String> lore = new ArrayList<>();
-            lore.add(ColorUtil.color(plugin.getConfigManager().rawStr("profile.tier-label").replace("{tier}", tierDisplay)));
-            lore.add(ColorUtil.color(plugin.getConfigManager().rawStr("profile.wins-label").replace("{wins}", String.valueOf(stats.getWins()))));
-            lore.add(ColorUtil.color(plugin.getConfigManager().rawStr("profile.losses-label").replace("{losses}", String.valueOf(stats.getLosses()))));
-            lore.add(ColorUtil.color(plugin.getConfigManager().rawStr("profile.kd-label").replace("{kd}", String.valueOf(stats.getKdRatio()))));
+            List<String> modeTpl = modeLore != null ? modeLore : List.of(
+                    plugin.getConfigManager().rawStr("profile.tier-label"),
+                    plugin.getConfigManager().rawStr("profile.wins-label"),
+                    plugin.getConfigManager().rawStr("profile.losses-label"),
+                    plugin.getConfigManager().rawStr("profile.kd-label"));
+            List<String> lore = modeTpl.stream()
+                    .map(l -> ColorUtil.color(l
+                            .replace("{tier}", tierDisplay)
+                            .replace("{wins}", String.valueOf(stats.getWins()))
+                            .replace("{losses}", String.valueOf(stats.getLosses()))
+                            .replace("{kd}", String.valueOf(stats.getKdRatio()))))
+                    .toList();
 
             ItemBuilder b = new ItemBuilder(mode.getIcon())
                     .name(tierDisplay + " &f" + mode.getDisplayName())
@@ -197,12 +223,17 @@ public class ProfileGUI {
                 : plugin.getConfigManager().rawStr("profile.status-offline");
         String name   = target.getName() != null ? target.getName() : "Unknown";
 
+        String uuidShort = target.getUniqueId().toString().substring(0, 8);
         meta.setDisplayName(ColorUtil.color(skullName.replace("{player}", name)));
-        meta.setLore(List.of(
-                ColorUtil.color(plugin.getConfigManager().rawStr("profile.status-label").replace("{status}", status)),
-                ColorUtil.color(plugin.getConfigManager().rawStr("profile.uuid-label")
-                        .replace("{uuid}", target.getUniqueId().toString().substring(0, 8)))
-        ));
+        List<String> skLore = skullLore != null ? skullLore : List.of(
+                plugin.getConfigManager().rawStr("profile.status-label"),
+                plugin.getConfigManager().rawStr("profile.uuid-label"));
+        meta.setLore(skLore.stream()
+                .map(l -> ColorUtil.color(l
+                        .replace("{status}", status)
+                        .replace("{uuid}", uuidShort)
+                        .replace("{player}", name)))
+                .toList());
         skull.setItemMeta(meta);
         return skull;
     }

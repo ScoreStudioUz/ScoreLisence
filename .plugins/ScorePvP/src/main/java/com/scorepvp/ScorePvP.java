@@ -62,7 +62,7 @@ public final class ScorePvP extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         for (String r : new String[]{
-            "modes.yml","lang/ru.yml","lang/uz.yml","menus.yml","cosmetics.yml",
+            "modes.yml","lang/ru.yml","cosmetics.yml",
             "kits/vanilla.yml","kits/axe.yml","kits/uhc.yml",
             "kits/pot.yml","kits/nodebuff.yml",
             "item_menus/duel.yml","item_menus/party.yml","item_menus/profile.yml",

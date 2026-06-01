@@ -26,76 +26,77 @@ items:
   duel-requests:
     slot: 10
     material: WOODEN_SWORD
-    name: "&fЗапросы на дуэль"
+    name: "&fDuel takliflari"
     lore:
-      - "&7Кто может отправлять"
-      - "&7вам запросы на дуэль"
+      - "&7Kim sizga duel takliflarini"
+      - "&7yubora oladi"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   party-invites:
     slot: 11
     material: NETHER_STAR
-    name: "&fПриглашения в пати"
+    name: "&fGuruhga takliflar"
     lore:
-      - "&7Кто может приглашать"
-      - "&7вас в пати"
+      - "&7Kim sizni guruhga"
+      - "&7taklif qila oladi"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   show-own-tier:
     slot: 12
     material: NAME_TAG
-    name: "&fПоказывать свой тир"
+    name: "&fTierlarni ko'rsatish"
     lore:
-      - "&7Кому виден ваш тир"
+      - "&7Sizning tieringizni"
+      - "&7kim ko'roladi"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   friend-requests:
     slot: 13
     material: PAPER
-    name: "&fЗаявки в друзья"
+    name: "&fDo'st arizalari"
     lore:
-      - "&7Принимать ли заявки"
-      - "&7в друзья"
+      - "&7Do'st arizalarini"
+      - "&7sizga yubora olishsinmi?"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   direct-messages:
     slot: 14
     material: BOOK
-    name: "&fЛичные сообщения"
+    name: "&fShaxsiy xabarlar"
     lore:
-      - "&7Кто может писать"
-      - "&7вам в /msg"
+      - "&7Kim sizga /msg"
+      - "&7yordamida yoza oladi"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   friend-join-notifier:
     slot: 15
     material: BELL
-    name: "&fУведомления о входе"
+    name: "&fKirish bildirishnomalari"
     lore:
-      - "&7Уведомлять о входе"
-      - "&7ваших друзей"
+      - "&7Do'stlaringiz o'yinga kirganda"
+      - "&7bildirishnoma yuborilsinmi?"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"
   profile-visibility:
     slot: 16
     material: SPYGLASS
-    name: "&fВидимость профиля"
+    name: "&fProfil sozlamalari"
     lore:
-      - "&7Кто может просматривать"
-      - "&7ваш профиль"
+      - "&7Kim sizning profilingizni"
+      - "&7ko'ra oladi"
       - ""
-      - "&eТекущее значение: &a{value}"
+      - "&eHozirgi holat: &a{value}"
       - ""
-      - "&7Нажмите для смены"
+      - "&7Almashtirish uchun bosing"

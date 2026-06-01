@@ -3,13 +3,13 @@
 #  Configurable like DeluxeMenus: titles, items, lore
 # ============================================================
 
-title: "&0Выбор режима дуэли"
+title: "&0Duel uchun rejim tanlash"
 size: 36
 
 # Filler glass pane
 filler:
-  material: BLUE_STAINED_GLASS_PANE
-  name: "&r"
+  material: RED_STAINED_GLASS_PANE
+  name: "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
 
 # Mode item slots (start - end)
 mode-slots:
@@ -18,14 +18,14 @@ mode-slots:
 
 # Mode item display
 mode-lore:
-  - "&7Нажмите для выбора режима"
+  - "&7Rejim tanlash uchun bosing"
   - ""
-  - "&eЛКМ &7— Выбрать"
+  - "&eLKM &7— Tanlash"
 
 # Unavailable mode display
 unavailable:
-  material: RED_STAINED_GLASS_PANE
-  name-suffix: " &8[&cНедоступно]"
+  material: BARRIER
+  name-suffix: " &8[&cMumkun emas]"
   lore:
-    - "&cТребуется версия: &e{version}+"
-    - "&7Ваша версия: &c{your_version}"
+    - "&cTalab qilinadigan versiya: &e{version}+"
+    - "&7Sizning versiyangiz: &c{your_version}"

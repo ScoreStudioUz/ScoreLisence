@@ -3,13 +3,13 @@
 #  Configurable like DeluxeMenus: titles, items, lore
 # ============================================================
 
-title: "&0Выбор режима PvP"
+title: "&0PvP rejim tanlovi"
 size: 36
 
 # Filler glass pane
 filler:
-  material: BLUE_STAINED_GLASS_PANE
-  name: "&r"
+  material: RED_STAINED_GLASS_PANE
+  name: "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
 
 # Mode item slots (start - end, skipping edge columns)
 mode-slots:
@@ -18,15 +18,15 @@ mode-slots:
 
 # Mode item display (placeholders: {mode}, {display_name})
 mode-lore:
-  - "&7Нажмите, чтобы начать поиск"
+  - "&7Qidiruvni boshlash uchun bosing"
   - ""
-  - "&eЛКМ &7— Поиск соперника"
+  - "&eLKM &7— Raqib qidiruvi"
 
 # Unavailable mode display (version incompatible)
 unavailable:
-  material: RED_STAINED_GLASS_PANE
+  material: BARRIER
   use-original-icon: false
-  name-suffix: " &8[&cНедоступно]"
+  name-suffix: " &8[&cMumkun emas]"
   lore:
-    - "&cТребуется версия: &e{version}+"
-    - "&7Ваша версия: &c{your_version}"
+    - "&cTalab qilinadigan versiya: &e{version}+"
+    - "&7Sizning versiyangiz: &c{your_version}"

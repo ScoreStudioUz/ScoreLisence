@@ -1,59 +1,113 @@
-# ============================================================
-#               ScorePvP — Конфигурация режимов
-# ============================================================
+# ===============================================
+#               UzPvP - Sozlamalar
+# ===============================================
 
-Sword:
-  display-name: "&bМеч"
+sword:
+  display-name: "&b&l🗡 Sword"
   icon: DIAMOND_SWORD
-  icon-enchanted: true
+  icon-enchanted: false
   enabled: true
   kit-type: "sword"
-  allowed-arenas: []
+  allowed-arenas: [sword1, sword2, sword3, sword4, sword5]
   default-rounds: 3
-  countdown-seconds: 5
+  countdown-seconds: 3
   min-client-version: "1.8.0"
 
-Axe:
-  display-name: "&cТопор"
+axe:
+  display-name: "&x&6&6&C&D&A&A&l🪓 Axe"
   icon: DIAMOND_AXE
   icon-enchanted: false
   enabled: true
   kit-type: "axe"
-  allowed-arenas: []
+  allowed-arenas: [axe1, axe2, axe3]
   default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
 
-UHC:
-  display-name: "&6UHC"
+netherite:
+  display-name: "&c&l⛑ Netherite"
+  icon: NETHERITE_HELMET
+  icon-enchanted: false
+  enabled: true
+  kit-type: "netherite"
+  allowed-arenas: [netherite1, netherite2, netherite3]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+
+op:
+  display-name: "&9&l🧪 OP"
+  icon: ENDER_PEARL
+  icon-enchanted: false
+  enabled: true
+  kit-type: "op"
+  allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+
+diamondsmp:
+  display-name: "&x&F&4&A&4&6&0&l🕸 DiamondSMP"
+  icon: COBWEB
+  icon-enchanted: false
+  enabled: true
+  kit-type: "diamondsmp"
+  allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+
+smp:
+  display-name: "&x&9&4&0&0&D&3&l🛡 SMP"
+  icon: NETHERITE_CHESTPLATE
+  icon-enchanted: false
+  enabled: true
+  kit-type: "smp"
+  allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+  
+potion:
+  display-name: "&x&F&F&1&4&9&3&l🧴 Potion"
+  icon: DRAGON_BREATH
+  icon-enchanted: false
+  enabled: true
+  kit-type: "potion"
+  allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+  
+uhc:
+  display-name: "&6&l🍎 UHC"
   icon: GOLDEN_APPLE
-  icon-enchanted: true
+  icon-enchanted: false
   enabled: true
   kit-type: "uhc"
-  allowed-arenas: []
-  default-rounds: 1
+  allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+  
+crystal:
+  display-name: "&x&0&0&B&F&F&F&l♦ Crystal"
+  icon: END_CRYSTAL
+  icon-enchanted: true
+  enabled: true
+  kit-type: "crystal"
+  allowed-arenas: [crystal1, crystal2, crystal3]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
 
-Pot:
-  display-name: "&5Поушн"
-  icon: SPLASH_POTION
+mace:
+  display-name: "&x&7&F&F&F&D&4&l☼ Mace"
+  icon: MACE
   icon-enchanted: false
   enabled: true
-  kit-type: "pot"
-  allowed-arenas: []
+  kit-type: "mace"
+  allowed-arenas: [mace1, mace2, mace3]
   default-rounds: 3
-
-SMP:
-  display-name: "&aSMP"
-  icon: GRASS_BLOCK
-  icon-enchanted: false
-  enabled: false
-  kit-type: "smp"
-  allowed-arenas: []
-  default-rounds: 1
-
-NoDebuff:
-  display-name: "&eNo Debuff"
-  icon: MILK_BUCKET
-  icon-enchanted: false
-  enabled: true
-  kit-type: "nodebuff"
-  allowed-arenas: []
-  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"

@@ -37,6 +37,13 @@ public class SettingsGUI {
     private int slotFriendJoinNotify; private Material matFriendJoinNotify;
     private int slotProfileVisibility;private Material matProfileVisibility;
 
+    // Per-setting name + lore read straight from item_menus/settings.yml.
+    // This is the single source of truth for these strings now — admins edit
+    // the yml and the change shows up after /spvp reload. {value} in a lore
+    // line is substituted at render time with the current toggle state.
+    private final java.util.Map<String, String> itemNames = new java.util.HashMap<>();
+    private final java.util.Map<String, List<String>> itemLores = new java.util.HashMap<>();
+
     private final ScorePvP plugin;
 
     public SettingsGUI(ScorePvP plugin) {
@@ -72,6 +79,18 @@ public class SettingsGUI {
         matFriendJoinNotify  = readMat(items, "friend-join-notifier", Material.BELL);
         slotProfileVisibility= readSlot(items, "profile-visibility", 16);
         matProfileVisibility = readMat(items, "profile-visibility", Material.SPYGLASS);
+
+        itemNames.clear();
+        itemLores.clear();
+        for (String key : new String[]{"duel-requests","party-invites","show-own-tier",
+                "friend-requests","direct-messages","friend-join-notifier","profile-visibility"}) {
+            if (items != null) {
+                String n = items.getString(key + ".name");
+                if (n != null) itemNames.put(key, n);
+                if (items.contains(key + ".lore"))
+                    itemLores.put(key, items.getStringList(key + ".lore"));
+            }
+        }
     }
 
     private void applyDefaults() {
@@ -159,59 +178,66 @@ public class SettingsGUI {
 
     private ItemStack duelRequests(PlayerSettings s) {
         return new ItemBuilder(matDuelRequests)
-                .name(plugin.getConfigManager().rawMsg("settings.duel-requests.name"))
-                .lore(buildLore("settings.duel-requests.lore", visibilityLabel(s.getDuelRequests())))
+                .name(nameFor("duel-requests", "settings.duel-requests.name"))
+                .lore(loreFor("duel-requests", "settings.duel-requests.lore", visibilityLabel(s.getDuelRequests())))
                 .build();
     }
 
     private ItemStack partyInvites(PlayerSettings s) {
         return new ItemBuilder(matPartyInvites)
-                .name(plugin.getConfigManager().rawMsg("settings.party-invites.name"))
-                .lore(buildLore("settings.party-invites.lore", visibilityLabel(s.getPartyInvites())))
+                .name(nameFor("party-invites", "settings.party-invites.name"))
+                .lore(loreFor("party-invites", "settings.party-invites.lore", visibilityLabel(s.getPartyInvites())))
                 .build();
     }
 
     private ItemStack showOwnTier(PlayerSettings s) {
         return new ItemBuilder(matShowOwnTier)
-                .name(plugin.getConfigManager().rawMsg("settings.show-own-tier.name"))
-                .lore(buildLore("settings.show-own-tier.lore", visibilityLabel(s.getShowOwnTier())))
+                .name(nameFor("show-own-tier", "settings.show-own-tier.name"))
+                .lore(loreFor("show-own-tier", "settings.show-own-tier.lore", visibilityLabel(s.getShowOwnTier())))
                 .build();
     }
 
     private ItemStack friendRequests(PlayerSettings s) {
         return new ItemBuilder(matFriendRequests)
-                .name(plugin.getConfigManager().rawMsg("settings.friend-requests.name"))
-                .lore(buildLore("settings.friend-requests.lore", boolLabel(s.isFriendRequests())))
+                .name(nameFor("friend-requests", "settings.friend-requests.name"))
+                .lore(loreFor("friend-requests", "settings.friend-requests.lore", boolLabel(s.isFriendRequests())))
                 .build();
     }
 
     private ItemStack directMessages(PlayerSettings s) {
         return new ItemBuilder(matDirectMessages)
-                .name(plugin.getConfigManager().rawMsg("settings.direct-messages.name"))
-                .lore(buildLore("settings.direct-messages.lore", visibilityLabel(s.getDirectMessages())))
+                .name(nameFor("direct-messages", "settings.direct-messages.name"))
+                .lore(loreFor("direct-messages", "settings.direct-messages.lore", visibilityLabel(s.getDirectMessages())))
                 .build();
     }
 
     private ItemStack friendJoinNotifier(PlayerSettings s) {
         return new ItemBuilder(matFriendJoinNotify)
-                .name(plugin.getConfigManager().rawMsg("settings.friend-join-notifier.name"))
-                .lore(buildLore("settings.friend-join-notifier.lore", boolLabel(s.isFriendJoinNotifier())))
+                .name(nameFor("friend-join-notifier", "settings.friend-join-notifier.name"))
+                .lore(loreFor("friend-join-notifier", "settings.friend-join-notifier.lore", boolLabel(s.isFriendJoinNotifier())))
                 .build();
     }
 
     private ItemStack profileVisibility(PlayerSettings s) {
         return new ItemBuilder(matProfileVisibility)
-                .name(plugin.getConfigManager().rawMsg("settings.profile-visibility.name"))
-                .lore(buildLore("settings.profile-visibility.lore", profileLabel(s.getProfileVisibility())))
+                .name(nameFor("profile-visibility", "settings.profile-visibility.name"))
+                .lore(loreFor("profile-visibility", "settings.profile-visibility.lore", profileLabel(s.getProfileVisibility())))
                 .build();
     }
 
-    // ── Label helpers ─────────────────────────────────────────────────────────
+    // ── Name / lore helpers ─────────────────────────────────────────────────────
+    // Source of truth = item_menus/settings.yml. Fall back to lang.yml only
+    // when the yml omits the field, so old translations keep working.
 
-    private List<String> buildLore(String langPath, String value) {
-        return plugin.getConfigManager().rawList(langPath).stream()
-                .map(l -> l.replace("{value}", value))
-                .toList();
+    private String nameFor(String key, String langFallback) {
+        String n = itemNames.get(key);
+        return n != null ? n : plugin.getConfigManager().rawStr(langFallback);
+    }
+
+    private List<String> loreFor(String key, String langFallback, String value) {
+        List<String> lore = itemLores.get(key);
+        if (lore == null) lore = plugin.getConfigManager().rawList(langFallback);
+        return lore.stream().map(l -> l.replace("{value}", value)).toList();
     }
 
     private String visibilityLabel(Visibility v) {
