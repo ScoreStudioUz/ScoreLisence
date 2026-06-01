@@ -86,10 +86,13 @@ public class CosmeticsListener implements Listener {
     private void handleMain(Player p, int slot) {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
         if (slot == CosmeticsGUI.MAIN_SHIELDS_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_SHIELDS)) { tell(p, "messages.no-category-permission"); return; }
             plugin.getCosmeticsGUI().openShields(p);
         } else if (slot == CosmeticsGUI.MAIN_DIAMOND_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_DIAMOND)) { tell(p, "messages.no-category-permission"); return; }
             plugin.getCosmeticsGUI().openArmor(p, ArmorMaterial.DIAMOND);
         } else if (slot == CosmeticsGUI.MAIN_NETHERITE_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_NETHERITE)) { tell(p, "messages.no-category-permission"); return; }
             plugin.getCosmeticsGUI().openArmor(p, ArmorMaterial.NETHERITE);
         } else if (slot == CosmeticsGUI.MAIN_CLEAR_SLOT) {
             mgr.clearShield(p.getUniqueId());

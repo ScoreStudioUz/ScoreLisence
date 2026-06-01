@@ -92,18 +92,15 @@ public class CosmeticsGUI {
         Inventory inv = Bukkit.createInventory(player, MAIN_SIZE, mainTitle());
         fill(inv, MAIN_SIZE);
 
-        inv.setItem(MAIN_SHIELDS_SLOT, new ItemBuilder(Material.SHIELD)
-                .name(plugin.getConfigManager().cosStr("main.shields-name"))
-                .lore(plugin.getConfigManager().cosList("main.shields-lore"))
-                .build());
-        inv.setItem(MAIN_DIAMOND_SLOT, new ItemBuilder(Material.DIAMOND_CHESTPLATE)
-                .name(plugin.getConfigManager().cosStr("main.diamond-name"))
-                .lore(plugin.getConfigManager().cosList("main.diamond-lore"))
-                .build());
-        inv.setItem(MAIN_NETHERITE_SLOT, new ItemBuilder(Material.NETHERITE_CHESTPLATE)
-                .name(plugin.getConfigManager().cosStr("main.netherite-name"))
-                .lore(plugin.getConfigManager().cosList("main.netherite-lore"))
-                .build());
+        inv.setItem(MAIN_SHIELDS_SLOT, mainButton(player,
+                com.scorepvp.command.CosmeticsCommand.PERM_SHIELDS,
+                Material.SHIELD, "main.shields-name", "main.shields-lore"));
+        inv.setItem(MAIN_DIAMOND_SLOT, mainButton(player,
+                com.scorepvp.command.CosmeticsCommand.PERM_DIAMOND,
+                Material.DIAMOND_CHESTPLATE, "main.diamond-name", "main.diamond-lore"));
+        inv.setItem(MAIN_NETHERITE_SLOT, mainButton(player,
+                com.scorepvp.command.CosmeticsCommand.PERM_NETHERITE,
+                Material.NETHERITE_CHESTPLATE, "main.netherite-name", "main.netherite-lore"));
 
         inv.setItem(MAIN_CLEAR_SLOT, new ItemBuilder(Material.BARRIER)
                 .name(plugin.getConfigManager().cosStr("main.clear-name"))
@@ -111,6 +108,25 @@ public class CosmeticsGUI {
                 .build());
 
         player.openInventory(inv);
+    }
+
+    /**
+     * A main-menu category button. If the player lacks {@code perm}, the button
+     * is shown as a BARRIER with the locked name+lore from cosmetics.yml
+     * (main.locked-name / main.locked-lore) so admins can edit the wording.
+     */
+    private ItemStack mainButton(Player player, String perm, Material mat,
+                                 String nameKey, String loreKey) {
+        if (player.hasPermission(perm)) {
+            return new ItemBuilder(mat)
+                    .name(plugin.getConfigManager().cosStr(nameKey))
+                    .lore(plugin.getConfigManager().cosList(loreKey))
+                    .build();
+        }
+        return new ItemBuilder(Material.BARRIER)
+                .name(plugin.getConfigManager().cosStr("main.locked-name"))
+                .lore(plugin.getConfigManager().cosList("main.locked-lore"))
+                .build();
     }
 
     public void openShields(Player player) {

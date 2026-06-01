@@ -78,6 +78,15 @@ permissions:
   duels.cosmetics.admin:
     description: Manage cosmetic shields and armor pieces
     default: op
+  duels.cosmetics.shields:
+    description: Access the shields cosmetics category
+    default: true
+  duels.cosmetics.diamond:
+    description: Access the diamond armor cosmetics category
+    default: true
+  duels.cosmetics.netherite:
+    description: Access the netherite armor cosmetics category
+    default: true
   duels.actionbar:
     description: Receive the combat action-bar HUD on every hit
     default: true

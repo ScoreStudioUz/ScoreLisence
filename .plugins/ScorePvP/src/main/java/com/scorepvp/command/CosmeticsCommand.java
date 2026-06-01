@@ -29,6 +29,9 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
 
     public static final String PERM_USE   = "duels.cosmetics";
     public static final String PERM_ADMIN = "duels.cosmetics.admin";
+    public static final String PERM_SHIELDS   = "duels.cosmetics.shields";
+    public static final String PERM_DIAMOND   = "duels.cosmetics.diamond";
+    public static final String PERM_NETHERITE = "duels.cosmetics.netherite";
 
     private final ScorePvP plugin;
 
