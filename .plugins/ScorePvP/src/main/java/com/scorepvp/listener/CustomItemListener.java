@@ -9,20 +9,20 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 /**
- * Golden Head — instant use on right-click.
+ * Golden Head — eaten like a golden apple (with eat animation), at kelp-like
+ * speed. The item carries a food component (see {@link CustomItemRegistry}),
+ * so vanilla drives the eat animation and fires {@link PlayerItemConsumeEvent}
+ * when it finishes; we apply the configured effects there.
  *
  * Config-driven values from custom-items.golden-head in config.yml:
  *   cooldown-seconds, effects.regeneration.amplifier/duration-seconds,
  *   effects.absorption.amplifier/duration-seconds
- *
- * No eating animation — effects are applied immediately on right-click.
- * Item amount decreases by 1 on use.
  */
 public class CustomItemListener implements Listener {
 
@@ -32,22 +32,34 @@ public class CustomItemListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
-    public void onUse(PlayerInteractEvent e) {
-        if (e.getHand() != EquipmentSlot.HAND) return;
-        Action action = e.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+    /**
+     * A PLAYER_HEAD is a placeable block, so right-clicking the golden head at a
+     * block face would place it as a skull instead of eating it. Cancel the
+     * block-interaction (placement) for the golden head; the CONSUMABLE
+     * component still drives the eat animation + PlayerItemConsumeEvent.
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onInteract(PlayerInteractEvent e) {
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack item = e.getItem();
+        if (!CustomItemRegistry.isCustomItem(item, CustomItemRegistry.GOLDEN_HEAD_ID)) return;
+        // Block placement only — eating still happens via the consumable component.
+        e.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onConsume(PlayerItemConsumeEvent e) {
+        ItemStack eaten = e.getItem();
+        if (!CustomItemRegistry.isCustomItem(eaten, CustomItemRegistry.GOLDEN_HEAD_ID)) return;
 
         Player player = e.getPlayer();
-        ItemStack held = player.getInventory().getItemInMainHand();
-        if (!CustomItemRegistry.isCustomItem(held, CustomItemRegistry.GOLDEN_HEAD_ID)) return;
 
-        // Check cooldown
-        if (player.hasCooldown(Material.PLAYER_HEAD)) return;
+        // Cooldown gate — if still cooling down, block the consume entirely.
+        if (player.hasCooldown(Material.PLAYER_HEAD)) {
+            e.setCancelled(true);
+            return;
+        }
 
-        e.setCancelled(true);
-
-        // Read values from config
         var cfg = plugin.getConfig();
         int regenAmp    = cfg.getInt("custom-items.golden-head.effects.regeneration.amplifier", 2);
         int regenSec    = cfg.getInt("custom-items.golden-head.effects.regeneration.duration-seconds", 5);
@@ -55,24 +67,17 @@ public class CustomItemListener implements Listener {
         int absSec      = cfg.getInt("custom-items.golden-head.effects.absorption.duration-seconds", 120);
         int cooldownSec = cfg.getInt("custom-items.golden-head.cooldown-seconds", 10);
 
-        // Apply effects instantly
         player.addPotionEffect(new PotionEffect(
                 PotionEffectType.REGENERATION, regenSec * 20, regenAmp, false, true, true));
         player.addPotionEffect(new PotionEffect(
                 PotionEffectType.ABSORPTION, absSec * 20, absAmp, false, true, true));
 
-        // Set cooldown
         player.setCooldown(Material.PLAYER_HEAD, cooldownSec * 20);
 
-        // Consume 1 from the stack
-        if (held.getAmount() > 1) {
-            held.setAmount(held.getAmount() - 1);
-        } else {
-            player.getInventory().setItemInMainHand(null);
-        }
-        player.updateInventory();
+        // Vanilla will consume one from the eaten stack (main or off hand)
+        // automatically because it has a food component, so we do NOT decrement
+        // it ourselves — doing so would remove two.
 
-        // Feedback message
         player.sendMessage(plugin.getConfigManager().rawMsg("custom-item.golden-head-use",
                 "{regen_sec}", String.valueOf(regenSec),
                 "{abs_sec}", String.valueOf(absSec)));

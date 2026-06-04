@@ -89,6 +89,23 @@ public class MenuManager {
             catch (NumberFormatException ex) { continue; }
             if (slot < 0 || slot >= size) continue;
 
+            // Custom item (e.g. golden_head) — rebuild from the registry so its
+            // texture, edible components and PDC marker survive the round-trip.
+            Object customId = map.get("custom-item-id");
+            if (customId != null && plugin.getCustomItemRegistry() != null) {
+                ItemStack custom = plugin.getCustomItemRegistry().buildItem(String.valueOf(customId));
+                if (custom != null) {
+                    int amt = 1;
+                    if (map.containsKey("amount")) {
+                        try { amt = Integer.parseInt(String.valueOf(map.get("amount"))); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                    custom.setAmount(Math.max(1, amt));
+                    items.put(slot, custom);
+                    continue;
+                }
+            }
+
             Material mat;
             try { mat = Material.valueOf(String.valueOf(map.get("material")).toUpperCase()); }
             catch (IllegalArgumentException ex) { continue; }
@@ -147,10 +164,60 @@ public class MenuManager {
                 continue;
             }
 
-            items.put(slot, builder.build());
+            ItemStack built = builder.build();
+            if (map.containsKey("potion-base-type")
+                    || map.containsKey("potion-effects")
+                    || map.containsKey("potion-color")) {
+                applyPotionMeta(built, map);
+            }
+            items.put(slot, built);
         }
 
         return new MenuDefinition(name, title, size, items);
+    }
+
+    /** Restores potion / tipped-arrow metadata saved by {@link #serializeItem}. */
+    private void applyPotionMeta(ItemStack stack, Map<?, ?> map) {
+        if (!(stack.getItemMeta() instanceof org.bukkit.inventory.meta.PotionMeta pm)) return;
+        Object baseType = map.get("potion-base-type");
+        if (baseType != null) {
+            try {
+                pm.setBasePotionType(org.bukkit.potion.PotionType.valueOf(
+                        String.valueOf(baseType).toUpperCase()));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        Object colorObj = map.get("potion-color");
+        if (colorObj != null) {
+            try { pm.setColor(org.bukkit.Color.fromRGB(Integer.parseInt(String.valueOf(colorObj)))); }
+            catch (NumberFormatException ignored) {}
+        }
+        if (map.get("potion-effects") instanceof List<?> effs) {
+            for (Object o : effs) {
+                if (!(o instanceof Map<?, ?> em)) continue;
+                Object typeKey = em.get("type");
+                if (typeKey == null) continue;
+                org.bukkit.potion.PotionEffectType type;
+                try {
+                    type = org.bukkit.Registry.EFFECT.get(
+                            org.bukkit.NamespacedKey.minecraft(String.valueOf(typeKey).toLowerCase()));
+                } catch (Throwable ignored) { type = null; }
+                if (type == null) continue;
+                int duration  = readInt(em.get("duration"), 200);
+                int amplifier = readInt(em.get("amplifier"), 0);
+                boolean ambient   = Boolean.TRUE.equals(em.get("ambient"));
+                boolean particles = !Boolean.FALSE.equals(em.get("particles"));
+                boolean icon      = !Boolean.FALSE.equals(em.get("icon"));
+                pm.addCustomEffect(new org.bukkit.potion.PotionEffect(
+                        type, duration, amplifier, ambient, particles, icon), true);
+            }
+        }
+        stack.setItemMeta(pm);
+    }
+
+    private static int readInt(Object o, int fallback) {
+        if (o == null) return fallback;
+        try { return Integer.parseInt(String.valueOf(o)); }
+        catch (NumberFormatException ex) { return fallback; }
     }
 
     // ── Create ───────────────────────────────────────────────────────────────
@@ -272,6 +339,33 @@ public class MenuManager {
             }
             if (meta.hasCustomModelData()) entry.put("custom-model-data", meta.getCustomModelData());
             if (meta.isUnbreakable()) entry.put("unbreakable", true);
+
+            // Potion / tipped-arrow / splash / lingering metadata. Without this
+            // a Strength II splash potion or a tipped arrow was saved as its
+            // bare material and came back as a plain water bottle / plain arrow.
+            if (meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+                try {
+                    org.bukkit.potion.PotionType baseType = pm.getBasePotionType();
+                    if (baseType != null) entry.put("potion-base-type", baseType.name());
+                } catch (Throwable ignored) {}
+                if (pm.hasColor() && pm.getColor() != null) {
+                    entry.put("potion-color", pm.getColor().asRGB());
+                }
+                if (pm.hasCustomEffects()) {
+                    List<Map<String, Object>> effList = new ArrayList<>();
+                    for (org.bukkit.potion.PotionEffect ef : pm.getCustomEffects()) {
+                        Map<String, Object> ee = new LinkedHashMap<>();
+                        ee.put("type", ef.getType().getKey().getKey());
+                        ee.put("duration", ef.getDuration());
+                        ee.put("amplifier", ef.getAmplifier());
+                        ee.put("ambient", ef.isAmbient());
+                        ee.put("particles", ef.hasParticles());
+                        ee.put("icon", ef.hasIcon());
+                        effList.add(ee);
+                    }
+                    entry.put("potion-effects", effList);
+                }
+            }
         }
         return entry;
     }

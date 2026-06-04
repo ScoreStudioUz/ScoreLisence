@@ -64,6 +64,11 @@ public class KitManager {
 
     // ── Give Kit ──────────────────────────────────────────────────────────────
 
+    /**
+     * Kit-settings region give: NO cosmetics. The player edits / saves this
+     * exact inventory, so applying cosmetic shields/armor here would bake them
+     * into the saved personal kit and corrupt the save logic.
+     */
     public void giveVanillaKit(Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
@@ -72,24 +77,43 @@ public class KitManager {
         if (personal != null && personal.length > 0) {
             applyAllContents(player, personal);
         } else {
-            applyDefaultKit(player, "vanilla");
+            applyDefaultKit(player, "vanilla", false);
         }
     }
 
+    /** Kit-settings region give of the default kit (no cosmetics — see above). */
     public void giveDefaultVanillaKit(Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
         player.getInventory().setItemInOffHand(null);
-        applyDefaultKit(player, "vanilla");
+        applyDefaultKit(player, "vanilla", false);
     }
 
+    /**
+     * Match give: cosmetics ARE applied (this is what the player fights with).
+     * For the vanilla kit type the player's personal saved kit takes priority,
+     * then cosmetics are layered on top of it.
+     */
     public void giveKitByType(Player player, String kitType) {
         player.getInventory().clear();
+        player.getInventory().setArmorContents(new ItemStack[4]);
+        player.getInventory().setItemInOffHand(null);
         if (kitType.equals("vanilla")) {
-            giveVanillaKit(player);
+            ItemStack[] personal = personalKits.get(player.getUniqueId());
+            ItemStack[] items = (personal != null && personal.length > 0)
+                    ? cloneItems(personal)
+                    : loadDefaultKit("vanilla");
+            applyCosmeticsToKit(player, items);
+            applyAllContents(player, items);
             return;
         }
-        applyDefaultKit(player, kitType);
+        applyDefaultKit(player, kitType, true);
+    }
+
+    private ItemStack[] cloneItems(ItemStack[] src) {
+        ItemStack[] out = new ItemStack[src.length];
+        for (int i = 0; i < src.length; i++) out[i] = src[i] == null ? null : src[i].clone();
+        return out;
     }
 
     // ── Personal kit reset ─────────────────────────────────────────────────────
@@ -247,6 +271,13 @@ public class KitManager {
                 if (meta.isUnbreakable()) {
                     entry.put("unbreakable", true);
                 }
+                // Custom-item marker (e.g. golden_head). Without this the
+                // PersistentDataContainer is dropped on YAML round-trip and the
+                // item comes back as a plain head with no special behaviour.
+                String customId = com.scorepvp.item.CustomItemRegistry.getCustomItemId(item);
+                if (customId != null) {
+                    entry.put("custom-item-id", customId);
+                }
                 // Potion (incl. splash / lingering / tipped arrow) metadata —
                 // without this strength II splash was saved as a plain water
                 // bottle. Persists the base potion type + custom effects so
@@ -342,9 +373,9 @@ public class KitManager {
         }
     }
 
-    private void applyDefaultKit(Player player, String kitName) {
+    private void applyDefaultKit(Player player, String kitName, boolean withCosmetics) {
         ItemStack[] items = loadDefaultKit(kitName);
-        applyCosmeticsToKit(player, items);
+        if (withCosmetics) applyCosmeticsToKit(player, items);
         // applyAllContents lays out the 41-slot array correctly:
         //   slots  0..35 → storage (hotbar + main inv)
         //   slots 36..39 → armor (boots, leggings, chestplate, helmet)
@@ -444,6 +475,24 @@ public class KitManager {
             try { slot = Integer.parseInt(String.valueOf(map.get("slot"))); }
             catch (NumberFormatException ex) { continue; }
             if (slot < 0 || slot >= result.length) continue;
+
+            // Custom item (e.g. golden_head) — rebuild from the registry so its
+            // texture, food component and PersistentDataContainer marker are all
+            // restored exactly. Honour the saved amount.
+            Object customId = map.get("custom-item-id");
+            if (customId != null && plugin.getCustomItemRegistry() != null) {
+                ItemStack custom = plugin.getCustomItemRegistry().buildItem(String.valueOf(customId));
+                if (custom != null) {
+                    int amt = 1;
+                    if (map.containsKey("amount")) {
+                        try { amt = Integer.parseInt(String.valueOf(map.get("amount"))); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                    custom.setAmount(Math.max(1, amt));
+                    result[slot] = custom;
+                    continue;
+                }
+            }
 
             Material mat;
             try { mat = Material.valueOf(String.valueOf(map.get("material")).toUpperCase()); }

@@ -90,7 +90,43 @@ public class CustomItemRegistry {
         );
 
         skull.setItemMeta(meta);
+
+        // Make it edible. On 1.21.2+ a FOOD component alone does NOT make an
+        // item consumable — it also needs a CONSUMABLE component. We set both
+        // via the Paper data-component API: EAT animation (golden-apple style)
+        // at kelp speed (~0.865s), always eatable, zero nutrition (the real
+        // effects come from CustomItemListener on PlayerItemConsumeEvent).
+        applyEdible(skull);
         return skull;
+    }
+
+    /**
+     * Adds FOOD + CONSUMABLE data components so the head plays the eat
+     * animation, can be eaten at full hunger, and finishes at kelp speed.
+     * Wrapped in try/catch so a missing API on an unexpected build degrades
+     * gracefully (item just won't be edible) rather than crashing item build.
+     */
+    public static void applyEdible(ItemStack stack) {
+        try {
+            io.papermc.paper.datacomponent.item.FoodProperties food =
+                    io.papermc.paper.datacomponent.item.FoodProperties.food()
+                            .nutrition(0)
+                            .saturation(0f)
+                            .canAlwaysEat(true)
+                            .build();
+            stack.setData(io.papermc.paper.datacomponent.DataComponentTypes.FOOD, food);
+
+            io.papermc.paper.datacomponent.item.Consumable consumable =
+                    io.papermc.paper.datacomponent.item.Consumable.consumable()
+                            .consumeSeconds(0.865f) // kelp speed
+                            .animation(io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation.EAT)
+                            .sound(net.kyori.adventure.key.Key.key("minecraft:entity.generic.eat"))
+                            .hasConsumeParticles(true)
+                            .build();
+            stack.setData(io.papermc.paper.datacomponent.DataComponentTypes.CONSUMABLE, consumable);
+        } catch (Throwable ignored) {
+            // Data-component API absent — item simply won't be edible.
+        }
     }
 
     /**

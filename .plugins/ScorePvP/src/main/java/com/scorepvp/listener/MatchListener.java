@@ -197,6 +197,15 @@ public class MatchListener implements Listener {
         // Would this damage drop them below 0?
         if (victim.getHealth() - e.getFinalDamage() > 0) return;
 
+        // Totem of Undying: if the victim is holding a totem AND the damage is a
+        // cause a totem can actually save against, let vanilla pop it instead of
+        // intercepting. Cancelling the damage here would consume the lethal blow
+        // without the totem ever triggering, so totems felt broken. Vanilla
+        // resurrects them at 1 HP and the round continues. Void / kill / world
+        // border are NOT totem-savable, so for those we still do the smooth
+        // death intercept (otherwise the player would hit the vanilla screen).
+        if (isHoldingTotem(victim) && isTotemSavable(e.getCause())) return;
+
         // Intercept — no real death.
         e.setCancelled(true);
 
@@ -342,6 +351,22 @@ public class MatchListener implements Listener {
             return null;
         }
         return lastAttacker.get(victim);
+    }
+
+    /** True if the player has a Totem of Undying in either hand (vanilla pop rule). */
+    private boolean isHoldingTotem(Player p) {
+        ItemStack main = p.getInventory().getItemInMainHand();
+        if (main != null && main.getType() == Material.TOTEM_OF_UNDYING) return true;
+        ItemStack off = p.getInventory().getItemInOffHand();
+        return off != null && off.getType() == Material.TOTEM_OF_UNDYING;
+    }
+
+    /** Damage causes a Totem of Undying does NOT protect against (it still kills). */
+    private boolean isTotemSavable(EntityDamageEvent.DamageCause cause) {
+        return switch (cause) {
+            case VOID, WORLD_BORDER, KILL -> false;
+            default -> true;
+        };
     }
 
     // ── Arena bounds check ────────────────────────────────────────────────────
