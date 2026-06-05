@@ -14,10 +14,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import com.scorepvp.model.Match;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -105,6 +104,28 @@ public class ProfileGUI {
             return;
         }
 
+        // For an offline / never-cached target, neither tiers nor stats are in
+        // memory, so the profile showed "unranked" with zeroed stats. Warm up
+        // both from the DB first, then render. Stats warmup populates the cache
+        // that render()'s getStats() calls read.
+        var statsWarmup = new java.util.ArrayList<java.util.concurrent.CompletableFuture<?>>();
+        for (PvPMode mode : plugin.getConfigManager().getModes()) {
+            statsWarmup.add(plugin.getStatsManager().loadAsync(targetUuid, mode.getId()));
+        }
+        // allOf's whenComplete fires on a background thread. loadTiersForDisplay's
+        // cache-hit path invokes its callback synchronously on the calling thread,
+        // so without hopping back to the main thread first, render() (which builds
+        // and opens an inventory) would run off-thread for online (cached) targets.
+        java.util.concurrent.CompletableFuture
+                .allOf(statsWarmup.toArray(new java.util.concurrent.CompletableFuture[0]))
+                .whenComplete((v, t) -> Bukkit.getScheduler().runTask(plugin, () ->
+                        plugin.getTierManager().loadTiersForDisplay(targetUuid, tierMap ->
+                                render(viewer, target, targetUuid, targetName, tierMap))));
+    }
+
+    private void render(Player viewer, OfflinePlayer target, UUID targetUuid,
+                        String targetName, Map<String, String> tierMap) {
+        if (!viewer.isOnline()) return;
         Inventory inv = Bukkit.createInventory(null, guiSize,
                 ColorUtil.color(titleTemplate.replace("{player}", targetName)));
 
@@ -144,7 +165,7 @@ public class ProfileGUI {
             totalLosses += s.getLosses();
 
             // Find highest tier across all modes
-            String tier = plugin.getTierManager().getTier(targetUuid, mode.getId());
+            String tier = tierMap.get(mode.getId());
             if (tier != null && !tier.isBlank()) {
                 int idx = tierOrder.indexOf(tier);
                 if (idx > highestTierIndex) {
@@ -180,7 +201,7 @@ public class ProfileGUI {
         for (PvPMode mode : modes) {
             if (slotIdx >= modeSlots.length) break;
 
-            String tier = plugin.getTierManager().getTier(targetUuid, mode.getId());
+            String tier = tierMap.get(mode.getId());
 
             // Skip modes without a tier — do NOT advance slotIdx
             if (tier == null || tier.isBlank()) continue;

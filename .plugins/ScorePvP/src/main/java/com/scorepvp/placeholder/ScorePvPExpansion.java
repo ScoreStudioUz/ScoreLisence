@@ -22,6 +22,17 @@ import org.jetbrains.annotations.Nullable;
  *   %scorepvp_deaths_<mode>%
  *   %scorepvp_kd_<mode>%
  *   %scorepvp_winrate_<mode>%
+ *
+ * Overall placeholders (aggregate across ALL modes):
+ *   %scorepvp_wins_total%
+ *   %scorepvp_losses_total%
+ *   %scorepvp_kills_total%
+ *   %scorepvp_deaths_total%
+ *   %scorepvp_kd_total%
+ *   %scorepvp_winrate_total%
+ *   %scorepvp_highest_tier%            e.g. [LT3]
+ *   %scorepvp_highest_tier_raw%        e.g. LT3
+ *
  *   %scorepvp_playtime%
  *   %scorepvp_playtime_hours%
  *   %scorepvp_status%
@@ -64,7 +75,26 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
             return resolveTop(parts);
         }
 
+        // ── Overall (aggregate across all modes) ─────────────────────────────────
+        switch (params) {
+            case "highest_tier"     -> { return resolveHighestTier(player, false); }
+            case "highest_tier_raw" -> { return resolveHighestTier(player, true);  }
+            case "wins_total"       -> { return String.valueOf(totalStat(player, "wins"));   }
+            case "losses_total"     -> { return String.valueOf(totalStat(player, "losses")); }
+            case "kills_total"      -> { return String.valueOf(totalStat(player, "kills"));  }
+            case "deaths_total"     -> { return String.valueOf(totalStat(player, "deaths")); }
+            case "kd_total"         -> { return resolveKdTotal(player);      }
+            case "winrate_total"    -> { return resolveWinrateTotal(player); }
+            default -> { /* fall through to per-mode + simple placeholders */ }
+        }
+
         // ── Player-specific ──────────────────────────────────────────────────────
+        // _raw must be checked before the generic tier_ prefix, otherwise
+        // tier_<mode>_raw would be swallowed and resolved as a colored tier.
+        if (params.startsWith("tier_") && params.endsWith("_raw")) {
+            String mode = params.substring(5, params.length() - 4);
+            return resolveTier(player, mode, true);
+        }
         if (params.startsWith("tier_"))          return resolveTier(player,    params.substring(5), false);
         if (params.startsWith("wins_"))          return resolveStat(player,    params.substring(5), "wins");
         if (params.startsWith("losses_"))        return resolveStat(player,    params.substring(7), "losses");
@@ -72,12 +102,6 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         if (params.startsWith("deaths_"))        return resolveStat(player,    params.substring(7), "deaths");
         if (params.startsWith("kd_"))            return resolveKd(player,      params.substring(3));
         if (params.startsWith("winrate_"))       return resolveWinrate(player,  params.substring(8));
-
-        // tier_<mode>_raw
-        if (params.startsWith("tier_") && params.endsWith("_raw")) {
-            String mode = params.substring(5, params.length() - 4);
-            return resolveTier(player, mode, true);
-        }
 
         return switch (params) {
             case "playtime"       -> resolvePlaytime(player, false);
@@ -144,6 +168,54 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         int total = s.getWins() + s.getLosses();
         if (total == 0) return "0%";
         return (int) Math.round((double) s.getWins() / total * 100) + "%";
+    }
+
+    // ── Overall aggregates ──────────────────────────────────────────────────────
+
+    private long totalStat(Player p, String field) {
+        long sum = 0;
+        for (var mode : plugin.getConfigManager().getModes()) {
+            PlayerStats s = plugin.getStatsManager().get(p.getUniqueId(), mode.getId());
+            sum += switch (field) {
+                case "wins"   -> s.getWins();
+                case "losses" -> s.getLosses();
+                case "kills"  -> s.getKills();
+                case "deaths" -> s.getDeaths();
+                default       -> 0;
+            };
+        }
+        return sum;
+    }
+
+    private String resolveKdTotal(Player p) {
+        long kills  = totalStat(p, "kills");
+        long deaths = totalStat(p, "deaths");
+        if (deaths == 0) return String.format("%.2f", (double) kills);
+        return String.format("%.2f", (double) kills / deaths);
+    }
+
+    private String resolveWinrateTotal(Player p) {
+        long wins   = totalStat(p, "wins");
+        long losses = totalStat(p, "losses");
+        long total  = wins + losses;
+        if (total == 0) return "0%";
+        return (int) Math.round((double) wins / total * 100) + "%";
+    }
+
+    /** Highest tier the player holds across all modes, ranked by configured tier order. */
+    private String resolveHighestTier(Player p, boolean raw) {
+        var tiers = plugin.getTierManager().getAllTiers(p.getUniqueId());
+        var order = plugin.getConfigManager().getTierOrder();
+        String best = null;
+        int bestIdx = -1;
+        for (String tier : tiers.values()) {
+            if (tier == null || tier.isBlank()) continue;
+            int idx = order.indexOf(tier);
+            if (idx > bestIdx) { bestIdx = idx; best = tier; }
+        }
+        if (best == null) return plugin.getConfigManager().rawStr("profile.unranked");
+        if (raw) return best;
+        return plugin.getConfigManager().getTierColor(best) + "[" + best + "]";
     }
 
     private String resolvePlaytime(Player p, boolean hoursOnly) {

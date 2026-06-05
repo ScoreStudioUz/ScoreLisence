@@ -54,6 +54,25 @@ public class TierManager {
     }
 
     /**
+     * Resolves a player's full tier map for read-only display (e.g. /profile of
+     * another player). If the tiers are already cached (online player) the
+     * callback fires immediately on the calling thread; otherwise the map is
+     * loaded from the DB off-thread and the callback is delivered back on the
+     * main thread. This is why an offline player's profile previously showed
+     * "unranked" — getTier only reads the cache, which is empty for them.
+     */
+    public void loadTiersForDisplay(UUID uuid, java.util.function.Consumer<Map<String, String>> callback) {
+        Map<String, String> cached = cache.get(uuid);
+        if (cached != null) {
+            callback.accept(cached);
+            return;
+        }
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getTiers().loadTiers(uuid))
+                .thenAccept(tiers -> Bukkit.getScheduler().runTask(plugin,
+                        () -> callback.accept(tiers != null ? tiers : Map.of())));
+    }
+
+    /**
      * Returns the (uuid, name) of a player that admins may target with a tier
      * command, even when that player is currently offline. Resolution order:
      * <ol>

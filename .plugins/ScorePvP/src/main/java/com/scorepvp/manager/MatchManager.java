@@ -28,6 +28,12 @@ public class MatchManager {
     // ── Factory ───────────────────────────────────────────────────────────────
 
     public Match createMatch(Arena arena, PvPMode mode, int rounds, Player p1, Player p2) {
+        // Guard: never put a player into a second match. Without this a queued
+        // arena-search race could overwrite byPlayer and orphan the old match,
+        // which is what produced the repeated "opponent left" win spam.
+        if (byPlayer.containsKey(p1.getUniqueId()) || byPlayer.containsKey(p2.getUniqueId())) {
+            return null;
+        }
         // Validate arena is ready
         if (!arena.isFullyConfigured() || !arena.isFree()) return null;
         arena.setBusy();
@@ -42,6 +48,8 @@ public class MatchManager {
     }
 
     public Match createFfaMatch(Arena arena, PvPMode mode, java.util.List<Player> players) {
+        // Guard: don't start if any participant is already in a match.
+        for (Player p : players) if (byPlayer.containsKey(p.getUniqueId())) return null;
         // Validate arena
         if (!arena.isFree()) return null;
         arena.setBusy();

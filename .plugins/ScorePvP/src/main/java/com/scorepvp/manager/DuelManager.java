@@ -1,10 +1,7 @@
 package com.scorepvp.manager;
 
 import com.scorepvp.ScorePvP;
-import com.scorepvp.model.Arena;
 import com.scorepvp.model.DuelRequest;
-import com.scorepvp.model.Match;
-import com.scorepvp.model.MatchPlayer;
 import com.scorepvp.model.PvPMode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -22,6 +19,11 @@ public class DuelManager {
     private final Map<UUID, DuelRequest> pending = new ConcurrentHashMap<>();
     private final Map<String, Queue<UUID>> queues = new ConcurrentHashMap<>();
     private final Map<UUID, String> inQueue = new ConcurrentHashMap<>();
+    // Players currently inside a startDuelWithTimeout retry loop (arena search).
+    // Prevents a player from being committed to a second match in another mode
+    // while still waiting for a free arena — the root of the duplicate-match /
+    // repeated "opponent left" spam bug.
+    private final Set<UUID> pendingMatch = ConcurrentHashMap.newKeySet();
 
     public DuelManager(ScorePvP plugin) {
         this.plugin = plugin;
@@ -33,11 +35,11 @@ public class DuelManager {
         ConfigManager cfg = plugin.getConfigManager();
 
         // FIX (sections 3+8): block duel while in match or party
-        if (plugin.getMatchManager().isInMatch(sender.getUniqueId())) {
+        if (isBusy(sender.getUniqueId())) {
             sender.sendMessage(cfg.msg("duel.you-in-match"));
             return;
         }
-        if (plugin.getMatchManager().isInMatch(target.getUniqueId())) {
+        if (isBusy(target.getUniqueId())) {
             sender.sendMessage(cfg.msg("duel.target-in-match", "{player}", target.getName()));
             return;
         }
@@ -141,7 +143,7 @@ public class DuelManager {
 
     public boolean acceptDuel(Player acceptor) {
         // FIX (section 3): block accept while in active match
-        if (plugin.getMatchManager().isInMatch(acceptor.getUniqueId())) {
+        if (isBusy(acceptor.getUniqueId())) {
             acceptor.sendMessage(plugin.getConfigManager().msg("duel.you-in-match"));
             return false;
         }
@@ -181,7 +183,7 @@ public class DuelManager {
 
     public boolean acceptDuelFrom(Player acceptor, String senderName) {
         // FIX (section 3): block accept while in active match
-        if (plugin.getMatchManager().isInMatch(acceptor.getUniqueId())) {
+        if (isBusy(acceptor.getUniqueId())) {
             acceptor.sendMessage(plugin.getConfigManager().msg("duel.you-in-match"));
             return false;
         }
@@ -219,30 +221,50 @@ public class DuelManager {
     }
 
     private void startDuelWithTimeout(Player p1, Player p2, String modeName, int rounds, int attemptNo) {
+        UUID u1 = p1.getUniqueId(), u2 = p2.getUniqueId();
+
+        // On the first attempt, commit both players to THIS pending match so they
+        // can't be pulled into another mode's match while we search for an arena.
+        if (attemptNo == 0) {
+            pendingMatch.add(u1);
+            pendingMatch.add(u2);
+        }
+
         int retryTicks  = plugin.getConfig().getInt("arena.retry-search-ticks", 100);
         int maxAttempts = plugin.getConfig().getInt("arena.search-timeout-seconds", 60)
                 / Math.max(1, retryTicks / 20);
 
+        // Abort the whole search if either player went offline or got committed to
+        // an actual match in the meantime — otherwise we'd create a duplicate.
+        if (p1 == null || !p1.isOnline() || p2 == null || !p2.isOnline()
+                || plugin.getMatchManager().isInMatch(u1)
+                || plugin.getMatchManager().isInMatch(u2)) {
+            clearPending(u1, u2);
+            return;
+        }
+
         if (attemptNo >= maxAttempts) {
             String msg = plugin.getConfigManager().msg("duel.arena-not-found-timeout");
-            if (p1 != null && p1.isOnline()) p1.sendMessage(msg);
-            if (p2 != null && p2.isOnline()) p2.sendMessage(msg);
+            if (p1.isOnline()) p1.sendMessage(msg);
+            if (p2.isOnline()) p2.sendMessage(msg);
+            clearPending(u1, u2);
             return;
         }
 
         PvPMode mode = plugin.getConfigManager().getMode(modeName);
         if (mode == null) {
-            if (p1 != null && p1.isOnline())
+            if (p1.isOnline())
                 p1.sendMessage(plugin.getConfigManager().msg("duel.mode-not-found", "{mode}", modeName));
+            clearPending(u1, u2);
             return;
         }
 
         var opt = plugin.getArenaManager().findFreeArena(mode);
         if (opt.isEmpty()) {
             if (attemptNo == 0) {
-                if (p1 != null && p1.isOnline())
+                if (p1.isOnline())
                     plugin.getConfigManager().sendBlockMessage(p1, "duel-no-arena-block", "{mode}", mode.getDisplayName());
-                if (p2 != null && p2.isOnline())
+                if (p2.isOnline())
                     plugin.getConfigManager().sendBlockMessage(p2, "duel-no-arena-block", "{mode}", mode.getDisplayName());
             }
             int next = attemptNo + 1;
@@ -251,7 +273,15 @@ public class DuelManager {
             return;
         }
 
-        plugin.getMatchManager().createMatch(opt.get(), mode, rounds, p1, p2);
+        clearPending(u1, u2);
+        // createMatch returns null if either player is somehow already in byPlayer
+        // (the duplicate-match guard) or the arena couldn't host the match. Either
+        // way, tell both players instead of silently dropping the duel.
+        if (plugin.getMatchManager().createMatch(opt.get(), mode, rounds, p1, p2) == null) {
+            String msg = plugin.getConfigManager().msg("duel.arena-not-found-timeout");
+            if (p1.isOnline()) p1.sendMessage(msg);
+            if (p2.isOnline()) p2.sendMessage(msg);
+        }
     }
 
     // ── Queue ────────────────────────────────────────────────────────────────
@@ -270,7 +300,7 @@ public class DuelManager {
                     "{player_version}", pv));
             return;
         }
-        if (plugin.getMatchManager().isInMatch(player.getUniqueId())) {
+        if (isBusy(player.getUniqueId())) {
             player.sendMessage(plugin.getConfigManager().msg("queue.in-match"));
             return;
         }
@@ -332,5 +362,19 @@ public class DuelManager {
         }
         pending.entrySet().removeIf(e ->
                 e.getValue().getSender().equals(uuid) || e.getValue().getTarget().equals(uuid));
+        pendingMatch.remove(uuid);
+    }
+
+    private void clearPending(UUID a, UUID b) {
+        pendingMatch.remove(a);
+        pendingMatch.remove(b);
+    }
+
+    /**
+     * True if the player is busy in a way that should block a new duel/queue:
+     * already in a match OR in the middle of an arena-search for a pending match.
+     */
+    public boolean isBusy(UUID uuid) {
+        return plugin.getMatchManager().isInMatch(uuid) || pendingMatch.contains(uuid);
     }
 }
