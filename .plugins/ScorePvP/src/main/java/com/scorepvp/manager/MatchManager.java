@@ -191,10 +191,16 @@ public class MatchManager {
                     "{player}", winner.getName()));
         }
 
+        // Detach from both lookup maps synchronously — see endMatch for why
+        // (closes the stale-FINISHED-match re-entry window that caused the
+        // forfeit/auto-win spam spiral).
+        java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
+        for (UUID uuid : participants) byPlayer.remove(uuid);
+        byId.remove(match.getMatchId());
+
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            for (UUID uuid : match.getAllUuids()) {
-                byPlayer.remove(uuid);
+            for (UUID uuid : participants) {
                 Player p = player(uuid);
                 if (p == null) continue;
                 clearInventory(p);
@@ -211,7 +217,6 @@ public class MatchManager {
             if (match.getArena().isVanilla()) {
                 plugin.getArenaRestoreManager().startRestore(match, null);
             }
-            byId.remove(match.getMatchId());
             plugin.getRoundStatsManager().clearMatch(match.getMatchId());
         }, 60L);
     }
@@ -460,10 +465,23 @@ public class MatchManager {
             }
         }
 
+        // Detach the match from BOTH lookup maps SYNCHRONOUSLY, right now —
+        // before the deferred teleport runs. Previously byPlayer/byId removal
+        // lived inside the 60-tick runTaskLater, so for 3 seconds after a match
+        // finished the players were still mapped to a FINISHED match. A quit /
+        // /leave / watchdog pass in that window re-entered handleDisconnect or
+        // endMatch on the stale match, re-broadcasting the forfeit and stacking
+        // another teleport task — the "auto-win spam that multiplies until
+        // restart" bug. Detaching here closes that window entirely. Player
+        // cleanup (inventory, teleport, arena restore) stays deferred so the
+        // geometry doesn't pop under their feet during the victory title.
+        java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
+        for (UUID uuid : participants) byPlayer.remove(uuid);
+        byId.remove(match.getMatchId());
+
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            for (UUID uuid : match.getAllUuids()) {
-                byPlayer.remove(uuid);
+            for (UUID uuid : participants) {
                 Player p = player(uuid);
                 if (p == null) continue;
                 clearInventory(p);
@@ -481,7 +499,6 @@ public class MatchManager {
             if (match.getArena().isVanilla()) {
                 plugin.getArenaRestoreManager().startRestore(match, null);
             }
-            byId.remove(match.getMatchId());
             plugin.getRoundStatsManager().clearMatch(match.getMatchId());
         }, 60L);
     }
@@ -532,6 +549,15 @@ public class MatchManager {
     public void handleDisconnect(UUID uuid) {
         Match match = byPlayer.get(uuid);
         if (match == null) return;
+
+        // A FINISHED match is already torn down (byPlayer is normally cleared
+        // synchronously in endMatch, but guard anyway): never re-broadcast a
+        // forfeit or re-end it. Just drop the stale mapping. This is the second
+        // layer of protection against the auto-win spam spiral.
+        if (match.getState() == Match.State.FINISHED) {
+            byPlayer.remove(uuid);
+            return;
+        }
 
         if (match.isFfa()) {
             MatchPlayer mp = match.getFighter(uuid);
