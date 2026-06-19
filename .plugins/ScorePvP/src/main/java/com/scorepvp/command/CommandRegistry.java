@@ -265,6 +265,45 @@ class ProfileCommand implements CommandExecutor, TabCompleter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  /stopduel <ник>  — admin: force-end a player's duel as a DRAW
+// ─────────────────────────────────────────────────────────────────────────────
+class StopDuelCommand implements CommandExecutor, TabCompleter {
+    private final ScorePvP p;
+    StopDuelCommand(ScorePvP p) { this.p = p; }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender s, @NotNull Command c, @NotNull String l, @NotNull String[] args) {
+        if (!s.hasPermission("scorepvp.stopduel")) { s.sendMessage(p.getConfigManager().msg("no-permission")); return true; }
+        if (args.length < 1) {
+            s.sendMessage(p.getConfigManager().rawMsg("prefix") + " " + p.getConfigManager().rawMsg("match.admin-draw-usage"));
+            return true;
+        }
+        Player target = Bukkit.getPlayerExact(args[0]);
+        if (target == null) {
+            s.sendMessage(p.getConfigManager().msg("player-not-found", "{player}", args[0]));
+            return true;
+        }
+        Match match = p.getMatchManager().getMatch(target.getUniqueId());
+        if (match == null || !match.isFighter(target.getUniqueId())) {
+            s.sendMessage(p.getConfigManager().rawMsg("prefix") + " " + p.getConfigManager().rawMsg("match.admin-draw-not-in-duel", "{player}", target.getName()));
+            return true;
+        }
+        p.getMatchManager().forceDraw(match);
+        s.sendMessage(p.getConfigManager().rawMsg("prefix") + " " + p.getConfigManager().rawMsg("match.admin-draw-done", "{player}", target.getName()));
+        return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender s, @NotNull Command c, @NotNull String l, @NotNull String[] a) {
+        if (!s.hasPermission("scorepvp.stopduel")) return List.of();
+        if (a.length == 1) return Bukkit.getOnlinePlayers().stream()
+                .filter(pl -> p.getMatchManager().isFighter(pl.getUniqueId()))
+                .map(Player::getName).filter(n -> n.toLowerCase().startsWith(a[0].toLowerCase())).collect(Collectors.toList());
+        return List.of();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Register all commands
 // ─────────────────────────────────────────────────────────────────────────────
 public class CommandRegistry {
@@ -277,6 +316,7 @@ public class CommandRegistry {
         reg(plugin, "arena",   new ArenaCommand(plugin));
         reg(plugin, "profile", new ProfileCommand(plugin));
         reg(plugin, "duel",    new DuelCommand(plugin));
+        reg(plugin, "stopduel", new StopDuelCommand(plugin));
     }
 
     private static void reg(ScorePvP plugin, String name, Object handler) {

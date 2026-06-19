@@ -176,7 +176,7 @@ public class ProfileGUI {
         }
 
         String highestTierDisplay = highestTier != null
-                ? plugin.getConfigManager().getTierColor(highestTier) + "[" + highestTier + "]"
+                ? plugin.getConfigManager().getTierDisplay(highestTier)
                 : plugin.getConfigManager().rawStr("profile.unranked");
 
         List<String> statsTpl = statsLoreTpl != null ? statsLoreTpl : List.of(
@@ -207,7 +207,7 @@ public class ProfileGUI {
             if (tier == null || tier.isBlank()) continue;
 
             PlayerStats stats = plugin.getStatsManager().get(targetUuid, mode.getId());
-            String tierDisplay = plugin.getConfigManager().getTierColor(tier) + "[" + tier + "]";
+            String tierDisplay = plugin.getConfigManager().getTierDisplay(tier, mode.getId());
 
             List<String> modeTpl = modeLore != null ? modeLore : List.of(
                     plugin.getConfigManager().rawStr("profile.tier-label"),

@@ -1,0 +1,20 @@
+name: FreezeWorld
+version: 1.0.0
+main: net.scorestudios.freezeworld.FreezeWorldPlugin
+api-version: '1.21'
+author: ScoreStudios
+description: Prevents floating sand/gravel/flowers/leaves from breaking when chunks load.
+load: STARTUP
+folia-supported: true
+
+commands:
+  freezeworld:
+    description: FreezeWorld control
+    usage: /freezeworld [on|off|status]
+    aliases: [fw]
+    permission: freezeworld.admin
+
+permissions:
+  freezeworld.admin:
+    description: Allows toggling FreezeWorld
+    default: op

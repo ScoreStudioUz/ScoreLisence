@@ -1,0 +1,667 @@
+# ============================================================
+#               ScorePvP — Языковой файл (RU)
+# ============================================================
+
+prefix: "&8[&bScorePvP&8]&r "
+
+# Общие
+no-permission: "&cBu buyruqdan foydalanish uchun huquqingiz yo'q."
+player-not-found: "O'yinchi &e{player} &cmavjud emas yoki o'yinda emas."
+invalid-usage: "&cNoto'g'ri ishlatish. Ishlatish: &e{usage}"
+players-only: "&cFaqat o'yinchi bu buyruqdan foydalanishi mumkin."
+
+# Инвентарь
+inventory-protected: "&cBu element himoyalangan va uni boshqa joyga ko'chirish mumkin emas."
+
+# Пати
+party:
+  already-in-party: "&cSiz allaqachon guruhdasiz."
+  not-in-party: "&cSiz guruhda emassiz."
+  not-leader: "&cSiz guruh rahbari emassiz."
+  no-invite: "&cSiz &e{player}&c dan taklif olmadingiz."
+  already-invited: "&e{player}&c allaqachon taklif qilingan."
+  target-in-party: "&e{player}&c allaqachon guruhda."
+  cannot-invite-self: "&cSiz o'zingizni taklif qila olmaysiz."
+  cannot-kick-self: "&cO'zingizni hayda olmaysiz. &e/party leave&c dan foydalaning."
+  not-member: "&e{player}&c guruh a'zosi emas."
+  invite-sent: "&e{player}&a ga taklif yuborildi."
+  invite-received: "&aSiz &e{player}&a dan taklif oldingiz. Qabul qilish uchun &b/party accept {player} &adan foydalaning."
+  joined: "&aSiz &e{player}&aning guruhiga qo'shildingiz."
+  member-joined: "&e{player} &aguruhga qo'shildi."
+  left: "&aSiz guruhni tark etdingiz."
+  member-left: "&e{player} &cguruhni tark etdi."
+  kicked: "&cSiz guruhdan haydaldingiz."
+  member-kicked: "&e{player} &cguruhdan haydaldi."
+  disbanded: "&cGuruh tarqatildi."
+  promoted: "&aSiz guruhni yangi rahbari bo'ldingiz."
+  promoted-notify: "&Rahbarlik &e{player}&a ga o'tqazildi."
+  chat-enabled: "&aGuruh chati faollashtirildi. Xabarlarni faqat guruh a'zolari ko'ra oladi."
+  chat-disabled: "&7Guruh chati o'chirildi."
+  chat-format: "&8[&bGuruh&8] &e{player}&7: &f{messege}"
+  pvp-blocked: "&cSiz guruhda bo'lganingizda, PvP rejimiga o'tish mumkin emas."
+  disbanded-owner-left: "&cRahbar o'yinni tark etgani sababli, guruh tarqatildi."
+  invites-disabled: "&e{player}&c guruhga takliflarni o'chirib qo'ygan."
+  target-in-match: "&e{player} &chozir o'yinda."
+  only-friends-invite: "&c&e{player} &cfaqat do'stlardan takliflarni qabul qiladi."
+  created: "&aGuruh yaratildi! O'yinchilarni taklif qiling: &e/party invite <ism>"
+  cannot-create-in-match: "&cJang paytida guruh tuza olmaysiz."
+  cannot-invite-in-match: "&cJang paytida guruhga taklif qila olmaysiz."
+  cannot-accept-in-match: "&cJang paytida taklifni qabul qila olmaysiz."
+  invite-denied: "&7Siz &e{player}&7ni taklifini rad etdingiz."
+  invite-denied-notify: "&e{player} &7guruhga taklifni rad etdi."
+  use-leave-in-match: "&cDueldan chiqish uchun &b/leave &cdan foydalaning."
+  cannot-kick-in-match: "&cJang paytida a'zolarni hayda olmaysiz."
+  cannot-disband-in-match: "&cJang paytida guruhni tarqata olmaysiz."
+  invite-header: "&e{player} &7sizni guruhga taklif qildi!"
+  invite-accept-btn: "&a[✔ Qabul qilish]"
+  invite-accept-hover: "&aTaklifni qabul qilish"
+  invite-decline-btn: "&c[✘ Отклонить]"
+  invite-decline-hover: "&cTaklifni rad etish"
+
+# Киты
+kit:
+  saved: "&aSizning vanilla kitingiz saqlandi!"
+  not-in-region: "&c/kit save buyrug'ini faqat «Kit sozlamalari» xonasida ishlata olasiz."
+  given: "&a&e{kit} &akiti berildi."
+  reset-done: "&aKit ma'lumotlari qayta tiklandi."
+  kit-saved-spawn: "&aKit saqlandi! Siz spawnga qaytdingiz."
+  kit-reset-blocked: "&c/kit reset «Kit sozlamalari» xonasida mumkun emas. &b/kit save &cishlating&7."
+
+# Тиры
+tier:
+  set: "&e{mode}&a &a&e{tier} &atieri &e{player} &aga berildi."
+  removed: "&e{player} &adan &e{mode}&a bo'limidagi tier olib tashlandi."
+  not-found: "&c&e{tier} &ctieri mavjud emas."
+  mode-not-found: "&c&e{mode} &crejimi mavjud emas."
+  info: "&e&b{player}&e tierlari:"
+  info-line: "  &7{mode}: &e{tier}"
+  no-tiers: "  &7Tierlar o'rnatilmagan."
+
+# Kit sozlamalari
+chest:
+  restored: "&7Sandiq qayta tiklandi."
+  saved: "&aSandiq ichidagi narsalar saqlandi."
+  admin-mode: "&e[Ad] &7Siz «Kit sozlamalari» xonasini tahrirlaysiz."
+  no-drop: "&cBu hududda hech qanday narsalarni tashlab yuborish mumkin emas.."
+  locked: "&cSandiqdan boshqa o'yinchi foydalanyabdi. Keyinroq urinib ko'ring."
+
+# Меню
+menu:
+  main-title: "&0PvP rejimini tanlash"
+  settings-title: "&0Sozlamalar"
+  mode-disabled: "&cRejim mavjud emas"
+  glass-name: "&r"
+  mode-lore: "&7Boshlash uchun bosing"
+  unavailable-version: "&cTalab qilinadigan versiya: &e{version}+"
+  unavailable-your-version: "&7Sizning versiyangiz: &c{version}"
+
+# Настройки — названия
+settings:
+  duel-requests:
+    name: "&fDuel takliflari"
+    lore:
+      - "&7Kim sizga duel takliflarini"
+      - "&7yubora oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  party-invites:
+    name: "&fGuruhga takliflar"
+    lore:
+      - "&7Kim sizni guruhga"
+      - "&7taklif qila oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  show-own-tier:
+    name: "&fTierlarni ko'rsatish"
+    lore:
+      - "&7Sizning tieringizni"
+      - "&7kim ko'roladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  friend-requests:
+    name: "&fDo'st arizalari"
+    lore:
+      - "&7Do'st arizalarini"
+      - "&7sizga yubora olishsinmi?"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  direct-messages:
+    name: "&fShaxsiy xabarlar"
+    lore:
+      - "&7Kim sizga /msg"
+      - "&7yordamida yoza oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  friend-join-notifier:
+    name: "&fKirish bildirishnomalari"
+    lore:
+      - "&7Do'stlaringiz o'yinga kirganda"
+      - "&7bildirishnoma yuborilsinmi?"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  profile-visibility:
+    name: "&fProfil sozlamalari"
+    lore:
+      - "&7Kim sizning profilingizni"
+      - "&7ko'ra oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+
+settings-values:
+  anyone: "&aHamma"
+  only-friends: "&eFaqat do'stlar"
+  enabled: "&aYoniq"
+  disabled: "&cO'chirilgan"
+  public: "&aOmmabop"
+  private: "&cShaxsiy"
+
+# ── Match ──────────────────────────────────────────────────────────────────────
+match:
+  countdown: 5
+  kill: "&c☠ &e{victim} &c{killer} &7tomonidan oldirildi."
+  round-win: "&aSiz yutdingiz!"
+  round-loss: "&cSiz o'ldingiz..."
+  victory: "&6&lG'ALABA!"
+  defeat: "&c&lMAG'LUBIYAT"
+  ffa-subtitle: "&7FFA — {count} ta o'yinchi"
+  round-subtitle: "&7Raund {current} / {total}"
+  fight: "&a&lJANG!"
+  ffa-remaining-score: "&7Qoldi: &e{count} &7ta o'yinchi"
+  ffa-kill: "&c☠ &e{dead} &7o'ldirildi"
+  ffa-kill-by: "&c☠ &e{dead} &c{killer} &7tomonidan oldirildi."
+  hp-remaining: "&a❤ &e{player} &c{hp} HP &7bilan qoldi."
+  players-remaining: "&7Qolgan o'yinchilar: &e{count}"
+  ffa-victory-subtitle: "&7Siz oxirgi tirik qolgansiz!"
+  ffa-winner: "&e{player} &aFFA ni yutdi!"
+  player-left: "&e{player} &7jangni tark etdi."
+  player-left-duel: "&e{player} &7duelni tark etdi."
+  forfeit-win: "&e{player} &aavtomatik tarzda go'lib bo'ldi, chunki raqib o'yinni tark etdi."
+  duel-winner: "&e{player} &ag'alaba qozondi &b{score}"
+  tie: "&7Durrang! Hisob &b{score1}&7:&b{score2}"
+  spectate-msg: "&e{player1} &7vs &e{player2} &7o'yinini kuzatish."
+  spectate-left: "&7Siz kuzatuv rejimiga otkazildingiz, o'yin davom etmoqda."
+  victory-subtitle: "&7Tabriklaymiz!"
+  defeat-subtitle: "&7Qayta sinab ko'ring.."
+  # Action bar shown to attackers with `duels.actionbar` on every successful hit.
+  # Placeholders: {ping} {dist} {dmg}
+  # Combo/hits/misses/accuracy убраны по запросу — оставлены только живые
+  # боевые метрики этого удара плюс собственный пинг игрока.
+  actionbar-hit: "&fPing: &a{ping}ms &8; &fMasofa: &a▲{dist} &8; &fZarar: &c♥{dmg}"
+
+# Cosmetics moved to a dedicated cosmetics.yml — see that file for the
+# menu titles, button names, and chat messages.
+
+# ── Block messages (styled multi-line) ────────────────────────────────────────
+# Round/duel finished blocks. Only header + winner + score remain —
+# accuracy/stats/[посмотреть] lines were removed by request.
+round-finished:
+  header:
+    - ""
+    - "&c➥ &fRaund tugadi &7#{round}"
+    - ""
+  winner-line: "&c↾ &fG'olib bo'ldi: &b{winner} &c{hp}&c💔"
+  score-line:  "&c▏ &fHisob: &a{winner_score} &7⋎ &c{loser_score}"
+
+duel-finished:
+  header:
+    - ""
+    - "&c➥ &fDuel tugadi &c🗡"
+    - ""
+  winner-line: "&c↾ &fG'olib bo'ldi: &b{winner} &c{hp}&c💔"
+  score-line:  "&c▏ &fHisob: &a{winner_score} &7⋎ &c{loser_score}"
+
+match-victory-block:
+  - ""
+  - "&c➥ &a&lG'alaba"
+  - ""
+  - "&c| &fRaqib: &7{loser}"
+  - "&c| &fHisob: &a{winner_score} &7: &c{loser_score}"
+  - "&c| &fRejim: &b{mode}"
+  - ""
+
+match-defeat-block:
+  - ""
+  - "&c➥ &c&lMag'lubiyat"
+  - ""
+  - "&c| &fRaqib: &7{winner}"
+  - "&c| &fHisob: &a{winner_score} &7: &c{loser_score}"
+  - "&c| &fRejim: &b{mode}"
+  - ""
+
+ffa-victory-block:
+  - ""
+  - "&c➥ &a&lFFA - G'alaba"
+  - ""
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &fO'yinchilar soni: &e{total}"
+  - ""
+
+match-tie-block:
+  - ""
+  - "&c➥ &7&lDurrang"
+  - ""
+  - "&c| &fHisob: &b{score1} &7: &b{score2}"
+  - "&c| &fRejim: &b{mode}"
+  - ""
+
+match-forfeit-block:
+  - ""
+  - "&c➥ &a&lG'alaba"
+  - ""
+  - "&c| &fRaqib o'yinni tark etdi"
+  - "&c| &fRejim: &b{mode}"
+  - ""
+
+duel-start-block:
+  - ""
+  - "&c➥ &fDuel boshlanmoqda..."
+  - ""
+  - "&c| &fRaqib: &b{opponent}"
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &fRaundlar: &b{rounds}"
+  - ""
+
+# ── Duel ───────────────────────────────────────────────────────────────────────
+duel-invite:
+  - ""
+  - "&eO'yinchi: &f{player}"
+  - "&eRejim: &f{mode}"
+  - "&eRaundlar: &f{rounds}"
+  - ""
+duel-sent-block:
+  - ""
+  - "&c➥ &a&lDuel yuborildi"
+  - ""
+  - "&c| &fO'yinchi: &e{player}"
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &fRaundlar: &b{rounds}"
+  - ""
+
+duel-invite-accept: "&a[Qabul qilish]"
+duel-invite-decline: "&c[Rad etish]"
+duel-invite-accept-hover: "&aDuelni qabul qilish uchun bosing."
+duel-invite-decline-hover: "&cDuelni rad etish uchun bosing."
+
+duel:
+  no-request: "&cSizda aktiv arizalar mavjud emas."
+  expired: "&cAriza muddati tugadi."
+  sender-offline: "&cSizni chaqirgan o'yinchi, serverni tark etdi."
+  target-in-match: "&e{player} &chozirda jangda."
+  target-in-queue: "&e{player} &chozirda o'ziga raqib izlamoqda."
+  you-in-match: "&cSiz hozirda jangdasiz."
+  already-pending: "&cSiz allaqachon ariza yuborgansiz: &e{player}&c."
+  mode-not-found: "&e{mode} &crejimi topilmadi."
+  cannot-self: "&cO'z-o'zingizga duel so'rovini yuborolmaysiz."
+  requests-disabled: "&e{player} &cduel so'rovlarini ochirib qo'ydi."
+  only-friends: "&e{player} &cfaqat do'stlaridan duel so'rovlarini qabul qiladi."
+  target-in-party: "&e{player} &chozirda jamoa a'zosi."
+  arena-not-found-timeout: "&cArena belgilangan vaqtda topilmadi. Qayta urinib ko'ring."
+  no-free-arena: "&cHozirda ushbu rejim uchun bo'sh arenalar mavjud emas: &e{mode}&c. Kuting..."
+
+# ── Block-сообщения дуэлей (многострочные) ──────────────────────────────────
+duel-declined-block:
+  - ""
+  - "&c➥ &c&lDuel rad etildi"
+  - ""
+  - "&c| &fSiz duel so'rovini rad etdingiz."
+  - ""
+
+duel-declined-notify-block:
+  - ""
+  - "&c➥ &c&lDuel so'rovingiz rad etildi"
+  - ""
+  - "&c| &e{player} &fsizning so'rovingizni rad etdi."
+  - ""
+
+duel-accepted-block:
+  - ""
+  - "&c➥ &a&lDuel so'rovingiz qabul qilindi."
+  - ""
+  - "&c| &fRaqib: &e{player}"
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &fRaundlar: &b{rounds}"
+  - "&c| &7Arena izlanmoqda..."
+  - ""
+
+duel-no-arena-block:
+  - ""
+  - "&c➥ &c&lArena topilmadi ❌"
+  - ""
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &7Kuting..."
+  - ""
+
+# ── Queue ──────────────────────────────────────────────────────────────────────
+queue:
+  left: "&7Siz navbatni tark etdingiz."
+  already-in: "&cSiz allaqachon navbatdasiz."
+  in-match: "&cSiz allaqachon o'yindasiz."
+
+queue-joined-block:
+  - ""
+  - "&c➥ &e&lRaqib qidiruvi"
+  - ""
+  - "&c| &fRejim: &b{mode}"
+  - "&c| &7Raqibni kuting..."
+  - ""
+
+# ── Profile ────────────────────────────────────────────────────────────────────
+profile:
+  private: "&e{player} &ning profili yopiq."
+  title: "&0Profil: &b{player}"
+  playtime-name: "&eO'yindagi vaqti"
+  playtime-lore: "&7{hours}s {minutes}min"
+  stats-name: "&eUmumiy statistika"
+  stats-wins: "&7G'alaba: &a{wins}"
+  stats-losses: "&7Mag'lubiyat: &c{losses}"
+  stats-kd: "&7K/D: &e{kd}"
+  highest-tier: "&7Eng baland tier: {tier}"
+  current-mode-name: "&6&lHozirgi rejim"
+  current-mode-mode: "&7Rejim: &b{mode}"
+  current-mode-tier: "&7Tier: {tier}"
+  current-mode-status: "&7Holat: &aJangda"
+  tier-label: "&7Tier: {tier}"
+  wins-label: "&7G'alaba: &a{wins}"
+  losses-label: "&7Mag'lubiyat: &c{losses}"
+  kd-label: "&7K/D: &e{kd}"
+  status-online: "&aOnline"
+  status-offline: "&cOffline"
+  status-label: "&7Holat: {status}"
+  uuid-label: ""
+  unranked: "&7Ranksiz"
+  opponent-label: "&7Raqib"
+
+# ── Msg ────────────────────────────────────────────────────────────────────────
+messages:
+  dm-format: "&8[&bXabar&8] &c{sender} &8→ &e{target}&8: &f{message}"
+  version-too-low: "&e{mode} &cda o'ynash uchun belgilangan versiyadan balandroq versiya kerak: &e{min_version}+&c. Sizning versiyangiz: &e{player_version}"
+  version-too-low-party: "&e{player} &cushbu o'yinchi &e{mode} &cbu rejimda oynolmaydi. (Uning versiyasi &e{version}&c). Talab qilinadi: &e{min_version}+"
+  version-too-low-duel: "&e{mode} &cushbu rejimni o'ynolmaysiz.: &e{player} &cTalab qilinadigan versiyada emas: &e{version}"
+
+msg:
+  blocked: "&e{player} &cshaxsiy xabarlarni qabul qilmaydi."
+  no-partner: "&cSizda oxirgi suhbatdoshingiz mavjud emas. Ishlatish: /msg <ism> <xabar>."
+  partner-offline: "&cSizning oxirgi suhbatdoshingiz serverni tark etdi."
+
+# ── Friends ───────────────────────────────────────────────────────────────────
+friends:
+  request-sent: "&aDo'st bo'lish arizasi &e{player}&a ga yuborildi."
+  request-accepted: "&e{player} &asizning do'stlik arizangizni qabul qildi!"
+  request-denied: "&e{player} &7sizning do'stlik arizangizni rad etdi."
+  accepted: "&aSiz &e{player}&a ning do'stlik arizasini qabul qildingiz. Endi sizlar do'stlarsiz!"
+  denied: "&7Siz &e{player}&7 ning do'stlik arizasini rad etdingiz."
+  removed: "&7Siz &e{player} &7ni do'stlar qatoridan o'chirdingiz."
+  was-removed: "&e{player} &7sizni do'stlar qatoridan o'chirdi."
+  no-request: "&cUshbu o'yinchidan arizalar mavjud emas: &e{player}&c."
+  already-friends: "&cUshbu o'yinchi bilan siz allaqachon do'stsiz: &e{player}&c."
+  not-friends: "&cUshbu o'yinhci bilan siz do'st emassiz: &e{player}&c."
+  cannot-add-self: "&cO'z-o'zingizni do'stlar qatoriga qo'sholmaysiz."
+  already-sent: "&cSiz allaqachon ushbu o'yinchiga ariza yubordingiz: &e{player}&c."
+  requests-disabled: "&e{player} &cdo'stlik arizalarini qabul qilmaydi."
+  list-full: "&cSizning do'stlar qatoringiz to'lgan."
+  join-notify: "&c» &b{player} &7serverga kirdi."
+  only-friends-invite: "&e{player} &ctaklifni faqat do'stlaridan qabul qiladi."
+  duel-only-friends: "&e{player} &ctaklifni faqat do'stlaridan qabul qiladi."
+  no-friends: "&7Sizda hozircha do'stlaringiz mavjud emas."
+  list-header: "&eDo'stlar: &7({count}):"
+  status-online: "&aOnline"
+  status-offline: "&7Offline"
+  no-incoming: "&7Aktiv arizalar mavjud emas."
+  incoming-header: "&eAktiv arizalar:"
+  request-header: "&e{player} &7sizni do'stlar qatoriga qo'shmoqchi:!"
+  accept-btn: "&a[✔ Qabul qilish]"
+  accept-hover: "&aArizani qabul qilish"
+  deny-btn: "&c[✘ Rad etish]"
+  deny-hover: "&cArizani rad etish"
+
+# ── Section 3 additions ───────────────────────────────────────────────────────
+command-blocked-match: "&cJang paytida faqat ushbu buyruqlar mumkun: &b/r &7/ &b/msg &7/ &b/leave&c."
+command-blocked-vanilla: "&c«Kit sozlamalari» xonasida faqat ushbu buyruqlar mumkun: &b/kit save&c."
+command-blocked-kit-reset: "&c/kit reset &7buyrug'i «Kit sozlamalari» xonasida mumkun emas.Kitni saqlash uchun &b/kit save &7ni ishlating."
+kit-reset-blocked: "&c/kit reset &7buyrug'i «Kit sozlamalari» xonasida mumkun emas."
+
+# ── Admin commands (ScorePvPCommand) ──────────────────────────────────────────
+admin:
+  reload: "&aKonfiguratsiya sozlamalari qayta yuklandi: &e{ms}ms&a."
+  version: "&7Versiya: &b{version}"
+  version-db: "  &7Baza: &f{db}"
+  version-db-mysql: "&2MySQL"
+  version-db-sqlite: "&eSQLite (qo'shimcha)"
+  version-modes: "  &7Yuklangan rejimlar: &f{count}"
+  setspawn-only-player: "Faqat o'yinchi spawn o'rnatishi mumkin."
+  setspawn-done: "&aWarp sizning joylashuvingizga o'rnatildi."
+  settpspawn-only-player: "Chiqish joylashuvini faqat o'yinchi o'rnata oladi."
+  settpspawn-done: "&aChiqish joylashuvi (tp-spawn) o'rnatildi."
+  setregion-only-player: "Faqat o'yinchi region o'rnatishi mumkin."
+  editor-only-player: "Faqat o'yinchi sozlamalari xonasiga kira oladi."
+  editor-on: "&aHotbar rejimi: &bO'chirildi&a."
+  editor-off: "&aHotbar rejimi: &bYoqildi&a."
+  kit-create-usage: "&cFoydalanish: &b/spvp kit create <kit_nomi>"
+  kit-create-success: "&b{kit} &akit muvaffaqiyatli yaratildi."
+  kit-create-exists: "&b{kit} &ckiti allaqachon mavjud."
+  kit-save-only-player: "Kitni faqat o'yinchi saqlashi mumkin."
+  kit-save-usage: "&cFoydalanish: &b/spvp kit save <kit_nomi>"
+  kit-save-success: "&b{kit} &akit inventaringizdan saqlab olindi."
+  kit-save-error: "&b{kit} &ckitini saqlashda xatolik yuz berdi. Loglarni tekshiring."
+  kit-set-usage: "&cFoydalanish: &b/spvp kit set vanilla"
+  kit-set-only-player: "Standart kitni faqat o'yinchi o'rnatishi mumkin."
+  kit-set-success: "&aInventaringiz &bDEFAULT Vanilla &akit sifatida o'rnatildi."
+  kit-set-error: "&cVanilla kitni saqlashda xatolik yuz berdi."
+  giveitem-usage: "&cFoydalanish: &b/spvp giveitem <o'yinchi> <item_id>"
+  giveitem-available: "  &7Mavjud buyumlar: &b{items}"
+  giveitem-unknown: "&cNoma'lum buyum: &b{item}"
+  giveitem-available-short: "  &7Mavjud: &b{items}"
+  giveitem-sent: "&b{item} &abuyumi &b{player} &ao'yinchisiga berildi."
+  giveitem-received: "&aSizga maxsus buyum berildi: &b{item}&a."
+  menu-usage: "&cFoydalanish: &b/spvp menu <create|editor|open> <nomi> [o'yinchi]"
+  menu-create-usage: "&cFoydalanish: &b/spvp menu create <nomi>"
+  menu-create-success: "&b{menu} &amenu yaratildi."
+  menu-create-exists: "&b{menu} &cmenusi allaqachon mavjud."
+  menu-editor-only-player: "Menu muharririni faqat o'yinchi ochiishi mumkin."
+  menu-editor-usage: "&cFoydalanish: &b/spvp menu editor <nomi>"
+  menu-not-found: "&b{menu} &cmenusi topilmadi."
+  menu-open-usage: "&cFoydalanish: &b/spvp menu open <nomi> <o'yinchi>"
+  menu-opened: "&b{menu} &amenusi &b{player} &auchun ochildi."
+  menu-saved: "&b{menu} &amenusi saqlandi."
+  clear-usage: "&cFoydalanish: &b/spvp clear all &7yoki &b/spvp clear <o'yinchi>"
+  clear-all-done: "&aBarcha o'yinchilarning statistika va tirlari tozalandi. Arenalar va kitlarga ta'sir qilmadi."
+  clear-player-done: "&b{player} &ao'yinchisining statistika va tirlari tozalandi."
+  help-title: "&eAdmin buyruqlari:"
+  help:
+    - "  &b/spvp reload                         &7— konfiguratsiyani qayta yuklash"
+    - "  &b/spvp version                        &7— plagini haqida ma'lumot"
+    - "  &b/spvp setspawn                       &7— 9-slotning warpini o'rnatish"
+    - "  &b/spvp settpspawn                     &7— jangdan keyingi chiqish nuqtasini o'rnatish"
+    - "  &b/spvp setregion                      &7— sandiqlar regionini belgilash"
+    - "  &b/spvp editor                         &7— kit muharriri rejimi (hotbarni yashirish)"
+    - "  &b/spvp kit create <name>              &7— kit yaratish"
+    - "  &b/spvp kit save <name>                &7— inventarni kit sifatida saqlash"
+    - "  &b/spvp kit set vanilla                &7— inventarni DEFAULT kit sifatida o'rnatish"
+    - "  &b/spvp giveitem <player> <item_id>    &7— maxsus buyum berish"
+    - "  &b/spvp clear all                      &7— hammaning statistikasini tozalash"
+    - "  &b/spvp clear <o'yinchi>               &7— o'yinchining statistikasini tozalash"
+    - "  &b/spvp menu create <name>             &7— dinamik menu yaratish"
+    - "  &b/spvp menu editor <name>             &7— menuni tahrirlash (GUI)"
+    - "  &b/spvp menu open <name> <player>      &7— o'yinchiga menuni ochish"
+
+# ── GUI ──────────────────────────────────────────────────────────────────────
+gui:
+  click-to-start: "&7Boshlash uchun bosing."
+
+# ── Hotbar items ──────────────────────────────────────────────────────────────
+hotbar:
+  party-ffa-name: "&b&lParty FFA"
+  party-ffa-lore: "&7Rejimni tanlash uchun bosing"
+  party-close-name: "&c&lGuruhni yopish"
+  party-close-lore: "&7Guruhni tarqatish uchun bosing"
+  party-leave-name: "&c&lGuruhni tark etish"
+  party-leave-lore: "&7Guruhni tark etish uchun bosing"
+  queue-name: "&c&lRaqib qidirilmoqda..."
+  queue-mode-lore: "&7Rejim: &e{mode}"
+  queue-cancel-lore: "&cQidiruvni bekor qilish uchun PKM bosing."
+  cannot-disband-in-match: "&cGuruhni aktiv jang paytida tarqatish mumkun emas."
+  cannot-leave-use-cmd: "&cChiqish uchun &b/leave &cbuyrug'ini ishlating."
+  cannot-create-in-match: "&cO'yin paytida guruh yaratib bo'lmaydi."
+
+# ── FFA (Party FFA — GUIClickListener) ────────────────────────────────────────
+ffa:
+  min-members: "&cFFA uchun guruhda kamida &e{min} &co'yinchi kerak."
+  incompatible-versions: "&cTalab qilinadigan versiya muammosi: (&e{version}+&c talab qilinadi):"
+  incompatible-entry: "  &7✗ {entry}"
+  no-arena: "&cUshbu rejim uchun bo'sh arenalar mavjud emas: &e{mode}&c."
+  not-enough-members: "&cTalab qilinadigan o'yinchilar soni mavjud emas, FFA bekor qilindi."
+  started: "&aFFA boshlandi! Rejim: {mode}"
+
+# ── Duel Rounds GUI ───────────────────────────────────────────────────────────
+duel-gui:
+  cancel-name: "&c&lBekor qilish"
+  cancel-lore: "&7Bekor qilish uchun bosing"
+  send-name: "&a&lDuel yuborish"
+  send-lore: "&7Duel so'rovini yuborish uchun bosing"
+  round-selected: "&a▶ Tanlangan"
+  round-click: "&7Tanlash uchun bosing"
+  round-word-1: "Raund"
+  round-word-2-4: "Raund"
+  round-word-5: "Raund"
+
+# ── Custom Items ──────────────────────────────────────────────────────────────
+custom-item:
+  golden-head-name: "&6&lGolden Head"
+  golden-head-lore:
+    - "&7Beriladigan effectlar:"
+    - "  &aRegeneration III &e5 sekundga"
+    - "  &6Absorption I &e2 minutga &7(+4ta yurak)"
+    - ""
+    - "&8Cooldown: &710 sek"
+  golden-head-use: "&6Golden Head &7: &aRegeneration III ({regen_sec}s) &7+ &6Absorption I ({abs_sec}s)"
+
+# ── Vanilla Region ────────────────────────────────────────────────────────────
+vanilla-region:
+  enter: "&aSiz «Kit sozlamalari» xonasizdasiz. &7Kitingizni saqlash uchun &b/kit save &7ishlating."
+  exit: "&7Siz «Kit sozmalari» xonasini tark etdingiz."
+
+# ── Spectator ─────────────────────────────────────────────────────────────────
+spec:
+  not-in-match: "&cUshbu o'yinchi jangda emas."
+  cannot-while-match: "&cSiz o'yinda bo'lganingizda boshqa o'yinchilarni kuzata olmaysiz."
+  leave-queue-first: "&cKuzatish uchun navbatdan chiqing."
+  cannot-spectate: "&cKuzatuv rejimida o'tish mumkun emas."
+
+# ── Leave ─────────────────────────────────────────────────────────────────────
+leave:
+  nowhere: "&7Sizda chiqadigan joy yo‘q."
+
+# ── Arena ─────────────────────────────────────────────────────────────────────
+arena:
+  creation-start: "&aArena yaratish rejimi &e#{number}&a. SICHQONCHA_CHAP = burchak 1, SICHQONCHA_O'NG = burchak 2."
+  corner1-set: "&aBurchak 1 o'rnatildi: &f{loc}"
+  corner2-set: "&aBurchak 2 o'rnatildi: &f{loc}"
+  region-saved: "&e#{number} &aarena regioni saqlandi. Sozlashni davom ettiring: /arena {number} position set ..."
+  region-tool-name: "&e&lRegionni belgilash"
+  region-tool-lore-1: "&7Blokni SICHQONCHA_CHAP bilan bosish = burchak 1"
+  region-tool-lore-2: "&7Blokni SICHQONCHA_O'NG bilan bosish = burchak 2"
+  region-select-msg: "&aOltin boltani qo'lingizga oling va regionni belgilang:"
+  region-select-help-1: "  &7Blokni SICHQONCHA_CHAP bilan bosish &f= &aburchak 1"
+  region-select-help-2: "  &7Blokni SICHQONCHA_O'NG bilan bosish &f= &aburchak 2"
+  region-corner1: "&aRegionning 1-burchagi: &f{loc}"
+  region-corner2: "&aRegionning 2-burchagi: &f{loc}"
+  region-chest-saved: "&aSandıqlar regioni muvaffaqiyatli saqlandi!"
+  not-found: "&e#{number} &carena topilmadi. Avval /arena create {number} ishlating"
+  not-found-short: "&cArena #{number} topilmadi."
+  position-unknown: "&cPozitsiya aniqlanmadi. Ishlating: 1 / 2 / center"
+  position-set: "&e#{number} &aarena uchun &e{pos} &apozitsiyasi o'rnatildi."
+  name-set: "&e#{number} &aarena nomi o'rnatildi: &b{name}"
+  type-unknown: "&cTur aniqlanmadi. Ishlating: default / vanilla"
+  type-set: "&e#{number} &aarena turi o'rnatildi: &b{type}"
+  info-header: "&eArena &b#{number} &e— {name}"
+  info-type: "  &7Turi: &f{type}"
+  info-status: "  &7Holati: {status}"
+  info-status-free: "&aBo'sh"
+  info-status-busy: "&cBand"
+  info-configured: "  &7To'liq sozlangan: {value}"
+  info-yes: "&aHa"
+  info-no: "&cYo'q"
+  info-corners: "  &7Burchak 1: {c1}  Burchak 2: {c2}"
+  info-positions: "  &7Pos1: {p1}  Pos2: {p2}  Markaz: {centre}"
+  info-snapshot: "  &7Snapshot: {value}"
+  info-snapshot-yes: "&a✔ saqlangan"
+  info-snapshot-no: "&c✘ yo'q — /arena {number} save ishlating"
+  restore-subtitle: "&7Arena tayyorlanmoqda..."
+  no-corners: "&e#{number} &carena belgilangan burchaklarga ega emas."
+  blocks-saved: "&e#{number} &aarena uchun &e{count} &ablok saqlandi."
+  schematic-saved: "&e#{number} &aarena shematikasi saqlandi (&e{file}&a)."
+  schematic-error: "&cShematikani saqlashda xatolik: {error}"
+  restoring: "&e#{number} &7arena tiklanmoqda..."
+  restored: "&e#{number} &aarena tiklandi!"
+  no-snapshot: "&c#{number} arena uchun saqlangan namuna yo'q. /arena {number} save ishlating"
+  list-header: "&eArenalar ({count}):"
+  list-entry-free: "&aBo'sh"
+  list-entry-busy: "&cBand"
+  deleted: "&aArena #{number} o'chirildi."
+  number-required: "&cRaqam butun son bo'lishi kerak."
+  arena-not-found: "&cArena topilmadi."
+  create-usage: "Foydalanish: /arena create <raqam>"
+  name-usage: "Foydalanish: /arena <n> name <nom>"
+  type-usage: "Foydalanish: /arena <n> type <default|vanilla>"
+  help-title: "&e/arena buyruqlari:"
+  help:
+    - "  &b/arena create <n>                        &7— yaratish"
+    - "  &b/arena <n> name <nom>                    &7— nom berish"
+    - "  &b/arena <n> type <default|vanilla>         &7— turini o'rnatish"
+    - "  &b/arena <n> position set <1|2|center>     &7— pozitsiyani o'rnatish"
+    - "  &b/arena <n> save                           &7— namunani saqlash (vanilla)"
+    - "  &b/arena <n> restore                        &7— qo'lda tiklash"
+    - "  &b/arena <n> info                           &7— ma'lumot"
+    - "  &b/arena <n> delete                         &7— o'chirish"
+    - "  &b/arena list                               &7— ro'yxat"
+
+# ── Party help ────────────────────────────────────────────────────────────────
+party-help:
+  title: "&eGuruh buyruqlari:"
+  lines:
+    - "  &b/party invite <ism>   &7— O'yinchini taklif qilish"
+    - "  &b/party accept <rahbar> &7— Taklifni qabul qilish"
+    - "  &b/party leave          &7— Guruhdan chiqish"
+    - "  &b/party kick <ism>     &7— O'yinchini guruhdan haydash"
+    - "  &b/party disband        &7— Guruhni tarqatish"
+    - "  &b/party chat           &7— Guruh chatiga o'tish"
+    - "  &b/party promote <ism>  &7— Rahbarlikni o'tqazish"
+    - "  &b/party deny <rahbar>   &7— Taklifni rad etish"
+    - "  &b/party ffa            &7— FFA-menyusi"
+
+# ── Friends help ──────────────────────────────────────────────────────────────
+friends-help:
+  title: "&eDo'stlik buyruqlari:"
+  lines:
+    - "  &b/friends add <ism>      &7— Ariza yuborish"
+    - "  &b/friends remove <ism>   &7— Do'stlar qatoridan o'chirish"
+    - "  &b/friends list            &7— Do'stlar qatori"
+    - "  &b/friends accept <ism>   &7— Arizani qabul qilish"
+    - "  &b/friends deny <ism>     &7— Arizani rad etish"
+    - "  &b/friends requests        &7— Aktiv arizalar"
+
+# ── Tier help ─────────────────────────────────────────────────────────────────
+tier-help:
+  title: "&eTier buyruglari:"
+  lines:
+    - "  &b/tier set <ism> <rejim> <tier>   &7— Tier berish (O'yinchining ismi harflari katta-kichikligi bo'yicha ham to'gri yozilgan bo'lishi kerak)."
+    - "  &b/tier unset <ism> <rejim>       &7— Tierni olish"
+    - "  &b/tier info <ism>                &7— Tierlarni ko'rsatish"
+
+# ── Placeholders ─────────────────────────────────────────────────────────────
+placeholders:
+  playtime-format: "{hours}s {minutes}min"

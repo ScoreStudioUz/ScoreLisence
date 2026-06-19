@@ -64,6 +64,9 @@ public class TabNameTagProvider implements NameTagProvider {
      *  numberFormat() writes when the rendered text hasn't changed. */
     private final Map<UUID, String> lastBelowByPlayer = new HashMap<>();
 
+    /** playerUUID → last LOBBY suffix pushed. Skips redundant setSuffix packets. */
+    private final Map<UUID, String> lastLobbySuffix = new HashMap<>();
+
     public TabNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
@@ -74,6 +77,10 @@ public class TabNameTagProvider implements NameTagProvider {
     public void setupMatchNametags(Match match) {
         NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
         if (ntm == null) return;
+
+        // The match owns the suffix now (forced to ""), so forget any lobby
+        // suffix cache for these players — it must re-apply fresh after the match.
+        for (UUID uuid : match.getAllUuids()) lastLobbySuffix.remove(uuid);
 
         Map<UUID, String[]> saved = new HashMap<>();
         String modeId = match.getMode().getId();
@@ -191,21 +198,26 @@ public class TabNameTagProvider implements NameTagProvider {
         Map<UUID, String[]> saved = savedTags.get(match.getMatchId());
         Set<UUID> injected = belowInjected.get(match.getMatchId());
 
-        if (player.isOnline() && injected != null && injected.contains(id)) {
-            removeBelowName(player);
-            injected.remove(id);
-        }
-        if (ntm != null && saved != null) {
-            String[] orig = saved.remove(id);
-            if (orig != null) {
-                TabPlayer tp = TabAPI.getInstance().getPlayer(id);
-                if (tp != null) {
-                    ntm.setPrefix(tp, orig[0]);
-                    ntm.setSuffix(tp, orig[1]);
-                }
+        // Remove the BELOW_NAME objective UNCONDITIONALLY (not gated on the
+        // injected set) — otherwise a player whose injection tracking got out
+        // of sync kept a stray "0"/HP line under their nick back in the lobby.
+        if (player.isOnline()) removeBelowName(player);
+        if (injected != null) injected.remove(id);
+
+        if (ntm != null) {
+            String[] orig = saved != null ? saved.remove(id) : null;
+            TabPlayer tp = TabAPI.getInstance().getPlayer(id);
+            if (tp != null) {
+                // Restore the saved lobby prefix/suffix, or blank them if we
+                // somehow lost the original — never leave the duel prefix glued
+                // on after the player leaves the match.
+                ntm.setPrefix(tp, orig != null ? orig[0] : "");
+                ntm.setSuffix(tp, orig != null ? orig[1] : "");
             }
         }
         lastBelowByPlayer.remove(id);
+        // Re-apply the lobby tier suffix next tick (the periodic task drives it).
+        lastLobbySuffix.remove(id);
     }
 
     @Override
@@ -220,19 +232,23 @@ public class TabNameTagProvider implements NameTagProvider {
         for (UUID uuid : match.getAllUuids()) {
             Player player = Bukkit.getPlayer(uuid);
 
-            if (player != null && player.isOnline() && injected != null && injected.contains(uuid)) {
+            // Always strip the BELOW_NAME objective if the player is online —
+            // a desynced `injected` set used to leave a "0" under their nick.
+            if (player != null && player.isOnline()) {
                 removeBelowName(player);
             }
 
-            if (ntm != null && saved != null && saved.containsKey(uuid)) {
+            if (ntm != null) {
                 TabPlayer tp = TabAPI.getInstance().getPlayer(uuid);
                 if (tp != null) {
-                    String[] orig = saved.get(uuid);
-                    ntm.setPrefix(tp, orig[0]);
-                    ntm.setSuffix(tp, orig[1]);
+                    String[] orig = saved != null ? saved.get(uuid) : null;
+                    ntm.setPrefix(tp, orig != null ? orig[0] : "");
+                    ntm.setSuffix(tp, orig != null ? orig[1] : "");
                 }
             }
         }
+        // Re-apply lobby tier suffixes after the match (periodic task drives it).
+        for (UUID uuid : match.getAllUuids()) lastLobbySuffix.remove(uuid);
     }
 
     @Override
@@ -343,5 +359,72 @@ public class TabNameTagProvider implements NameTagProvider {
         if (obj != null) {
             obj.unregister();
         }
+    }
+
+    @Override
+    public void clearStrayState(Player player) {
+        // Defensive: a player who is NOT in a match should carry neither the
+        // BELOW_NAME HP objective NOR a duel match-prefix. Both can linger if an
+        // opponent left during countdown / spectate and the match teardown
+        // raced the prefix restore. Reset them to TAB's own configured values
+        // so the lobby nametag goes back to normal WITHOUT a relog.
+        if (player == null || !player.isOnline()) return;
+        UUID id = player.getUniqueId();
+        if (plugin.getMatchManager().isInMatch(id)) return;
+
+        // Cheap gate: only act if a leftover match objective is actually present
+        // on this player's board. Keeps the every-3s sweep nearly free for the
+        // many lobby players who have no ghost.
+        Objective obj = player.getScoreboard().getObjective(HEALTH_OBJ_NAME);
+        if (obj == null) return;
+
+        removeBelowName(player);
+        lastBelowByPlayer.remove(id);
+
+        // If we still hold saved lobby tags for this player from some match,
+        // forget them — they're stale once the player is out of all matches.
+        for (Map<UUID, String[]> saved : savedTags.values()) saved.remove(id);
+
+        NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
+        if (ntm == null) return;
+        TabPlayer tp = TabAPI.getInstance().getPlayer(id);
+        if (tp == null) return;
+        // getOriginalPrefix/Suffix return TAB's own configured values (not our
+        // match override), so this restores the lobby nametag cleanly.
+        ntm.setPrefix(tp, ntm.getOriginalPrefix(tp));
+        ntm.setSuffix(tp, ntm.getOriginalSuffix(tp));
+        // Force the lobby suffix to re-apply on the next tick (we just blew it
+        // away) instead of being skipped by the diff check.
+        lastLobbySuffix.remove(id);
+    }
+
+    @Override
+    public void applyLobbyNametag(Player player) {
+        if (player == null || !player.isOnline()) return;
+        if (!plugin.getConfig().getBoolean("nametag.lobby-enabled", true)) return;
+        // Match nametags own the head while fighting/spectating — never override.
+        if (plugin.getMatchManager().isInMatch(player.getUniqueId())) return;
+
+        NameTagManager ntm = TabAPI.getInstance().getNameTagManager();
+        if (ntm == null) return;
+        TabPlayer tp = TabAPI.getInstance().getPlayer(player.getUniqueId());
+        if (tp == null) return;
+
+        String suffix = buildLobbySuffix(player.getUniqueId());
+        // Only push a packet when the suffix actually changed — TAB's setSuffix
+        // is a network write per call.
+        String prev = lastLobbySuffix.get(player.getUniqueId());
+        if (suffix.equals(prev)) return;
+        lastLobbySuffix.put(player.getUniqueId(), suffix);
+        ntm.setSuffix(tp, suffix);
+    }
+
+    /** "&7| HT1" (colored) or "" when the player has no tier / lobby disabled. */
+    private String buildLobbySuffix(UUID uuid) {
+        String[] hi = plugin.getTierManager().getHighestTier(uuid);
+        if (hi == null) return "";
+        String tierDisplay = plugin.getConfigManager().getTierDisplay(hi[0], hi[1]);
+        String fmt = plugin.getConfig().getString("nametag.lobby-suffix-format", " &7| {tier}");
+        return fmt.replace("{tier}", tierDisplay);
     }
 }

@@ -349,10 +349,32 @@ public class DuelManager {
         startDuelWithTimeout(p1, p2, modeName, rounds, 0);
     }
 
+    /**
+     * Drops everyone from every queue (used on plugin reload/disable). Players
+     * are returned to their normal lobby hotbar so they aren't stuck showing a
+     * "searching" state after a reload cancelled their queue.
+     */
+    public void clearAllQueues() {
+        for (UUID uuid : new java.util.ArrayList<>(inQueue.keySet())) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                try { plugin.getHotbarManager().showNormalMode(p); } catch (Throwable ignored) {}
+            }
+        }
+        inQueue.clear();
+        queues.clear();
+    }
+
     // ── Queries ───────────────────────────────────────────────────────────────
 
     public boolean isInQueue(UUID uuid)    { return inQueue.containsKey(uuid); }
     public String  getQueueMode(UUID uuid) { return inQueue.get(uuid); }
+
+    /** Number of players currently waiting in the given mode's queue. */
+    public int getQueueSize(String modeName) {
+        Queue<UUID> q = queues.get(modeName);
+        return q == null ? 0 : q.size();
+    }
 
     public void handleDisconnect(UUID uuid) {
         String mode = inQueue.remove(uuid);

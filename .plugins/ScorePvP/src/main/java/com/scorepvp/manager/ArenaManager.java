@@ -345,7 +345,7 @@ public class ArenaManager {
     public Arena getFreeArenaForFfa()             { return findFreeArenaForFfa(dummyMode()).orElse(null); }
 
     private PvPMode dummyMode() {
-        return new PvPMode("","",null,false,true,"", List.of(), 3, 5, "");
+        return new PvPMode("","",null,false,true,"", List.of(), 3, 5, "", java.util.Map.of());
     }
 
     // ── CRUD ─────────────────────────────────────────────────────────────────

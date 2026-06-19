@@ -48,6 +48,12 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "reload" -> {
                 long start = System.currentTimeMillis();
+                // Before reloading config: tear down every active match —
+                // restore vanilla arenas, cancel all duels/queues, send
+                // everyone to spawn. Otherwise a reload mid-duel leaves arenas
+                // griefed and players stuck with stale match state.
+                plugin.getDuelManager().clearAllQueues();
+                plugin.getMatchManager().shutdownAllMatches();
                 plugin.getConfigManager().reload();
                 plugin.getMenuManager().loadAll();
                 // Reload all item_menus GUI configs

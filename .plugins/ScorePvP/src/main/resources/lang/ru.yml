@@ -76,6 +76,9 @@ tier:
 # Заголовки и item-name'ы меню задаются в item_menus/*.yml, здесь только лор.
 menu:
   mode-lore: "&7Boshlash uchun bosing"
+  # Rejim ikonkasi tagida ko'rinadigan navbat qatori. {count} — shu rejimda
+  # hozir navbatda turgan o'yinchilar soni (o'yin boshlansa 0 ga tushadi).
+  queue-count-lore: "&7O'yinchilar: &e{count}&7/2"
 
 # Настройки — значения тоглов (название/лор предметов живёт в item_menus/settings.yml)
 settings-values:
@@ -104,6 +107,10 @@ match:
   player-left: "&e{player} &7jangni tark etdi."
   player-left-duel: "&e{player} &7duelni tark etdi."
   forfeit-win: "&e{player} &aavtomatik tarzda go'lib bo'ldi, chunki raqib o'yinni tark etdi."
+  admin-draw: "&eDuel administrator tomonidan to'xtatildi — natija &7DURRANG&e."
+  admin-draw-usage: "&cIshlatish: /stopduel <ник>"
+  admin-draw-not-in-duel: "&c{player} hozir duelda emas."
+  admin-draw-done: "&a{player} ning dueli to'xtatildi (durrang)."
   spectate-msg: "&e{player1} &7vs &e{player2} &7o'yinini kuzatish."
   spectate-left: "&7Siz kuzatuv rejimiga otkazildingiz, o'yin davom etmoqda."
   victory-subtitle: "&7Tabriklaymiz!"

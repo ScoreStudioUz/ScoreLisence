@@ -54,6 +54,26 @@ public class TierManager {
     }
 
     /**
+     * Highest tier this (cached/online) player holds across all modes, ranked by
+     * the configured tier order. Returns {@code [tier, modeId]} or {@code null}
+     * if the player has no tier (or isn't cached).
+     */
+    public String[] getHighestTier(UUID uuid) {
+        Map<String, String> tiers = cache.get(uuid);
+        if (tiers == null || tiers.isEmpty()) return null;
+        var order = plugin.getConfigManager().getTierOrder();
+        String best = null, bestMode = null;
+        int bestIdx = -1;
+        for (var e : tiers.entrySet()) {
+            String tier = e.getValue();
+            if (tier == null || tier.isBlank()) continue;
+            int idx = order.indexOf(tier);
+            if (idx > bestIdx) { bestIdx = idx; best = tier; bestMode = e.getKey(); }
+        }
+        return best == null ? null : new String[]{best, bestMode};
+    }
+
+    /**
      * Resolves a player's full tier map for read-only display (e.g. /profile of
      * another player). If the tiers are already cached (online player) the
      * callback fires immediately on the calling thread; otherwise the map is
@@ -172,12 +192,11 @@ public class TierManager {
 
     // ── Display ───────────────────────────────────────────────────────────────
 
-    /** Returns the colored tier prefix, e.g. "&e[LT3]", or empty string if no tier. */
+    /** Returns the colored tier prefix, e.g. "&e[LT3]" (gradient-aware), or "" if no tier. */
     public String getColoredTier(UUID uuid, String mode) {
         String tier = getTier(uuid, mode);
         if (tier == null || tier.isBlank()) return "";
-        String color = plugin.getConfigManager().getTierColor(tier);
-        return color + "[" + tier + "]";
+        return plugin.getConfigManager().getTierDisplay(tier);
     }
 
     /**

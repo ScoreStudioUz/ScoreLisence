@@ -1,0 +1,102 @@
+# ============================================================
+#  Settings GUI — item_menus/settings.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Настройки"
+size: 27
+
+# Filler glass pane
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: "&r"
+
+# Settings item slots (row 2: 10-16)
+settings-slots:
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+
+# Per-setting item config
+items:
+  duel-requests:
+    slot: 10
+    material: WOODEN_SWORD
+    name: "&fDuel takliflari"
+    lore:
+      - "&7Kim sizga duel takliflarini"
+      - "&7yubora oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  party-invites:
+    slot: 11
+    material: NETHER_STAR
+    name: "&fGuruhga takliflar"
+    lore:
+      - "&7Kim sizni guruhga"
+      - "&7taklif qila oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  show-own-tier:
+    slot: 12
+    material: NAME_TAG
+    name: "&fTierlarni ko'rsatish"
+    lore:
+      - "&7Sizning tieringizni"
+      - "&7kim ko'roladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  friend-requests:
+    slot: 13
+    material: PAPER
+    name: "&fDo'st arizalari"
+    lore:
+      - "&7Do'st arizalarini"
+      - "&7sizga yubora olishsinmi?"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  direct-messages:
+    slot: 14
+    material: BOOK
+    name: "&fShaxsiy xabarlar"
+    lore:
+      - "&7Kim sizga /msg"
+      - "&7yordamida yoza oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  friend-join-notifier:
+    slot: 15
+    material: BELL
+    name: "&fKirish bildirishnomalari"
+    lore:
+      - "&7Do'stlaringiz o'yinga kirganda"
+      - "&7bildirishnoma yuborilsinmi?"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"
+  profile-visibility:
+    slot: 16
+    material: SPYGLASS
+    name: "&fProfil sozlamalari"
+    lore:
+      - "&7Kim sizning profilingizni"
+      - "&7ko'ra oladi"
+      - ""
+      - "&eHozirgi holat: &a{value}"
+      - ""
+      - "&7Almashtirish uchun bosing"

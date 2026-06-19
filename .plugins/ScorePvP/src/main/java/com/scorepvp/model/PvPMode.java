@@ -3,6 +3,7 @@ package com.scorepvp.model;
 import org.bukkit.Material;
 
 import java.util.List;
+import java.util.Map;
 
 public class PvPMode {
 
@@ -16,11 +17,14 @@ public class PvPMode {
     private final int defaultRounds;
     private final int countdownSeconds;
     private final String minClientVersion;  // "" = no restriction; "1.21.0" = 1.21+
+    /** Per-mode tier → color spec overrides (tier-colors in modes.yml). Empty = use global. */
+    private final Map<String, String> tierColors;
 
     public PvPMode(String id, String displayName, Material icon, boolean iconEnchanted,
                    boolean enabled, String kitType,
                    List<String> allowedArenas, int defaultRounds,
-                   int countdownSeconds, String minClientVersion) {
+                   int countdownSeconds, String minClientVersion,
+                   Map<String, String> tierColors) {
         this.id               = id;
         this.displayName      = displayName;
         this.icon             = icon;
@@ -31,6 +35,7 @@ public class PvPMode {
         this.defaultRounds    = defaultRounds;
         this.countdownSeconds = countdownSeconds;
         this.minClientVersion = minClientVersion == null ? "" : minClientVersion;
+        this.tierColors       = tierColors == null ? Map.of() : tierColors;
     }
 
     public String  getId()                     { return id; }
@@ -44,4 +49,8 @@ public class PvPMode {
     public int     getCountdownSeconds()       { return countdownSeconds; }
     public String  getMinClientVersion()       { return minClientVersion; }
     public boolean hasVersionRestriction()     { return !minClientVersion.isEmpty(); }
+
+    /** Per-mode color spec for a tier, or null if this mode has no override. */
+    public String  getTierColor(String tier)   { return tierColors.get(tier); }
+    public Map<String, String> getTierColors() { return tierColors; }
 }

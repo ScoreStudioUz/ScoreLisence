@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Cosmetics configuration
+#
+#  All visible strings for the /cosmetics menu, sub-menus and admin
+#  feedback messages live here. Edit freely — the plugin reloads this file
+#  on each `/scorepvp reload`.
+#
+#  Permissions referenced in code (defined in plugin.yml):
+#    duels.cosmetics        — open the menu, have selections applied
+#    duels.cosmetics.admin  — add/remove shields, set armor pieces
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Titles shown at the top of each menu. The listener matches on these strings
+# verbatim, so changing them is safe but they must remain unique.
+menu-title:           "&8Kosmetika"
+shields-menu-title:   "&8Kosmetika › Shields"
+diamond-menu-title:   "&8Kosmetika › Diamond Armors"
+netherite-menu-title: "&8Kosmetika › Netherite Armors"
+
+# Suffix appended to admin-only hints inside the menu.
+editor-suffix: " &7[Tahrir]"
+
+# How "selected" state is shown next to a cosmetic item.
+selected-prefix: "&a✔ "
+selected-lore:   "&aTanlandi - o'chirish uchun bosing"
+
+# Filler glass material used as the background of all menus.
+filler-material: "RED_STAINED_GLASS_PANE"
+filler-name:     "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
+
+# Divider row in the shields menu (slots 36..44) — visually separates the
+# cosmetic shields from the navigation row at the bottom.
+divider-material: "RED_STAINED_GLASS_PANE"
+divider-name:     "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
+
+# Hint shown to admins on empty slots inside the shields menu.
+empty-shield-slot-name: "&8Bo'sh slot #{slot}"
+empty-shield-slot-lore:
+  - "&7Qo'lingizga qalqon oling va ishlating:"
+  - "&e/cosmetics admin shield add"
+
+# Hint shown to admins on empty armor piece slots.
+# {piece} = piece name (шлем/нагрудник/…), {set} = column number 1..9
+empty-armor-slot-name: "&8{piece} &7— набор &e#{set}"
+empty-armor-slot-lore:
+  - "&7Возьмите крашенную часть брони в руку"
+  - "&7и используйте &e/cosmetics admin armor set {set} {piece}"
+
+# ── Main menu buttons ────────────────────────────────────────────────────────
+main:
+  shields-name: "&b&lQalqonlar"
+  shields-lore:
+    - "&7Tanlagan qalqoningiz,"
+    - "&7duellarda sizga beriladi."
+    - ""
+    - "&eOchish uchun bosing."
+  diamond-name: "&b&lOlmos Bronyalar"
+  diamond-lore:
+    - "&7Tanlagan olmos bronyalaringiz"
+    - "&7duellarda sizga beriladi."
+    - ""
+    - "&eOchish uchun bosing."
+  netherite-name: "&5&lNezerit Bronyalar"
+  netherite-lore:
+    - "&7Tanlagan nezerit bronyalaringiz"
+    - "&7duellarda sizga beriladi."
+    - ""
+    - "&eOchish uchun bosing."
+  back-name: "&c&lOrqaga"
+  clear-name: "&c&lHammasini tozalash"
+  clear-lore:
+    - "&7Tanlangan qalqon va bronyalarni tozalash."
+
+# ── Sub-menu buttons ─────────────────────────────────────────────────────────
+sub:
+  back-name: "&c&lOrqaga"
+  clear-name: "&c&lTanlaganingizni tozalash"
+  clear-lore:
+    - "&7Ushbu tanlagan predmetingizni tozalash."
+
+# ── Armor sub-menu layout ────────────────────────────────────────────────────
+# The 9×4 grid is hard-coded (slots 0..35):
+#   Row 0 (slots  0.. 8) → helmets,  columns are 9 armor sets.
+#   Row 1 (slots  9..17) → chestplates
+#   Row 2 (slots 18..26) → leggings
+#   Row 3 (slots 27..35) → boots
+# Only the navigation overlays below remain configurable.
+armor-menu:
+  back-slot:  45
+  clear-slot: 49
+
+# ── Chat messages ────────────────────────────────────────────────────────────
+messages:
+  prefix:               "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f| "
+  no-permission:        "&cSizda kosmetika uchun ruxsat mavjud emas."
+  no-admin-permission:  "&cSizda kosmetikani tahrirlash uchun ruxsat mavjud emas."
+  not-holding-shield:   "&cQalqonni qolingizga oling."
+  not-holding-armor:    "&cSizning qolingizda mos keluvchi predmet mavjud emas {piece}."
+  shield-added:         "&aQalqon kosmetikaga qo'shildi (Slot &e#{slot}&a)."
+  shield-removed:       "&aQalqon o'chirildi (Slot &e#{slot}&a)."
+  shield-slots-full:    "&cBosh slotlar mavjud emas — 36ta slot ishlatilinmoqda."
+  armor-set:            "&aBronya elementi &e{piece} &ayangilandi."
+  selected-shield:      "&aTanlangan shit: &e#{slot}&a."
+  selected-armor:       "&aSiz ushbu turni tanladingiz: &e{name} &7({material})&a."
+  deselected-armor:     "&7Tanlovni olib tashlash: &f{name} &8({material})&7."
+  cleared-shield:       "&7Belgilangan qalqon o'chirildi."
+  cleared-armor:        "&7Belgilangan bronyalar {material} o'chirildi."
+  cleared-all:          "&7Hamma kosmetikalar o'chirildi."
+  invalid-slot:         "&cXato slot."
+  invalid-piece:        "&cXato bronya elementi."
+  invalid-armor-material: "&cUshbu predmet olmos yoki nezerit bronya elementi emas."
+  invalid-set-index:    "&cSon bo'lishi kerak: 1..9."
+  # ── /cosmetics admin … usage hints ───────────────────────────────────────
+  # Эти строки печатаются без префикса (это hint, не ошибка).
+  usage-admin-root:        "&e/cosmetics admin <shield|armor> ..."
+  usage-admin-shield:      "&e/cosmetics admin shield <add|remove>"
+  usage-admin-shield-remove: "&e/cosmetics admin shield remove <slot>"
+  usage-admin-armor:       "&e/cosmetics admin armor <set|remove> ..."
+  usage-admin-armor-set:   "&e/cosmetics admin armor set <set#1-9> <helmet|chestplate|leggings|boots>"
+  usage-admin-armor-remove: "&e/cosmetics admin armor remove <diamond|netherite> <set#1-9> <piece>"
+  usage-admin:             "&e/cosmetics admin <shield|armor>"
+
+# ── Display names used by the listener in chat ───────────────────────────────
+piece-names:
+  helmet:     "Helmet"
+  chestplate: "Chestplate"
+  leggings:   "Leggins"
+  boots:      "Boots"
+
+material-names:
+  diamond:   "Diamond"
+  netherite: "Netherite"

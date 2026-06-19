@@ -62,6 +62,10 @@ public class PlayerJoinQuitListener implements Listener {
                 } else {
                     plugin.getHotbarManager().giveHotbar(e.getPlayer());
                 }
+                // Defensive sweep: clear any orphaned match BELOW_NAME line
+                // (the stray "0" under the nick) left over from a crash/reload.
+                try { plugin.getNameTagProvider().clearStrayState(e.getPlayer()); }
+                catch (Throwable ignored) {}
                 plugin.getFriendsManager().notifyFriendsOnJoin(e.getPlayer());
             }
         }, 2L);

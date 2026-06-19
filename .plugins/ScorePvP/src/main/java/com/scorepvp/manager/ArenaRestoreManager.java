@@ -146,13 +146,13 @@ public class ArenaRestoreManager {
         if (!file.exists()) {
             plugin.getLogger().warning("[ScorePvP] No schematic file for arena #"
                     + arena.getNumber() + " — nothing to paste.");
-            onComplete.run();
+            run(onComplete);
             return;
         }
 
         Location c1 = arena.getCorner1();
         Location c2 = arena.getCorner2();
-        if (c1 == null || c2 == null) { onComplete.run(); return; }
+        if (c1 == null || c2 == null) { run(onComplete); return; }
 
         int minX = Math.min(c1.getBlockX(), c2.getBlockX());
         int minY = Math.min(c1.getBlockY(), c2.getBlockY());
@@ -163,7 +163,7 @@ public class ArenaRestoreManager {
             ClipboardFormat format = ClipboardFormats.findByFile(file);
             if (format == null) {
                 plugin.getLogger().warning("[ScorePvP] Unknown schematic format: " + file.getName());
-                onComplete.run();
+                run(onComplete);
                 return;
             }
 
@@ -182,13 +182,16 @@ public class ArenaRestoreManager {
                         .build();
                 Operations.complete(operation);
             }
-            onComplete.run();
+            run(onComplete);
         } catch (Exception e) {
             plugin.getLogger().severe("[ScorePvP] Failed to paste schematic for arena #"
                     + arena.getNumber() + ": " + e.getMessage());
-            onComplete.run();
+            run(onComplete);
         }
     }
+
+    /** Runs a callback only if it's non-null. Round-end restore passes null. */
+    private void run(Runnable r) { if (r != null) r.run(); }
 
     // ── Admin save: just writes a .schem if WorldEdit is present ────────────
 
@@ -225,12 +228,12 @@ public class ArenaRestoreManager {
         if (tracker == null) {
             // Should never happen — tracker is wired in onEnable — but bail safely.
             plugin.getLogger().warning("[ScorePvP] ArenaBlockTracker missing; round restore skipped.");
-            onComplete.run();
+            run(onComplete);
             return;
         }
 
         if (!tracker.hasChanges(match.getMatchId())) {
-            onComplete.run();
+            run(onComplete);
             return;
         }
 
@@ -239,7 +242,7 @@ public class ArenaRestoreManager {
             plugin.getLogger().fine("[ScorePvP] Arena #" + arena.getNumber()
                     + " restored " + reverted + " block(s) via diff tracker.");
         }
-        onComplete.run();
+        run(onComplete);
     }
 
     /** Visible only if the round-end restore path ever needs a countdown. Unused today. */

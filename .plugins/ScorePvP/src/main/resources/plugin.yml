@@ -64,10 +64,18 @@ commands:
     description: Open cosmetics menu
     usage: /cosmetics [admin shield|armor ...]
     permission: duels.cosmetics
+  stopduel:
+    description: Force-end a player's duel as a draw (admin)
+    usage: /stopduel <ник>
+    permission: scorepvp.stopduel
+    aliases: [duelstop]
 
 permissions:
   scorepvp.admin:
     description: Full admin access
+    default: op
+  scorepvp.stopduel:
+    description: Force-end any duel as a draw
     default: op
   scorepvp.use:
     description: Use ScorePvP features

@@ -148,9 +148,14 @@ public class MainMenuGUI {
     // ── Item builders ─────────────────────────────────────────────────────────
 
     private ItemStack buildAvailableSlot(PvPMode mode) {
+        int queued = plugin.getDuelManager().getQueueSize(mode.getId());
+        List<String> lore = new ArrayList<>();
+        lore.add(plugin.getConfigManager().rawStr("menu.mode-lore"));
+        lore.add(plugin.getConfigManager().rawStr("menu.queue-count-lore")
+                .replace("{count}", String.valueOf(queued)));
         ItemBuilder b = new ItemBuilder(mode.getIcon())
                 .name(mode.getDisplayName())
-                .lore(plugin.getConfigManager().rawStr("menu.mode-lore"));
+                .lore(lore);
         if (mode.isIconEnchanted()) b.glow();
         return b.build();
     }

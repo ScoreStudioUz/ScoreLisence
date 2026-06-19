@@ -275,7 +275,17 @@ public class MatchManager {
         // Setup nametags + health IMMEDIATELY (before countdown ends)
         plugin.getNameTagProvider().setupMatchNametags(match);
 
-        int countdown = plugin.getConfig().getInt("match.countdown", 5);
+        // Only the FIRST round has a countdown — subsequent rounds start the
+        // fight instantly so there's no dead time between rounds.
+        if (match.getCurrentRound() > 1) {
+            match.setState(Match.State.ACTIVE);
+            mp1.setFrozen(false); mp2.setFrozen(false);
+            broadcastTitle(match, Title.title(comp(plugin.getConfigManager().rawStr("match.fight")), comp(""),
+                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(500))));
+            return;
+        }
+
+        int countdown = plugin.getConfig().getInt("match.countdown", 3);
         int[] n = {countdown};
         BukkitTask[] taskRef = {null};
         taskRef[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -503,6 +513,115 @@ public class MatchManager {
         }, 60L);
     }
 
+    // ── Admin force-draw ────────────────────────────────────────────────────────
+
+    /**
+     * Force-ends a match as a DRAW (admin /stopduel). No win/loss/kill stats are
+     * recorded; both players (and any spectators) are sent back to spawn exactly
+     * like a normal match end. Works for duels and FFA alike.
+     */
+    public void forceDraw(Match match) {
+        if (match == null || match.getState() == Match.State.FINISHED) return;
+
+        BukkitTask ct = countdownTasks.remove(match.getMatchId());
+        if (ct != null) ct.cancel();
+        match.setState(Match.State.FINISHED);
+        match.getArena().setFree();
+
+        plugin.getNameTagProvider().clearMatchNametags(match);
+
+        // Announce the draw to everyone in the match.
+        broadcastToMatch(match, plugin.getConfigManager().rawMsg("prefix")
+                + " " + plugin.getConfigManager().rawMsg("match.admin-draw"));
+
+        if (plugin.getConfig().getBoolean("placeholders.update-on-match-end", true))
+            plugin.getPlaceholderCache().refreshMode(match.getMode().getId());
+
+        // Detach synchronously (same rationale as endMatch).
+        java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
+        for (UUID uuid : participants) byPlayer.remove(uuid);
+        byId.remove(match.getMatchId());
+
+        Location spawn = plugin.getConfigManager().getTpSpawnLocation();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (UUID uuid : participants) {
+                Player p = player(uuid);
+                if (p == null) continue;
+                clearInventory(p);
+                resetFighter(p);
+                if (spawn != null) p.teleport(spawn);
+                if (plugin.getPartyManager().isInParty(uuid))
+                    plugin.getHotbarManager().updatePartySlot(p, true);
+                else
+                    plugin.getHotbarManager().restoreHotbar(p);
+                p.updateInventory();
+            }
+            cleanupArenaDrops(match.getArena());
+            if (match.getArena().isVanilla()) {
+                plugin.getArenaRestoreManager().startRestore(match, null);
+            }
+            plugin.getRoundStatsManager().clearMatch(match.getMatchId());
+        }, 60L);
+    }
+
+    // ── Reload / shutdown teardown ─────────────────────────────────────────────
+
+    /**
+     * Synchronously tears down EVERY active match — used on plugin reload and
+     * onDisable. For each match we:
+     *   1. restore the vanilla arena (block diff + arrows + loose drops),
+     *   2. clear match nametags,
+     *   3. teleport every participant (fighters + spectators) back to spawn and
+     *      restore their lobby hotbar.
+     *
+     * Everything runs inline (no runTaskLater) because the Bukkit scheduler is
+     * already dead during onDisable; deferring would silently drop the work and
+     * leave arenas griefed / players trapped in spectator after a restart.
+     */
+    public void shutdownAllMatches() {
+        java.util.List<Match> matches = new java.util.ArrayList<>(byId.values());
+        Location spawn = plugin.getConfigManager().getTpSpawnLocation();
+
+        for (Match match : matches) {
+            // Stop any running countdown timer.
+            BukkitTask ct = countdownTasks.remove(match.getMatchId());
+            if (ct != null) ct.cancel();
+
+            match.setState(Match.State.FINISHED);
+            match.getArena().setFree();
+
+            try { plugin.getNameTagProvider().clearMatchNametags(match); }
+            catch (Throwable ignored) {}
+
+            // Restore the arena before players are moved — synchronous, 1-tick.
+            try {
+                cleanupArenaDrops(match.getArena());
+                if (match.getArena().isVanilla()) {
+                    plugin.getArenaRestoreManager().startRestore(match, null);
+                }
+            } catch (Throwable ignored) {}
+
+            for (UUID uuid : new java.util.ArrayList<>(match.getAllUuids())) {
+                byPlayer.remove(uuid);
+                Player p = player(uuid);
+                if (p == null) continue;
+                try {
+                    clearInventory(p);
+                    resetFighter(p);
+                    if (spawn != null) p.teleport(spawn);
+                    if (plugin.getPartyManager().isInParty(uuid))
+                        plugin.getHotbarManager().updatePartySlot(p, true);
+                    else
+                        plugin.getHotbarManager().restoreHotbar(p);
+                    p.updateInventory();
+                } catch (Throwable ignored) {}
+            }
+            byId.remove(match.getMatchId());
+            try { plugin.getRoundStatsManager().clearMatch(match.getMatchId()); }
+            catch (Throwable ignored) {}
+        }
+    }
+
     // ── Spectator ─────────────────────────────────────────────────────────────
 
     public boolean addSpectator(Player spec, Match match) {
@@ -510,8 +629,28 @@ public class MatchManager {
         MatchPlayer mp = new MatchPlayer(spec.getUniqueId(), spec.getName(), MatchPlayer.Role.SPECTATOR);
         match.addSpectator(mp);
         byPlayer.put(spec.getUniqueId(), match);
+
+        // Strip the lobby hotbar/inventory FIRST so the spectator can't keep
+        // (or use) lobby items while watching, then switch to SPECTATOR and
+        // teleport into the arena.
+        plugin.getHotbarManager().removeHotbar(spec);
+        clearInventory(spec);
         spec.setGameMode(GameMode.SPECTATOR);
         safeTP(spec, match.getArena().getCentre());
+
+        // Re-assert SPECTATOR a tick after the teleport: the previous code set
+        // it before the TP, and something in the same/next tick (region kit
+        // re-give, hotbar restore) was knocking them back into SURVIVAL — so
+        // /spec dropped you into the live fight in survival until the round
+        // ended. Re-applying after the TP settles makes it stick immediately.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!spec.isOnline()) return;
+            if (!byPlayer.containsKey(spec.getUniqueId())) return; // left already
+            if (spec.getGameMode() != GameMode.SPECTATOR) {
+                spec.setGameMode(GameMode.SPECTATOR);
+            }
+        });
+
         spec.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                 + " " + plugin.getConfigManager().rawMsg("match.spectate-msg",
                 "{player1}", match.getFighter1() != null ? match.getFighter1().getName() : "?",

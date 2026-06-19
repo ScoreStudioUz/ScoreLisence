@@ -192,6 +192,13 @@ public final class ScorePvP extends JavaPlugin {
     // ── onDisable ─────────────────────────────────────────────────────────────
     @Override
     public void onDisable() {
+        // 0. Tear down every active match FIRST: restore vanilla arenas, cancel
+        //    all duels/queues, and teleport everyone back to spawn. Done inline
+        //    (the scheduler is already dead at this point) so a restart never
+        //    leaves arenas griefed or players trapped in spectator.
+        if (duelManager != null) duelManager.clearAllQueues();
+        if (matchManager != null) matchManager.shutdownAllMatches();
+
         // 1. Synchronous flush of ALL stats and playtime ONCE (before per-player cleanup)
         if (statsManager != null) statsManager.flushAllSync();
 

@@ -1,0 +1,61 @@
+name: ScoreCheck
+version: '${project.version}'
+main: uz.score.scorecheck.ScoreCheck
+api-version: '1.21'
+description: Professional player verification plugin
+authors: [ ScoreStudio ]
+website: https://score.uz
+
+commands:
+  check:
+    description: ScoreCheck main command
+    aliases: [ scheck, scorecheck ]
+    usage: /check help
+    permission: scorecheck.use
+
+permissions:
+  scorecheck.use:
+    description: Base access to /check
+    default: op
+  scorecheck.start:
+    description: Start a check
+    default: op
+  scorecheck.close:
+    description: Close a check (pass or ban)
+    default: op
+  scorecheck.free:
+    description: Free a player (alias for close pass)
+    default: op
+  scorecheck.next:
+    description: Advance to phase 2
+    default: op
+  scorecheck.msg:
+    description: Message a checked player
+    default: op
+  scorecheck.addtime:
+    description: Add time to waiting timer
+    default: op
+  scorecheck.remtime:
+    description: Remove time from waiting timer
+    default: op
+  scorecheck.settime:
+    description: Set waiting timer
+    default: op
+  scorecheck.list:
+    description: List active checks
+    default: op
+  scorecheck.info:
+    description: View check info
+    default: op
+  scorecheck.setloc:
+    description: Set teleport location
+    default: op
+  scorecheck.reload:
+    description: Reload config
+    default: op
+  scorecheck.bypass:
+    description: Bypass freeze restrictions
+    default: false
+  scorecheck.seevanished:
+    description: See vanished (checked) players
+    default: op

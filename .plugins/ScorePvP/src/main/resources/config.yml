@@ -8,7 +8,7 @@
 language: ru
 
 # Показывать ли [ScorePvP] перед сообщениями в чате
-use-plugin-prefix: true
+use-plugin-prefix: false
 
 # ── Storage ───────────────────────────────────────────────────────────────────
 # Split storage: tiers могут жить в общей MySQL на всю сеть серверов,
@@ -23,19 +23,19 @@ storage:
       host: mysql-uztiers.alwaysdata.net
       port: 3306
       database: uztiers_tiers
-      username: uztiers
+      username: uztiers_scorepvp
       password: shohjahon1
       pool-size: 4
       connection-timeout: 5000
 
 # Spawn warp — slot 9 (hotbar index 8)
 warp:
-  world: spawn
-  x: 0.5
-  y: 101.0
-  z: 0.5
-  yaw: 88.7997817993164
-  pitch: -0.9000831246376038
+  world: editor_room
+  x: -69797.5
+  y: 88.0
+  z: -29487.5
+  yaw: 89.99995422363281
+  pitch: 2.4000227451324463
 
 # TP Spawn — where players teleport after a match ends (Duel, FFA, PvP)
 # If not set, falls back to the warp location above.
@@ -49,13 +49,13 @@ tp-spawn:
 
 # Chest region — only players in this box interact with managed chests
 chest-region:
-  world: world
-  min-x: -50
-  min-y: 60
-  min-z: -50
-  max-x: 50
-  max-y: 80
-  max-z: 50
+  world: editor_room
+  min-x: -69815
+  min-y: 87
+  min-z: -29503
+  max-x: -69790
+  max-y: 105
+  max-z: -29473
 
 # Hotbar items given on join
 hotbar:
@@ -93,17 +93,24 @@ tiers:
   - HT2
   - LT1
   - HT1
+  # GLOBAL (fallback) tier ranglari. Har bir rejim modes.yml dagi o'zining
+  # `tier-colors` blokida bu ranglarni QAYTA YOZISHI mumkin. Agar rejimda
+  # biror tier uchun rang bo'lmasa — shu yerdagi qiymat ishlatiladi.
+  # Ikki format qo'llab-quvvatlanadi:
+  #   • Legacy rang kodi:   '&b'                          (butun matnga bitta rang)
+  #   • MiniMessage gradient: '<gradient:#9E9E9E:#FFFFFF>' (matn bo'ylab o'tuvchi rang)
+  # Tier yorlig'i QAVSSIZ ko'rsatiladi — masalan "HT1".
   colors:
-    LT5: '&7'
-    HT5: '&f'
-    LT4: '&a'
-    HT4: '&2'
-    LT3: '&b'
-    HT3: '&3'
-    LT2: '&e'
-    HT2: '&6'
-    LT1: '&c'
-    HT1: '&4'
+    HT1: '<gradient:#FFC107:#FFE082>'
+    LT1: '<gradient:#FFEB3B:#FFF9C4>'
+    HT2: '<gradient:#FFFFFF:#E0E0E0>'
+    LT2: '<gradient:#B0BEC5:#ECEFF1>'
+    HT3: '<gradient:#1E88E5:#90CAF9>'
+    LT3: '<gradient:#4FC3F7:#E1F5FE>'
+    HT4: '<gradient:#2196F3:#BBDEFB>'
+    LT4: '<gradient:#5C6BC0:#C5CAE9>'
+    HT5: '<gradient:#7E57C2:#D1C4E9>'
+    LT5: '<gradient:#9575CD:#EDE7F6>'
 
 # ── Party settings ─────────────────────────────────────────────────────────────
 party:
@@ -111,7 +118,9 @@ party:
 
 # ── Match settings ─────────────────────────────────────────────────────────────
 match:
-  countdown: 5
+  # Faqat BIRINCHI raund uchun sanab tushish (sekund). Keyingi raundlar
+  # darhol "FIGHT!" bilan boshlanadi — sanash bo'lmaydi.
+  countdown: 3
   round-end-delay-ticks: 60
   finish-delay-ticks: 60
 
@@ -175,12 +184,22 @@ nametag:
   # 20 = раз в секунду. Дополнительно строка обновляется на каждом
   # событии урона — чтобы HP не отставало в бою.
   ping-refresh-ticks: 20
-  # Форматы для дуэлей и FFA
-  duel-format: '%lp_prefix%%tier_color%[%tier%] %team_color%| '
-  ffa-format: '%lp_prefix%%tier_color%[%tier%] &f| '
+  # Форматы для дуэлей и FFA (tier QAVSSIZ ko'rsatiladi)
+  duel-format: '%lp_prefix%%tier_color%%tier% %team_color%| '
+  ffa-format: '%lp_prefix%%tier_color%%tier% &f| '
   # Форматы когда у игрока нет тира
   no-tier-duel-format: '%lp_prefix%%team_color%'
   no-tier-ffa-format: '%lp_prefix%'
+
+  # ── Lobby nametag (duelda EMAS, oddiy spawnda boshi ustida) ──
+  # O'yinchi duelda bo'lmaganda boshi ustidagi nik yoniga eng katta tieri
+  # qo'shiladi: masalan "SHOXMONEY | HT1".  TAB borligida — TAB suffiksi orqali,
+  # aks holda Bukkit scoreboard team suffiksi orqali qo'llanadi.
+  # Plagin tier RANGini avtomatik qo'yadi (eng katta tier qaysi rejimники
+  # bo'lsa, o'sha rejimning rangida).  {tier} — rangli tier yorlig'i (qavssiz).
+  lobby-enabled: true
+  # Nik bilan tier orasidagi qo'shimcha (suffix). {tier} — rangli tier.
+  lobby-suffix-format: ' &7| {tier}'
 
 # ── HUD / Action Bar ───────────────────────────────────────────────────────────
 hud:
@@ -191,7 +210,7 @@ hud:
   # Используются для below-name строки (nametag.below-name-format) и
   # для собственного HUD-индикатора пинга в action bar.
   ping:
-    good-max: 100
+    good-max: 80
     mid-max: 150
     good-color: '&a'
     mid-color: '&6'
@@ -212,7 +231,7 @@ custom-items:
   golden-head:
     enabled: true
     # Base64 texture value (player head skin)
-    base64-texture: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWU1YmY2MDM2Mzg2YjJlYjAwZmMyZTYzNWU1NzViNzRlMmI1YTBjNjljYmI1MzY5MWFlZGZkYjZhMGMzNjAwOSJ9fX0=
+    base64-texture: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2JiNjEyZWI0OTVlZGUyYzVjYTUxNzhkMmQxZWNmMWNhNWEyNTVkMjVkZmMzYzI1NGJjNDdmNjg0ODc5MWQ4In19fQ==
     # Cooldown in seconds
     cooldown-seconds: 10
     effects:

@@ -26,9 +26,9 @@ public class NameTagFormatter {
         this.includeLpPrefix = plugin.getConfig().getBoolean("nametag.include-luckperms-prefix", true);
 
         this.duelFormat = plugin.getConfig().getString("nametag.duel-format",
-                "%lp_prefix%%tier_color%[%tier%] %team_color%| ");
+                "%lp_prefix%%tier_color%%tier% %team_color%| ");
         this.ffaFormat = plugin.getConfig().getString("nametag.ffa-format",
-                "%lp_prefix%%tier_color%[%tier%] &f| ");
+                "%lp_prefix%%tier_color%%tier% &f| ");
         this.noTierDuelFormat = plugin.getConfig().getString("nametag.no-tier-duel-format",
                 "%lp_prefix%%team_color%");
         this.noTierFfaFormat = plugin.getConfig().getString("nametag.no-tier-ffa-format",
@@ -53,13 +53,27 @@ public class NameTagFormatter {
             return applyPlaceholders(template, lpPrefix, "", "", teamColorCode);
         }
 
-        String tierColor = plugin.getConfig().getString("tiers.colors." + tier, "&f");
+        String tierColor = plugin.getConfigManager().getTierColorSpec(tier, modeId);
         String template = ffa ? ffaFormat : duelFormat;
         return applyPlaceholders(template, lpPrefix, tierColor, tier, teamColorCode);
     }
 
     private String applyPlaceholders(String template, String lpPrefix,
                                      String tierColor, String tier, String teamColor) {
+        // For a MiniMessage gradient spec the color must wrap the whole tier
+        // label, not sit in front of it — so collapse the common
+        // "%tier_color%%tier%" segment into a single pre-rendered gradient run.
+        // Plain legacy specs fall through to the literal placeholder swap below.
+        if (com.scorepvp.util.ColorUtil.isMiniMessage(tierColor) && !tier.isEmpty()) {
+            String rendered = com.scorepvp.util.ColorUtil.applyColorSpec(tierColor, tier);
+            template = template
+                    .replace("%tier_color%%tier%", rendered)
+                    .replace("%tier_color%", "")          // any stray color tokens
+                    .replace("%tier%", rendered);
+            return template
+                    .replace("%lp_prefix%", lpPrefix)
+                    .replace("%team_color%", teamColor);
+        }
         return template
                 .replace("%lp_prefix%", lpPrefix)
                 .replace("%tier_color%", tierColor)

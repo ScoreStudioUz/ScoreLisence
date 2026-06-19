@@ -1,0 +1,31 @@
+# ============================================================
+#  Duel Mode Selection GUI — item_menus/duel.yml
+#  Configurable like DeluxeMenus: titles, items, lore
+# ============================================================
+
+title: "&0Duel uchun rejim tanlash"
+size: 36
+
+# Filler glass pane
+filler:
+  material: RED_STAINED_GLASS_PANE
+  name: "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f- Serveri"
+
+# Mode item slots (start - end)
+mode-slots:
+  start: 10
+  end: 25
+
+# Mode item display
+mode-lore:
+  - "&7Rejim tanlash uchun bosing"
+  - ""
+  - "&eLKM &7— Tanlash"
+
+# Unavailable mode display
+unavailable:
+  material: BARRIER
+  name-suffix: " &8[&cMumkun emas]"
+  lore:
+    - "&cTalab qilinadigan versiya: &e{version}+"
+    - "&7Sizning versiyangiz: &c{your_version}"

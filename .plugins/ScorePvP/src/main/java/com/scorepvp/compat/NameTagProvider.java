@@ -40,4 +40,20 @@ public interface NameTagProvider {
      * list name, and team membership to lobby defaults.
      */
     default void clearMatchNametagsForPlayer(Match match, Player player) {}
+
+    /**
+     * Removes any leftover match-only display state (e.g. a stray BELOW_NAME
+     * HP/ping objective showing a "0" under the nick) from a player who is NOT
+     * in a match. Called on join as a defensive sweep so orphaned state from a
+     * crash / hard reload doesn't linger in the lobby.
+     */
+    default void clearStrayState(Player player) {}
+
+    /**
+     * Applies the LOBBY nametag for a player who is NOT in a match: shows their
+     * highest tier next to their name (e.g. "SHOXMONEY | HT1"). Also strips any
+     * leftover match below-name HP/ping line. No-op for players in a match.
+     * Safe to call repeatedly (the periodic hotbar task drives it).
+     */
+    default void applyLobbyNametag(Player player) {}
 }

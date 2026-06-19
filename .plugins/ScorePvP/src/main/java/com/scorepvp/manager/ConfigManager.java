@@ -120,6 +120,17 @@ public class ConfigManager {
                 icon = Material.PAPER;
             }
 
+            // Per-mode tier color overrides (modes.yml → <mode>.tier-colors.<TIER>).
+            // Missing/empty → global tiers.colors is used as fallback.
+            Map<String, String> tierColors = new LinkedHashMap<>();
+            var tcSec = sec.getConfigurationSection("tier-colors");
+            if (tcSec != null) {
+                for (String tier : tcSec.getKeys(false)) {
+                    String spec = tcSec.getString(tier);
+                    if (spec != null && !spec.isEmpty()) tierColors.put(tier, spec);
+                }
+            }
+
             PvPMode mode = new PvPMode(
                     id,
                     sec.getString("display-name", id),
@@ -130,7 +141,8 @@ public class ConfigManager {
                     sec.getStringList("allowed-arenas"),
                     sec.getInt("default-rounds", 3),
                     sec.getInt("countdown-seconds", 5),
-                    sec.getString("min-client-version", "")
+                    sec.getString("min-client-version", ""),
+                    tierColors
             );
             pvpModes.add(mode);
             modeById.put(id, mode);
@@ -266,8 +278,40 @@ public class ConfigManager {
         return plugin.getConfig().getStringList("tiers.order");
     }
 
-    public String getTierColor(String tier) {
-        return ColorUtil.color(plugin.getConfig().getString("tiers.colors." + tier, "&f"));
+    /** Raw global color spec for a tier — legacy code ("&b") or MiniMessage ("&lt;gradient:…&gt;"). */
+    public String getTierColorSpec(String tier) {
+        return plugin.getConfig().getString("tiers.colors." + tier, "&f");
+    }
+
+    /**
+     * Mode-aware color spec: a mode's own {@code tier-colors.<TIER>} from
+     * modes.yml takes precedence; if the mode has no override (or modeId is
+     * null) it falls back to the global {@code tiers.colors.<TIER>}.
+     */
+    public String getTierColorSpec(String tier, String modeId) {
+        if (modeId != null) {
+            PvPMode mode = modeById.get(modeId);
+            if (mode != null) {
+                String spec = mode.getTierColor(tier);
+                if (spec != null && !spec.isEmpty()) return spec;
+            }
+        }
+        return getTierColorSpec(tier);
+    }
+
+    /**
+     * Returns the fully-rendered tier label as a legacy string (no brackets),
+     * e.g. "&bLT3" for a legacy color or a hex-gradient run for a gradient
+     * spec. Returns "" for a null/blank tier.
+     */
+    public String getTierDisplay(String tier) {
+        return getTierDisplay(tier, null);
+    }
+
+    /** Mode-aware variant of {@link #getTierDisplay(String)}. */
+    public String getTierDisplay(String tier, String modeId) {
+        if (tier == null || tier.isBlank()) return "";
+        return ColorUtil.applyColorSpec(getTierColorSpec(tier, modeId), tier);
     }
 
     // ── Modes ─────────────────────────────────────────────────────────────────

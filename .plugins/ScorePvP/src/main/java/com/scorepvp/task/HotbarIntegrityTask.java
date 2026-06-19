@@ -25,6 +25,19 @@ public class HotbarIntegrityTask extends BukkitRunnable {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             java.util.UUID uuid = player.getUniqueId();
 
+            // For anyone NOT in a match:
+            //  1) auto-heal leftover duel nametag / below-name HP+ping (the
+            //     ghost from an opponent leaving during countdown/spectate
+            //     clears itself WITHOUT a relog), then
+            //  2) (re)apply the lobby nametag — highest tier next to the nick,
+            //     e.g. "SHOXMONEY | HT1".
+            if (!plugin.getMatchManager().isInMatch(uuid)) {
+                try { plugin.getNameTagProvider().clearStrayState(player); }
+                catch (Throwable ignored) {}
+                try { plugin.getNameTagProvider().applyLobbyNametag(player); }
+                catch (Throwable ignored) {}
+            }
+
             // Skip players inside the vanilla region — they have a custom inventory
             if (plugin.getPlayerDataManager().isInVanillaRegion(uuid)) continue;
 
@@ -67,6 +80,15 @@ public class HotbarIntegrityTask extends BukkitRunnable {
                 needsRepair = true;
                 break;
             }
+        }
+
+        // A lobby player who is NOT in a queue and NOT in a party must never
+        // keep a slot-4 (queue/party barrier). If one lingered — e.g. they
+        // relogged out of a queue and the barrier survived the session — wipe
+        // it here so the menu's middle slot doesn't stay stuck on a barrier.
+        ItemStack slot4 = inv.getItem(HotbarManager.SLOT_QUEUE);
+        if (slot4 != null && !slot4.getType().isAir()) {
+            inv.setItem(HotbarManager.SLOT_QUEUE, null);
         }
 
         if (needsRepair) {

@@ -134,6 +134,22 @@ public class ArenaBlockTracker implements Listener {
         recordIfTracked(match, e.getBlock(), e.getBlock().getBlockData().clone());
     }
 
+    // ── Listener — liquid flow / spread ───────────────────────────────────────
+    //
+    // Placing a water/lava bucket only records the SOURCE block. As the liquid
+    // spreads outward each tick, BlockFromToEvent fires for every block it
+    // flows INTO — those weren't captured by the bucket-empty handler, so on
+    // restore they stayed flooded. Recording the destination block's pre-flow
+    // data here (usually AIR) lets the diff tracker drain spread liquids too.
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLiquidFlow(org.bukkit.event.block.BlockFromToEvent e) {
+        Block to = e.getToBlock();
+        Match match = matchForBlock(to);
+        if (match == null) return;
+        recordIfTracked(match, to, to.getBlockData().clone());
+    }
+
     // ── Listener — explosions (TNT, anchor, end crystal, creeper, fireball) ──
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -1,0 +1,226 @@
+# ============================================================
+#   ScoreCheck v1.0.0 | ScoreStudio
+#   Формат цветов: &f &c &a &e &b и #RRGGBB
+# ============================================================
+
+# Локация телепортации при проверке
+# Установить: /check setloc
+teleport-location:
+  world: world
+  x: 0.5
+  y: 64.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+
+# Локация возврата после прохождения проверки
+# Если пусто — телепортирует на спавн
+return-location:
+  enabled: false
+  world: world
+  x: 0.0
+  y: 64.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+
+# ---- Таймер ----
+waiting-time: 300
+reminder-interval: 15
+
+# Единицы времени (отображаются в таймере)
+time-format:
+  hours: "&fч"
+  minutes: "&fм"
+  seconds: "&fс"
+
+# ---- Бан-команда ----
+# Плейсхолдеры: {player} {moderator}
+ban-command: "ban {player} &cПроверка не пройдена. Модератор: &e{moderator}"
+
+# ---- Невидимость ----
+# Делать ли игрока невидимым для других (не-модераторов) во время проверки
+vanish-on-check: true
+
+# ---- Звуки событий ----
+sounds:
+  enabled: true
+  check-start:
+    sound: ENTITY_ENDER_DRAGON_GROWL
+    volume: 0.6
+    pitch: 1.2
+  phase2:
+    sound: BLOCK_BEACON_ACTIVATE
+    volume: 0.8
+    pitch: 0.9
+  check-pass:
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.0
+  check-ban:
+    sound: ENTITY_WITHER_DEATH
+    volume: 0.7
+    pitch: 0.8
+  reminder:
+    sound: BLOCK_NOTE_BLOCK_PLING
+    volume: 0.4
+    pitch: 0.7
+  attempt-move:
+    sound: BLOCK_CHAIN_BREAK
+    volume: 0.3
+    pitch: 1.5
+
+# ---- Эффекты на игрока ----
+effects:
+  # Выдавать ли эффекты при проверке
+  enabled: true
+  # Эффект замедления (уровень 0-255, 0 = полная остановка)
+  slowness-level: 10
+  # Слепота при попытке выйти за зону
+  blindness-on-escape: true
+  blindness-duration: 60
+
+# ---- BossBar ----
+bossbar:
+  phase1:
+    title: "&c&lОжидание &f| &e{timer}"
+    color: RED
+    style: SEGMENTED_10
+    animation:
+      - "&c⏳ &fОжидание &e{timer} &c⏳"
+      - "&4⏳ &cОжидание &e{timer} &4⏳"
+    animation-interval: 25
+
+  phase2:
+    title: "&e&l🔍 Идёт проверка..."
+    color: YELLOW
+    style: SOLID
+    animation:
+      - "&e🔍 &fИдёт проверка&e..."
+      - "&6🔍 &fИдёт проверка&6..."
+    animation-interval: 30
+
+# ---- ActionBar (показывается каждую секунду) ----
+actionbar:
+  enabled: true
+  phase1: "&c⏳ Проверка &7| &fМодератор: &e{moderator} &7| &fОсталось: &c{timer}"
+  phase2: "&e🔍 Проверка идёт &7| &fМодератор: &e{moderator}"
+
+# ---- Сообщения ----
+messages:
+  prefix: "&8[&c&lScoreCheck&8] &r"
+
+  # Права
+  no-permission: "{prefix}&cНедостаточно прав."
+  player-only: "{prefix}&cЭта команда только для игроков."
+  unknown-sub: "{prefix}&cНеизвестная команда. &7/check help"
+  invalid-time: "{prefix}&cНеверный формат времени. Примеры: &f5m &7| &f30s &7| &f1h"
+  
+  # Общее
+  player-not-found: "{prefix}&cИгрок &e{player} &cне найден или офлайн."
+  player-already-checked: "{prefix}&cИгрок &e{player} &cуже на проверке."
+  player-not-checked: "{prefix}&cИгрок &e{player} &cне находится на проверке."
+  location-saved: "{prefix}&aЛокация проверки сохранена!"
+  config-reloaded: "{prefix}&aКонфигурация перезагружена."
+
+  # Старт проверки — модератор
+  check-start-mod: "{prefix}&aПроверка игрока &e{player} &aначата. &7[Фаза 1]"
+  # Старт — игроку (Title + сообщение в чат)
+  check-start-title: "&c&lПРОВЕРКА"
+  check-start-subtitle: "&fВас вызвал модератор &e{moderator}"
+  check-start-chat: |-
+    &8&m---------------------------------------------
+    &c&l  ⚠ ВЫ ВЫЗВАНЫ НА ПРОВЕРКУ ⚠
+    &7  Модератор: &e{moderator}
+    &7  Время ожидания: &f{timer}
+    &7  Не пытайтесь выйти из игры.
+    &8&m---------------------------------------------
+
+  # Фаза 2 — переход
+  phase2-mod: "{prefix}&eИгрок &f{player} &eпереведён в фазу проверки."
+  phase2-title: "&e&l🔍 ПРОВЕРКА"
+  phase2-subtitle: "&7Ожидайте указаний модератора"
+  phase2-chat: |-
+    &8&m---------------------------------------------
+    &e&l  🔍 ПРОВЕРКА НАЧАЛАСЬ
+    &7  Модератор: &e{moderator}
+    &7  Следуйте указаниям.
+    &8&m---------------------------------------------
+
+  # Отпустить игрока
+  check-pass-mod: "{prefix}&aИгрок &e{player} &aуспешно прошёл проверку."
+  check-pass-player: |-
+    &8&m---------------------------------------------
+    &a&l  ✅ ПРОВЕРКА ПРОЙДЕНА
+    &7  Вы можете продолжить игру.
+    &8&m---------------------------------------------
+  check-pass-title: "&a&l✅ ПРОЙДЕНО"
+  check-pass-subtitle: "&7Продолжайте играть!"
+
+  # Бан
+  check-ban-mod: "{prefix}&cИгрок &e{player} &cзабанен."
+  
+  # Дисконнект во время проверки
+  disconnect-mod: "{prefix}&cИгрок &e{player} &cвышел во время проверки. &7Бан выдан."
+
+  # Таймаут (фаза 1 истекла)
+  timeout-mod: "{prefix}&cВремя ожидания для &e{player} &cвышло. &7Бан выдан."
+  timeout-player: "&c&lВРЕМЯ ВЫШЛО! &cВы получите бан."
+
+  # Чат модератор ↔ игрок
+  msg-to-player: "&8[&cМОДЕРАТОР&8] &e{moderator}&8: &f{message}"
+  msg-to-mod: "&8[&bПРОВЕРЯЕМЫЙ&8] &e{player}&8: &f{message}"
+  
+  # Напоминание игроку
+  reminder: |-
+    &8&m---------------------------------------------
+    &c&l  ⚠ ПРОВЕРКА АКТИВНА
+    &7  Модератор: &e{moderator}
+    &7  {phase_info}
+    &8&m---------------------------------------------
+  reminder-phase1: "&fОсталось: &c{timer}"
+  reminder-phase2: "&fПроверка идёт. Ждите указаний."
+
+  # Таймер команды
+  time-added: "{prefix}&aДобавлено &f{time} &aк таймеру &e{player}&a. Новое: &f{new_time}"
+  time-removed: "{prefix}&eУбрано &f{time} &eу таймера &e{player}&e. Новое: &f{new_time}"
+  time-set: "{prefix}&bТаймер &e{player} &bустановлен: &f{new_time}"
+
+  # Попытка нарушить заморозку
+  freeze-attempt: "&c&lЗАМОРОЖЕН! &cВы не можете этого делать во время проверки."
+
+  # Помощь
+  help: |-
+    &8&m---------------------------------------------
+    &c&l ScoreCheck &8| &7Команды
+    &8&m---------------------------------------------
+    &e/check start <ник>        &7— начать проверку
+    &e/check close <ник> pass   &7— отпустить (прошёл)
+    &e/check close <ник> ban    &7— забанить
+    &e/check free <ник>         &7— отпустить (алиас)
+    &e/check next <ник>         &7— перейти к фазе 2
+    &e/check msg <ник> <текст>  &7— написать игроку
+    &e/check addtime <ник> <t>  &7— добавить время
+    &e/check remtime <ник> <t>  &7— убрать время
+    &e/check settime <ник> <t>  &7— установить время
+    &e/check list               &7— список проверок
+    &e/check info <ник>         &7— инфо о проверке
+    &e/check setloc             &7— установить локацию
+    &e/check reload             &7— перезагрузить
+    &8&m---------------------------------------------
+
+  # Список проверок
+  list-header: "{prefix}&7Активные проверки: &e{count}"
+  list-entry: "  &7• &e{player} &7→ &f{moderator} &8| &7{phase} &8| &c{timer}"
+  list-empty: "{prefix}&7Активных проверок нет."
+
+  # Инфо о проверке
+  info: |-
+    &8&m---------------------------------------------
+    &c&l Проверка: &e{player}
+    &7  Модератор: &f{moderator}
+    &7  Фаза: &f{phase}
+    &7  Оставшееся время: &c{timer}
+    &8&m---------------------------------------------
+  info-phase1: "&cОжидание &7(Фаза 1)"
+  info-phase2: "&eПроверка &7(Фаза 2)"

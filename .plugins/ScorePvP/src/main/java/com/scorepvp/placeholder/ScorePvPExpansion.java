@@ -143,8 +143,7 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         String tier = plugin.getTierManager().getTier(p.getUniqueId(), mode);
         if (tier == null) return plugin.getConfigManager().rawStr("profile.unranked");
         if (raw) return tier;
-        String color = plugin.getConfigManager().getTierColor(tier);
-        return color + "[" + tier + "]";
+        return plugin.getConfigManager().getTierDisplay(tier, mode);
     }
 
     private String resolveStat(Player p, String mode, String field) {
@@ -207,15 +206,19 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         var tiers = plugin.getTierManager().getAllTiers(p.getUniqueId());
         var order = plugin.getConfigManager().getTierOrder();
         String best = null;
+        String bestMode = null;
         int bestIdx = -1;
-        for (String tier : tiers.values()) {
+        for (var e : tiers.entrySet()) {
+            String tier = e.getValue();
             if (tier == null || tier.isBlank()) continue;
             int idx = order.indexOf(tier);
-            if (idx > bestIdx) { bestIdx = idx; best = tier; }
+            if (idx > bestIdx) { bestIdx = idx; best = tier; bestMode = e.getKey(); }
         }
         if (best == null) return plugin.getConfigManager().rawStr("profile.unranked");
         if (raw) return best;
-        return plugin.getConfigManager().getTierColor(best) + "[" + best + "]";
+        // Color the highest tier using the colors of the mode it came from, so
+        // the lobby/tab badge matches that mode's gradient.
+        return plugin.getConfigManager().getTierDisplay(best, bestMode);
     }
 
     private String resolvePlaytime(Player p, boolean hoursOnly) {
