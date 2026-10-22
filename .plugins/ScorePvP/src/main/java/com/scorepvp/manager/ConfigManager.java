@@ -131,6 +131,13 @@ public class ConfigManager {
                 }
             }
 
+            // Per-mode starting saturation (0..20). Falls back to the global
+            // match.default-start-saturation (itself defaulting to 5) — full 20
+            // saturation let a sword fighter passively regen too much HP.
+            double globalSat = plugin.getConfig().getDouble("match.default-start-saturation", 5.0);
+            float startSat = (float) sec.getDouble("start-saturation", globalSat);
+            startSat = Math.max(0f, Math.min(20f, startSat));
+
             PvPMode mode = new PvPMode(
                     id,
                     sec.getString("display-name", id),
@@ -142,7 +149,8 @@ public class ConfigManager {
                     sec.getInt("default-rounds", 3),
                     sec.getInt("countdown-seconds", 5),
                     sec.getString("min-client-version", ""),
-                    tierColors
+                    tierColors,
+                    startSat
             );
             pvpModes.add(mode);
             modeById.put(id, mode);

@@ -1,41 +1,31 @@
-# Default Axe kit
-name: "axe"
 items:
-  - slot: 0
-    material: DIAMOND_AXE
-    name: "&fТопор"
-    enchantments:
-      sharpness: 5
-      efficiency: 5
-      unbreaking: 3
-  - slot: 1
-    material: DIAMOND_SWORD
-    name: "&fМеч"
-    enchantments:
-      sharpness: 4
-      unbreaking: 3
-  - slot: 2
-    material: GOLDEN_APPLE
-    name: "&fЗолотое яблоко"
-    amount: 8
-  - slot: 36
-    material: DIAMOND_BOOTS
-    enchantments:
-      protection: 4
-      unbreaking: 3
-      feather_falling: 4
-  - slot: 37
-    material: DIAMOND_LEGGINGS
-    enchantments:
-      protection: 4
-      unbreaking: 3
-  - slot: 38
-    material: DIAMOND_CHESTPLATE
-    enchantments:
-      protection: 4
-      unbreaking: 3
-  - slot: 39
-    material: DIAMOND_HELMET
-    enchantments:
-      protection: 4
-      unbreaking: 3
+- slot: 0
+  material: DIAMOND_AXE
+  amount: 1
+- slot: 1
+  material: CROSSBOW
+  amount: 1
+- slot: 2
+  material: DIAMOND_SWORD
+  amount: 1
+- slot: 3
+  material: BOW
+  amount: 1
+- slot: 8
+  material: ARROW
+  amount: 5
+- slot: 36
+  material: DIAMOND_BOOTS
+  amount: 1
+- slot: 37
+  material: DIAMOND_LEGGINGS
+  amount: 1
+- slot: 38
+  material: DIAMOND_CHESTPLATE
+  amount: 1
+- slot: 39
+  material: DIAMOND_HELMET
+  amount: 1
+- slot: 40
+  material: SHIELD
+  amount: 1

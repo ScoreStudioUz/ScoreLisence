@@ -62,6 +62,14 @@ public class HotbarManager {
         player.getInventory().setItem(SLOT_SETTINGS, buildSlot("hotbar.slot-7", Material.GRINDSTONE));
         player.getInventory().setItem(SLOT_WARP,     buildSlot("hotbar.slot-8", Material.ENDER_PEARL));
         player.updateInventory();
+
+        // Lobby-only elytra + wind-charge cosmetic (no-op if disabled / not in lobby).
+        if (plugin.getElytraCosmeticManager() != null)
+            plugin.getElytraCosmeticManager().apply(player);
+
+        // Lobby cosmetic hat (helmet slot; no-op if none selected / not in lobby).
+        if (plugin.getHatManager() != null)
+            plugin.getHatManager().applyLobbyHat(player);
     }
 
     /** Clears all 4 protected slots AND the queue slot before a kit is given in a match. */

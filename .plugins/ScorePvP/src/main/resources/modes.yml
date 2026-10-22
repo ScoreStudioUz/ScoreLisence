@@ -3,9 +3,13 @@
 # ===============================================
 #
 # Har bir rejim uchun ALOHIDA tier ranglari (tier-colors).
-# Ikki format qo'llab-quvvatlanadi:
+# Uch format qo'llab-quvvatlanadi:
 #   • Legacy rang kodi:     '&b'                          (butun tier matniga bitta rang)
 #   • MiniMessage gradient: '<gradient:#9E9E9E:#FFFFFF>'  (matn bo'ylab o'tuvchi rang)
+#   • Icon + gradient:      '&b🗡 <gradient:#9E9E9E:#FFFFFF>'
+#       └ '<' belgisidan OLDINGI qism (icon + o'z rangi) o'zgarishsiz oldiga
+#         qo'yiladi, keyin tier matni gradientda bo'yaladi. Ya'ni icon boshqa
+#         rangda, tier esa gradientda: "&b🗡 " + "<grad>HT1".
 # Tier yorlig'i QAVSSIZ ko'rsatiladi — masalan "HT1" (avvalgidek "[HT1]" emas).
 # Agar rejimda biror tier uchun rang berilmagan bo'lsa — config.yml dagi
 # global `tiers.colors` ishlatiladi (fallback).
@@ -216,6 +220,28 @@ mace:
   enabled: true
   kit-type: "mace"
   allowed-arenas: [mace1, mace2, mace3]
+  default-rounds: 3
+  countdown-seconds: 3
+  min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>'
+    HT5: '<gradient:#FFFFFF:#C8C8C8>'
+    LT4: '<gradient:#7CFC00:#2E8B22>'
+    HT4: '<gradient:#2E8B22:#0B6B0B>'
+    LT3: '<gradient:#55FFFF:#1E90FF>'
+    HT3: '<gradient:#1E90FF:#005FAF>'
+    LT2: '<gradient:#FFE259:#FFA751>'
+    HT2: '<gradient:#FFA751:#E0670C>'
+    LT1: '<gradient:#FF7878:#D40000>'
+    HT1: '<gradient:#D40000:#7A0000>'
+
+vanilla:
+  display-name: "&f&l✦ Vanilla"
+  icon: IRON_SWORD
+  icon-enchanted: false
+  enabled: true
+  kit-type: "vanilla"
+  allowed-arenas: [vanilla1, vanilla2, vanilla3]
   default-rounds: 3
   countdown-seconds: 3
   min-client-version: "1.8.0"

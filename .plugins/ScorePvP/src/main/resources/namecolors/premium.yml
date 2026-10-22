@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Premium nik ranglari (gradient NameColors)
+#
+#  Gradient (ko'p rangli o'tuvchi) niklar. Rang spetsifikatsiyasi MiniMessage
+#  gradient formatida beriladi: <gradient:#START:#END> yoki ko'p nuqtali
+#  <gradient:#A:#B:#C>. O'yinchining niki HAMMA YERDA (chat, TAB) gradient
+#  ko'rinishida chiqadi. Menyuda har swatch O'YINCHINING O'Z NIKINI shu
+#  gradientda ko'rsatadi — shuning uchun alohida "name" kerak emas.
+#
+#  Har bir yozuv:
+#    <id>:
+#      color:       MiniMessage gradient — "<gradient:#FF5F6D:#FFC371>"
+#      permission:  (ixtiyoriy) shu gradientni tanlash uchun kerakli ruxsat
+#      icon:        (ixtiyoriy) menyu ikonkasi materiali
+#
+#  Pastda 2 namuna bor — o'zingiz xohlagancha qo'shishingiz mumkin.
+# ─────────────────────────────────────────────────────────────────────────────
+colors:
+  sunset:
+    color: "<gradient:#FF5F6D:#FFC371>"
+    permission: "scorepvp.namecolor.premium.sunset"
+    icon: ORANGE_DYE
+  ocean:
+    color: "<gradient:#2E3192:#1BFFFF>"
+    permission: "scorepvp.namecolor.premium.ocean"
+    icon: CYAN_DYE

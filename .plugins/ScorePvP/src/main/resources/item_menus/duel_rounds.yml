@@ -25,14 +25,33 @@ round-slots:
 round-values:
   - 1
   - 2
-  - 3
-  - 5
-  - 7
+  - 4
+  - 6
   - 10
   - 15
+  - 20
 
 # Default selected round count
 default-rounds: 3
+
+# ── Maxsus shlyapalar toggle (COAL) ──────────────────────────────────────────
+# 4-slot (o'yinchi ko'rishida 5-chi katak). Bosilganda yoqiladi/o'chiriladi.
+# Default O'CHIRILGAN. Yoqilganda COAL yonadi (glow) va nomida "Yoqilgan" deb
+# turadi. Har bosishda UI button click ovozi chiqadi.
+hats:
+  slot: 4
+  material: COAL
+  # Qaysi shlyapa modelini COAL ko'rsatishi (hats.yml dagi id). Bo'sh — oddiy COAL.
+  # Resource pack shu shlyapaning custom-model-data siga model bog'laydi.
+  hat: ""
+  name-on:  "&aMaxsus shlyapalar: &2&lYoqilgan"
+  name-off: "&cMaxsus shlyapalar: &4&lO'chirilgan"
+  lore:
+    - "&7Duelda maxsus shlyapalar ishlatilsinmi."
+    - "&7Kimda tanlangan shlyapa bo'lsa,"
+    - "&7o'sha duelda kiyadi."
+    - ""
+    - "&eBosing — yoqish/o'chirish."
 
 # Items for selected/unselected round
 selected-material: MAP

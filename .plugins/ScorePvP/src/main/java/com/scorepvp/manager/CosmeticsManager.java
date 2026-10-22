@@ -45,8 +45,15 @@ public class CosmeticsManager {
 
     private final ScorePvP plugin;
 
-    /** slot -> shield ItemStack (slots 0..35). */
+    /** Shield category ids (fixed order = menu slots 48/49/50). */
+    public static final String[] SHIELD_CATEGORIES = {"plain", "banner", "flag"};
+    /** How many shields fit on one category page (menu slots 0..44). */
+    public static final int SHIELDS_PER_CATEGORY = 45;
+
+    /** stable index -> shield ItemStack. */
     private final Map<Integer, ItemStack> shields = new ConcurrentHashMap<>();
+    /** stable index -> category id (one of {@link #SHIELD_CATEGORIES}). */
+    private final Map<Integer, String> shieldCategory = new ConcurrentHashMap<>();
     /**
      * Armor storage keyed by {@code <material>.<setIndex>.<piece>} → ItemStack.
      * Example: {@code "diamond.0.helmet"}. setIndex is 0..{@link #ARMOR_SETS}-1.
@@ -113,20 +120,34 @@ public class CosmeticsManager {
      * shield. The stored stack is a defensive clone — modifying the player's
      * inventory afterwards will not mutate the stored cosmetic.
      */
+    /** Adds a shield to the "plain" category (legacy default). */
     public int addShield(ItemStack shield) {
+        return addShield(shield, SHIELD_CATEGORIES[0]);
+    }
+
+    /**
+     * Stores the given shield under {@code category} at the first free stable
+     * index and returns that index, or {@code -1} if the item is not a shield.
+     * Shields are hidden-attributes on store so the menu icon stays clean.
+     */
+    public int addShield(ItemStack shield, String category) {
         if (shield == null || shield.getType() != Material.SHIELD) return -1;
-        for (int i = 0; i < 36; i++) {
+        String cat = normalizeCategory(category);
+        ItemStack stored = shield.clone();
+        hideShieldTooltip(stored);
+        for (int i = 0; ; i++) {
             if (!shields.containsKey(i)) {
-                shields.put(i, shield.clone());
+                shields.put(i, stored);
+                shieldCategory.put(i, cat);
                 saveShields();
                 return i;
             }
         }
-        return -1;
     }
 
     public boolean removeShield(int slot) {
         if (shields.remove(slot) == null) return false;
+        shieldCategory.remove(slot);
         // Invalidate any selection pointing to this slot
         for (PlayerSelection sel : selections.values()) {
             if (sel.shieldSlot == slot) sel.shieldSlot = -1;
@@ -134,6 +155,38 @@ public class CosmeticsManager {
         saveShields();
         savePlayers();
         return true;
+    }
+
+    /** The category id a stored shield belongs to (defaults to "plain"). */
+    public String getShieldCategory(int index) {
+        return shieldCategory.getOrDefault(index, SHIELD_CATEGORIES[0]);
+    }
+
+    /** Stored shield indices in ascending order for one category. */
+    public java.util.List<Integer> getShieldIndices(String category) {
+        String cat = normalizeCategory(category);
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        for (Integer idx : shields.keySet()) {
+            if (getShieldCategory(idx).equals(cat)) out.add(idx);
+        }
+        java.util.Collections.sort(out);
+        return out;
+    }
+
+    private static String normalizeCategory(String c) {
+        if (c == null) return SHIELD_CATEGORIES[0];
+        String lc = c.toLowerCase();
+        for (String k : SHIELD_CATEGORIES) if (k.equals(lc)) return k;
+        return SHIELD_CATEGORIES[0];
+    }
+
+    /** Hides banner-pattern/attribute tooltip text on a stored shield stack. */
+    public static void hideShieldTooltip(ItemStack shield) {
+        org.bukkit.inventory.meta.ItemMeta m = shield.getItemMeta();
+        if (m != null) {
+            m.addItemFlags(org.bukkit.inventory.ItemFlag.values());
+            shield.setItemMeta(m);
+        }
     }
 
     /**
@@ -284,14 +337,9 @@ public class CosmeticsManager {
     }
 
     private void loadShields() {
-        if (!shieldsFile.exists()) {
-            // First-time setup: seed with 18 default coloured shields so the
-            // menu isn't empty out-of-the-box. Admins can remove or replace
-            // any of them via /cosmetics admin shield remove/add.
-            seedDefaultShields();
-            saveShields();
-            return;
-        }
+        // No default seeding — the menu starts empty; admins add shields with
+        // /cosmetics admin shield add <category>.
+        if (!shieldsFile.exists()) return;
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(shieldsFile);
         ConfigurationSection sec = cfg.getConfigurationSection("shields");
         if (sec == null) return;
@@ -299,59 +347,20 @@ public class CosmeticsManager {
             try {
                 int slot = Integer.parseInt(key);
                 ItemStack s = sec.getItemStack(key + ".item");
-                if (s != null) shields.put(slot, s);
+                if (s != null) {
+                    hideShieldTooltip(s);
+                    shields.put(slot, s);
+                    shieldCategory.put(slot, normalizeCategory(cfg.getString("shields." + key + ".category")));
+                }
             } catch (NumberFormatException ignored) {}
         }
-    }
-
-    /**
-     * Populates the cosmetic shield grid with one shield per Bukkit
-     * {@link org.bukkit.DyeColor} (16 colours) plus two patterned bonuses,
-     * for 18 total. Each shield is a banner-base shield with no patterns —
-     * vanilla just renders it in the matching base colour.
-     */
-    private void seedDefaultShields() {
-        org.bukkit.DyeColor[] colours = org.bukkit.DyeColor.values(); // 16
-        int slot = 0;
-        for (org.bukkit.DyeColor c : colours) {
-            shields.put(slot++, buildBaseShield(c, null));
-        }
-        // Bonus #1 — white shield with red cross (medic look).
-        shields.put(slot++, buildBaseShield(org.bukkit.DyeColor.WHITE, java.util.List.of(
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.RED,
-                        org.bukkit.block.banner.PatternType.STRIPE_CENTER),
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.RED,
-                        org.bukkit.block.banner.PatternType.STRIPE_MIDDLE)
-        )));
-        // Bonus #2 — black shield with gold border + diagonal.
-        shields.put(slot, buildBaseShield(org.bukkit.DyeColor.BLACK, java.util.List.of(
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.YELLOW,
-                        org.bukkit.block.banner.PatternType.BORDER),
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.YELLOW,
-                        org.bukkit.block.banner.PatternType.STRIPE_DOWNRIGHT)
-        )));
-    }
-
-    private ItemStack buildBaseShield(org.bukkit.DyeColor base,
-                                      java.util.List<org.bukkit.block.banner.Pattern> patterns) {
-        ItemStack shield = new ItemStack(Material.SHIELD);
-        org.bukkit.inventory.meta.BlockStateMeta meta =
-                (org.bukkit.inventory.meta.BlockStateMeta) shield.getItemMeta();
-        if (meta != null) {
-            org.bukkit.block.Banner banner = (org.bukkit.block.Banner) meta.getBlockState();
-            banner.setBaseColor(base);
-            if (patterns != null) banner.setPatterns(patterns);
-            banner.update();
-            meta.setBlockState(banner);
-            shield.setItemMeta(meta);
-        }
-        return shield;
     }
 
     private void saveShields() {
         YamlConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<Integer, ItemStack> e : shields.entrySet()) {
             cfg.set("shields." + e.getKey() + ".item", e.getValue());
+            cfg.set("shields." + e.getKey() + ".category", getShieldCategory(e.getKey()));
         }
         try { cfg.save(shieldsFile); }
         catch (IOException ex) { plugin.getLogger().warning("cosmetics shields save failed: " + ex.getMessage()); }
@@ -433,6 +442,24 @@ public class CosmeticsManager {
                         }
                     }
                 }
+                // Per-(material,piece) trim selections. Stored nested as
+                // trim.<material>.<piece>.{pattern,material}; the in-memory map
+                // key is "<material>.<piece>" (dotted). Deep-walk to rebuild it.
+                ConfigurationSection trimSec = cfg.getConfigurationSection(key + ".trim");
+                if (trimSec != null) {
+                    for (String deep : trimSec.getKeys(true)) {
+                        if (deep.endsWith(".pattern")) {
+                            String combo = deep.substring(0, deep.length() - ".pattern".length());
+                            String v = trimSec.getString(deep);
+                            if (v != null) sel.trimPattern.put(combo, v);
+                        } else if (deep.endsWith(".material")) {
+                            String combo = deep.substring(0, deep.length() - ".material".length());
+                            String v = trimSec.getString(deep);
+                            if (v != null) sel.trimMaterial.put(combo, v);
+                        }
+                    }
+                }
+
                 selections.put(uuid, sel);
             } catch (IllegalArgumentException ignored) {}
         }
@@ -442,14 +469,22 @@ public class CosmeticsManager {
         YamlConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<UUID, PlayerSelection> e : selections.entrySet()) {
             PlayerSelection sel = e.getValue();
-            // Skip empty selections — keeps the file lean
-            if (sel.shieldSlot < 0 && sel.armorSet.isEmpty()) continue;
+            // Skip empty selections — keeps the file lean. Trims count too:
+            // a player who only picked a trim (no shield/set) must still persist.
+            if (sel.shieldSlot < 0 && sel.armorSet.isEmpty()
+                    && sel.trimPattern.isEmpty() && sel.trimMaterial.isEmpty()) continue;
 
             String k = e.getKey().toString();
             cfg.set(k + ".shield", sel.shieldSlot);
             for (Map.Entry<String, Integer> a : sel.armorSet.entrySet()) {
                 if (a.getValue() == null || a.getValue() < 0) continue;
                 cfg.set(k + "." + a.getKey() + ".set", a.getValue());
+            }
+            for (Map.Entry<String, String> t : sel.trimPattern.entrySet()) {
+                if (t.getValue() != null) cfg.set(k + ".trim." + t.getKey() + ".pattern", t.getValue());
+            }
+            for (Map.Entry<String, String> t : sel.trimMaterial.entrySet()) {
+                if (t.getValue() != null) cfg.set(k + ".trim." + t.getKey() + ".material", t.getValue());
             }
         }
         try { cfg.save(playersFile); }
@@ -462,5 +497,78 @@ public class CosmeticsManager {
         public int shieldSlot = -1;
         /** material-key (e.g. "diamond") → selected set index, or absent = none. */
         public final Map<String, Integer> armorSet = new LinkedHashMap<>();
+        /** piece (helmet/chestplate/leggings/boots) → trim pattern registry key (minecraft name). */
+        public final Map<String, String> trimPattern = new LinkedHashMap<>();
+        /** piece → trim material registry key (minecraft name). */
+        public final Map<String, String> trimMaterial = new LinkedHashMap<>();
+    }
+
+    // ── Armor trims (per-piece, player-chosen) ─────────────────────────────────
+    //
+    // Replaces the old admin-curated armor SETS. Each player now picks a trim
+    // pattern + trim material for every armor piece independently; at match
+    // start those trims are stamped onto the kit's own armor (KitManager).
+
+    private static String pieceKey(ArmorPiece piece) { return piece.name().toLowerCase(); }
+
+    /**
+     * Trim selections are keyed per (armor-material, piece) so DIAMOND and
+     * NETHERITE keep entirely separate trims — picking a diamond-leggings trim
+     * never bleeds onto netherite. Key form: {@code "diamond.leggings"}.
+     */
+    private static String trimKey(ArmorMaterial mat, ArmorPiece piece) {
+        return mat.key() + "." + pieceKey(piece);
+    }
+
+    /** Stores the chosen trim PATTERN (minecraft registry key) for a piece. */
+    public void setTrimPattern(UUID uuid, ArmorMaterial mat, ArmorPiece piece, String patternKey) {
+        getSelection(uuid).trimPattern.put(trimKey(mat, piece), patternKey);
+        savePlayers();
+    }
+
+    /** Stores the chosen trim MATERIAL (minecraft registry key) for a piece. */
+    public void setTrimMaterial(UUID uuid, ArmorMaterial mat, ArmorPiece piece, String materialKey) {
+        getSelection(uuid).trimMaterial.put(trimKey(mat, piece), materialKey);
+        savePlayers();
+    }
+
+    public String getTrimPatternKey(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+        PlayerSelection sel = selections.get(uuid);
+        return sel == null ? null : sel.trimPattern.get(trimKey(mat, piece));
+    }
+
+    public String getTrimMaterialKey(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+        PlayerSelection sel = selections.get(uuid);
+        return sel == null ? null : sel.trimMaterial.get(trimKey(mat, piece));
+    }
+
+    /** Clears the trim selection for one (material, piece). */
+    public void resetTrim(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+        PlayerSelection sel = selections.get(uuid);
+        if (sel == null) return;
+        sel.trimPattern.remove(trimKey(mat, piece));
+        sel.trimMaterial.remove(trimKey(mat, piece));
+        savePlayers();
+    }
+
+    /**
+     * Resolves the player's chosen trim for a (material, piece) into a live
+     * {@link org.bukkit.inventory.meta.trim.ArmorTrim}, or null if either the
+     * pattern or material isn't set / no longer exists in the registry.
+     */
+    public org.bukkit.inventory.meta.trim.ArmorTrim getArmorTrim(UUID uuid, ArmorMaterial mat, ArmorPiece piece) {
+        String patKey = getTrimPatternKey(uuid, mat, piece);
+        String matKey = getTrimMaterialKey(uuid, mat, piece);
+        if (patKey == null || matKey == null) return null;
+        try {
+            org.bukkit.inventory.meta.trim.TrimPattern pat =
+                    org.bukkit.Registry.TRIM_PATTERN.get(org.bukkit.NamespacedKey.minecraft(patKey));
+            org.bukkit.inventory.meta.trim.TrimMaterial trimMat =
+                    org.bukkit.Registry.TRIM_MATERIAL.get(org.bukkit.NamespacedKey.minecraft(matKey));
+            if (pat == null || trimMat == null) return null;
+            return new org.bukkit.inventory.meta.trim.ArmorTrim(trimMat, pat);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 }

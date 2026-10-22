@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Standart nik ranglari (NameColors)
+#
+#  Oddiy bir rangli niklar. Har bir rang oddiy hex (#RRGGBB) yoki legacy (&a)
+#  kodida beriladi. O'yinchi menyudan tanlaydi va niki chatda / TAB da o'sha
+#  rangda ko'rinadi. Menyuda har swatch O'YINCHINING O'Z NIKINI shu rangda
+#  ko'rsatadi — shuning uchun alohida "name" kerak emas.
+#
+#  Har bir yozuv:
+#    <id>:
+#      color:       rang spetsifikatsiyasi — "&a" yoki "#55FF55"
+#      permission:  (ixtiyoriy) shu rangni tanlash uchun kerakli ruxsat
+#      icon:        (ixtiyoriy) menyu ikonkasi materiali
+#
+#  Pastda 2 namuna bor — o'zingiz xohlagancha qo'shishingiz mumkin.
+# ─────────────────────────────────────────────────────────────────────────────
+colors:
+  green:
+    color: "&a"
+    permission: "scorepvp.namecolor.green"
+    icon: LIME_DYE
+  aqua:
+    color: "#55FFFF"
+    permission: "scorepvp.namecolor.aqua"
+    icon: LIGHT_BLUE_DYE

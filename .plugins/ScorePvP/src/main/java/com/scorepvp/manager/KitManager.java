@@ -40,6 +40,18 @@ public class KitManager {
     /** Personal kit cache: uuid → inventory contents (41 slots). Empty array = not saved. */
     private final Map<UUID, ItemStack[]> personalKits = new ConcurrentHashMap<>();
 
+    /**
+     * Per-mode personal kit cache, keyed by "{uuid}:{kitType}". Each player can
+     * customise a separate loadout for every non-vanilla mode (axe, smp, …) via
+     * the in-game kit editor GUI. Backed by data-player/{uuid}-{kitType}.yml.
+     * An entry of length 0 means "checked, none saved → use the default kit".
+     */
+    private final Map<String, ItemStack[]> modeKits = new ConcurrentHashMap<>();
+
+    private static String modeKitKey(UUID uuid, String kitType) {
+        return uuid + ":" + kitType;
+    }
+
     /** Named kits created via /spvp kit create (held in memory, backed by files). */
     private final Map<String, ItemStack[]> namedKitCache = new ConcurrentHashMap<>();
 
@@ -60,6 +72,7 @@ public class KitManager {
 
     public void unload(UUID uuid) {
         personalKits.remove(uuid);
+        unloadModeKits(uuid);
     }
 
     // ── Give Kit ──────────────────────────────────────────────────────────────
@@ -73,6 +86,13 @@ public class KitManager {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
         player.getInventory().setItemInOffHand(null);
+        // Multi-kit selected kit wins; then legacy personal store; then default.
+        ItemStack[] selected = plugin.getVanillaKitManager() != null
+                ? plugin.getVanillaKitManager().getSelectedItems(player.getUniqueId()) : null;
+        if (selected != null) {
+            applyAllContents(player, selected);
+            return;
+        }
         ItemStack[] personal = personalKits.get(player.getUniqueId());
         if (personal != null && personal.length > 0) {
             applyAllContents(player, personal);
@@ -91,23 +111,132 @@ public class KitManager {
 
     /**
      * Match give: cosmetics ARE applied (this is what the player fights with).
-     * For the vanilla kit type the player's personal saved kit takes priority,
-     * then cosmetics are layered on top of it.
+     * Every mode now honours the player's per-mode personal kit edited via the
+     * in-game kit editor; if none is saved the bundled default kit is used.
+     * Cosmetics (shield / armor skins) are layered on top of whichever wins.
      */
     public void giveKitByType(Player player, String kitType) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
         player.getInventory().setItemInOffHand(null);
+
         if (kitType.equals("vanilla")) {
-            ItemStack[] personal = personalKits.get(player.getUniqueId());
-            ItemStack[] items = (personal != null && personal.length > 0)
-                    ? cloneItems(personal)
-                    : loadDefaultKit("vanilla");
+            // Vanilla now uses the multi-kit system: the player's SELECTED kit
+            // wins. Falls back to the legacy personal-kit store, then the bundled
+            // default, so old saves still work until re-selected.
+            ItemStack[] items = null;
+            if (plugin.getVanillaKitManager() != null) {
+                items = plugin.getVanillaKitManager().getSelectedItems(player.getUniqueId());
+            }
+            if (items == null) {
+                ItemStack[] personal = personalKits.get(player.getUniqueId());
+                items = (personal != null && personal.length > 0)
+                        ? cloneItems(personal)
+                        : loadDefaultKit("vanilla");
+            }
             applyCosmeticsToKit(player, items);
             applyAllContents(player, items);
             return;
         }
-        applyDefaultKit(player, kitType, true);
+
+        // Other modes: per-mode personal kit (GUI editor) → else bundled default.
+        ItemStack[] modeKit = getModeKit(player.getUniqueId(), kitType);
+        ItemStack[] items = (modeKit != null && modeKit.length > 0)
+                ? cloneItems(modeKit)
+                : loadDefaultKit(kitType);
+        applyCosmeticsToKit(player, items);
+        applyAllContents(player, items);
+    }
+
+    // ── Per-mode personal kits (in-game GUI editor) ────────────────────────────
+
+    /**
+     * Returns the player's saved 41-slot kit for {@code kitType}, loading from
+     * disk on first access. Returns a length-0 array when nothing is saved (so
+     * the caller falls back to the bundled default kit). Never returns null.
+     */
+    public ItemStack[] getModeKit(UUID uuid, String kitType) {
+        String key = modeKitKey(uuid, kitType);
+        ItemStack[] cached = modeKits.get(key);
+        if (cached != null) return cached;
+        ItemStack[] loaded = loadModeKitFromFile(uuid, kitType);
+        ItemStack[] result = loaded != null ? loaded : new ItemStack[0];
+        modeKits.put(key, result);
+        return result;
+    }
+
+    /** True if the player has a non-empty personal kit saved for this mode. */
+    public boolean hasModeKit(UUID uuid, String kitType) {
+        ItemStack[] kit = getModeKit(uuid, kitType);
+        return kit.length > 0;
+    }
+
+    /**
+     * Returns the editor's starting contents for a mode: the player's saved kit
+     * if present, otherwise a clone of the bundled default so they edit a real
+     * loadout rather than an empty box. Always a fresh 41-slot array.
+     */
+    public ItemStack[] getModeKitOrDefault(UUID uuid, String kitType) {
+        ItemStack[] saved = getModeKit(uuid, kitType);
+        ItemStack[] base = (saved.length > 0) ? saved : loadDefaultKit(kitType);
+        ItemStack[] out = new ItemStack[41];
+        for (int i = 0; i < 41 && i < base.length; i++) {
+            out[i] = base[i] == null ? null : base[i].clone();
+        }
+        return out;
+    }
+
+    /** Saves the player's edited 41-slot kit for this mode to cache + disk. */
+    public void saveModeKit(UUID uuid, String kitType, ItemStack[] items) {
+        ItemStack[] stored = new ItemStack[41];
+        for (int i = 0; i < 41 && i < items.length; i++) {
+            stored[i] = items[i] == null ? null : items[i].clone();
+        }
+        modeKits.put(modeKitKey(uuid, kitType), stored);
+        try {
+            File file = modeKitFile(uuid, kitType);
+            YamlConfiguration cfg = new YamlConfiguration();
+            cfg.set("items", serializeKitItems(stored));
+            cfg.save(file);
+        } catch (Exception e) {
+            plugin.getLogger().warning("[ScorePvP] saveModeKit failed for "
+                    + uuid + "/" + kitType + ": " + e.getMessage());
+        }
+    }
+
+    /** Clears the player's personal kit for this mode (falls back to default). */
+    public void resetModeKit(UUID uuid, String kitType) {
+        modeKits.put(modeKitKey(uuid, kitType), new ItemStack[0]);
+        File file = modeKitFile(uuid, kitType);
+        if (file.exists() && !file.delete()) {
+            plugin.getLogger().warning("[ScorePvP] could not delete mode kit file " + file.getName());
+        }
+    }
+
+    private File modeKitFile(UUID uuid, String kitType) {
+        File dir = new File(plugin.getDataFolder(), DATA_DIR);
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, uuid.toString() + "-" + kitType + ".yml");
+    }
+
+    private ItemStack[] loadModeKitFromFile(UUID uuid, String kitType) {
+        File file = modeKitFile(uuid, kitType);
+        if (!file.exists()) return null;
+        try {
+            YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+            ItemStack[] result = buildItemsFromConfig(cfg);
+            for (ItemStack it : result) if (it != null) return result;
+            return null;
+        } catch (Exception e) {
+            plugin.getLogger().warning("[ScorePvP] loadModeKitFromFile failed for "
+                    + uuid + "/" + kitType + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /** Drops cached per-mode kits for a player on quit. */
+    public void unloadModeKits(UUID uuid) {
+        modeKits.keySet().removeIf(k -> k.startsWith(uuid + ":"));
     }
 
     private ItemStack[] cloneItems(ItemStack[] src) {
@@ -212,6 +341,40 @@ public class KitManager {
         return kit != null && kit.length > 0;
     }
 
+    // ── Public helpers shared with the vanilla multi-kit system ────────────────
+
+    /** Serialises a 41-slot kit array to the YAML list schema (public wrapper). */
+    public List<Map<String, Object>> serializeKitPublic(ItemStack[] items) {
+        return serializeKitItems(items);
+    }
+
+    /** Rebuilds a 41-slot kit array from a serialized {@code items:} list (public wrapper). */
+    public ItemStack[] deserializeKitItems(List<?> raw) {
+        YamlConfiguration tmp = new YamlConfiguration();
+        tmp.set("items", raw);
+        return buildItemsFromConfig(tmp);
+    }
+
+    /** Bundled default kit contents for {@code kitName} (public wrapper). */
+    public ItemStack[] loadDefaultKitPublic(String kitName) {
+        return loadDefaultKit(kitName);
+    }
+
+    /** Snapshots a player's full inventory to a 41-slot array (public wrapper). */
+    public ItemStack[] snapshotInventoryPublic(Player p) {
+        return snapshotInventory(p);
+    }
+
+    /** Lays a 41-slot kit array back onto a player (public wrapper). */
+    public void applyAllContentsPublic(Player player, ItemStack[] items) {
+        applyAllContents(player, items);
+    }
+
+    /** Applies the player's cosmetic shield/trim selections onto a kit (public wrapper). */
+    public void applyCosmeticsToKitPublic(Player player, ItemStack[] items) {
+        applyCosmeticsToKit(player, items);
+    }
+
     // ── Snapshot inventory → 41-slot array ───────────────────────────────────
 
     private ItemStack[] snapshotInventory(Player p) {
@@ -307,6 +470,18 @@ public class KitManager {
                         entry.put("potion-effects", effList);
                     }
                 }
+                // Shulker box contents — without this a shulker saved in a kit
+                // came back empty. Serialise the contained inventory recursively
+                // using the same schema (slot/material/…), tagged by inner slot.
+                if (meta instanceof org.bukkit.inventory.meta.BlockStateMeta bsm
+                        && bsm.getBlockState() instanceof org.bukkit.block.ShulkerBox shulker) {
+                    ItemStack[] contents = shulker.getInventory().getContents();
+                    boolean any = false;
+                    for (ItemStack c : contents) if (c != null && !c.getType().isAir()) { any = true; break; }
+                    if (any) {
+                        entry.put("shulker-contents", serializeKitItems(contents));
+                    }
+                }
             }
             list.add(entry);
         }
@@ -387,9 +562,11 @@ public class KitManager {
     }
 
     /**
-     * Replaces vanilla shield/diamond/netherite armor in the resolved kit with
-     * the player's selected cosmetic counterparts (if any). Only runs when the
-     * player has {@code duels.cosmetics} permission.
+     * Applies the player's cosmetic selections to the resolved kit:
+     *   • the chosen cosmetic SHIELD replaces any kit shield, and
+     *   • the chosen ARMOR TRIM (pattern + material, per piece) is stamped onto
+     *     whatever armor the kit already provides for that slot.
+     * Only runs when the player has {@code duels.cosmetics} permission.
      */
     private void applyCosmeticsToKit(Player player, ItemStack[] items) {
         if (!player.hasPermission("duels.cosmetics")) return;
@@ -407,42 +584,117 @@ public class KitManager {
             }
         }
 
-        // Bukkit PlayerInventory armor layout: slots 36..39 are
-        // [boots, leggings, chestplate, helmet] — NOT [helmet, chestplate,
-        // leggings, boots]. The previous mapping caused "I picked a helmet
-        // skin but in-game my boots changed" because slot 36 actually
-        // resolves to the boots slot on the live player inventory.
-        replaceArmorSlot(items, 36, uid, CosmeticsManager.ArmorPiece.BOOTS);
-        replaceArmorSlot(items, 37, uid, CosmeticsManager.ArmorPiece.LEGGINGS);
-        replaceArmorSlot(items, 38, uid, CosmeticsManager.ArmorPiece.CHESTPLATE);
-        replaceArmorSlot(items, 39, uid, CosmeticsManager.ArmorPiece.HELMET);
+        // Bukkit kit array armor layout (slots 36..39):
+        //   36 = boots, 37 = leggings, 38 = chestplate, 39 = helmet
+        applyTrimToSlot(items, 36, uid, CosmeticsManager.ArmorPiece.BOOTS);
+        applyTrimToSlot(items, 37, uid, CosmeticsManager.ArmorPiece.LEGGINGS);
+        applyTrimToSlot(items, 38, uid, CosmeticsManager.ArmorPiece.CHESTPLATE);
+        applyTrimToSlot(items, 39, uid, CosmeticsManager.ArmorPiece.HELMET);
+
+        // Cosmetic hats are handled separately (see stampDuelHatOnHelmet) — only
+        // stamped when the duel enabled the "custom hats" opt-in.
     }
 
-    private void replaceArmorSlot(ItemStack[] items, int slot, UUID uid,
-                                   CosmeticsManager.ArmorPiece piece) {
+    /**
+     * Duel-hats opt-in: swaps the fighter's kit helmet for their cosmetic hat so
+     * the hat renders on the head in third-person / to other players.
+     *
+     * <p><b>Why a COAL swap instead of stamping custom_model_data on the netherite/
+     * diamond helmet:</b> Minecraft renders WORN armor through the equipment/armor
+     * layer, which ignores {@code custom_model_data} entirely — so a stamped helmet
+     * shows only in the inventory/hand, never on the head. The active resource pack
+     * has no {@code equipment/} definitions, so a real armor helmet physically
+     * cannot carry a custom worn model. A non-armor item (COAL), however, renders
+     * its own item-model on the head — this is exactly how the lobby hats already
+     * work.
+     *
+     * <p>To keep combat identical, the COAL is grafted with the original kit
+     * helmet's protection: every enchantment (Protection, etc. — these still apply
+     * because their vanilla enchant slot is "armor") plus the source material's
+     * default HEAD attribute modifiers (armor / armor-toughness / knockback-
+     * resistance). So the fighter sees a hat but is defended exactly like the
+     * netherite/diamond helmet they'd otherwise wear.
+     *
+     * <p>No-op if the player owns no selected hat, so everyone else keeps the plain
+     * kit helmet.
+     */
+    public void stampDuelHatOnHelmet(Player player) {
+        if (player == null) return;
+        var hats = plugin.getHatManager();
+        if (hats == null) return;
+        String hatId = hats.getSelected(player);
+        com.scorepvp.hats.HatDefinition hat = hats.getHat(hatId);
+        if (hat == null) return;
+        if (!hats.owns(player, hat)) return; // no ownership → plain helmet
+        ItemStack original = player.getInventory().getHelmet();
+        if (original == null || original.getType().isAir()) return;
+
+        // COAL base carrying the hat model (renders on the head; worn armor would
+        // ignore the model — see javadoc).
+        ItemStack hatHelmet = new ItemStack(Material.COAL, 1);
+        ItemMeta meta = hatHelmet.getItemMeta();
+        if (meta == null) return;
+        meta.setCustomModelData(hat.getCustomModelData());
+        if (original.hasItemMeta() && original.getItemMeta().hasDisplayName()) {
+            meta.displayName(original.getItemMeta().displayName());
+        }
+
+        // 1) Graft the kit helmet's enchantments. Protection & co. still take
+        //    effect on a COAL in the helmet slot because their vanilla enchant
+        //    slot is "armor", which activates for whatever sits in an armor slot.
+        for (var en : original.getEnchantments().entrySet()) {
+            meta.addEnchant(en.getKey(), en.getValue(), true);
+        }
+
+        // 2) Graft the source material's default HEAD attributes (armor,
+        //    armor-toughness, knockback-resistance) so the COAL defends exactly
+        //    like the netherite/diamond helmet did.
+        var defaults = original.getType()
+                .getDefaultAttributeModifiers(org.bukkit.inventory.EquipmentSlot.HEAD);
+        for (var entry : defaults.entries()) {
+            meta.addAttributeModifier(entry.getKey(), entry.getValue());
+        }
+        // Hide the attribute/enchant lines so it reads as a hat, not armor.
+        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ATTRIBUTES,
+                org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+        // Force NO enchant glint while keeping the enchants themselves — the hat
+        // should look like a plain hat, not a glowing item. The enchantments
+        // still apply (Protection etc.); only the visual shimmer is suppressed.
+        meta.setEnchantmentGlintOverride(false);
+
+        hatHelmet.setItemMeta(meta);
+        player.getInventory().setHelmet(hatHelmet);
+        player.updateInventory();
+    }
+
+    /**
+     * Stamps the player's chosen armor trim onto the kit's existing armor piece
+     * in the given slot. Leaves the piece untouched if it isn't trimmable armor
+     * or the player has selected no trim for that piece.
+     */
+    private void applyTrimToSlot(ItemStack[] items, int slot, UUID uid,
+                                  CosmeticsManager.ArmorPiece piece) {
+        if (slot < 0 || slot >= items.length) return;
         ItemStack it = items[slot];
         if (it == null || it.getType().isAir()) return;
-        Material m = it.getType();
-        CosmeticsManager.ArmorMaterial mat;
-        if (m == Material.DIAMOND_HELMET || m == Material.DIAMOND_CHESTPLATE
-                || m == Material.DIAMOND_LEGGINGS || m == Material.DIAMOND_BOOTS) {
-            mat = CosmeticsManager.ArmorMaterial.DIAMOND;
-        } else if (m == Material.NETHERITE_HELMET || m == Material.NETHERITE_CHESTPLATE
-                || m == Material.NETHERITE_LEGGINGS || m == Material.NETHERITE_BOOTS) {
-            mat = CosmeticsManager.ArmorMaterial.NETHERITE;
-        } else return;
-        ItemStack cos = plugin.getCosmeticsManager().getSelectedArmor(uid, mat, piece);
-        if (cos != null) {
-            ItemStack out = cos.clone();
-            ItemMeta meta = out.getItemMeta();
-            if (meta != null && it.getItemMeta() != null) {
-                for (Map.Entry<Enchantment, Integer> ench : it.getItemMeta().getEnchants().entrySet()) {
-                    meta.addEnchant(ench.getKey(), ench.getValue(), true);
-                }
-                out.setItemMeta(meta);
-            }
-            items[slot] = out;
-        }
+        // Diamond and netherite trims are stored separately; pick the set that
+        // matches the kit's actual armor material so a netherite chestplate
+        // never gets the diamond trim and vice-versa.
+        CosmeticsManager.ArmorMaterial mat = armorMaterialOf(it.getType());
+        if (mat == null) return;
+        org.bukkit.inventory.meta.trim.ArmorTrim trim =
+                plugin.getCosmeticsManager().getArmorTrim(uid, mat, piece);
+        if (trim == null) return;
+        if (!(it.getItemMeta() instanceof org.bukkit.inventory.meta.ArmorMeta am)) return;
+        am.setTrim(trim);
+        it.setItemMeta(am);
+    }
+
+    private CosmeticsManager.ArmorMaterial armorMaterialOf(Material m) {
+        String n = m.name();
+        if (n.startsWith("DIAMOND_"))   return CosmeticsManager.ArmorMaterial.DIAMOND;
+        if (n.startsWith("NETHERITE_")) return CosmeticsManager.ArmorMaterial.NETHERITE;
+        return null;
     }
 
     private ItemStack[] loadDefaultKit(String kitName) {
@@ -507,7 +759,9 @@ public class KitManager {
                 catch (NumberFormatException ignored) {}
             }
 
-            ItemBuilder builder = new ItemBuilder(mat, amount);
+            // Kit items are handed to the player in combat — keep their vanilla
+            // tooltip (attack damage, armor, enchants) visible, unlike GUI icons.
+            ItemBuilder builder = new ItemBuilder(mat, amount).showTooltip();
 
             if (map.containsKey("name")) {
                 builder.name(String.valueOf(map.get("name")));
@@ -559,10 +813,29 @@ public class KitManager {
                     || map.containsKey("potion-color")) {
                 applyPotionMeta(built, map);
             }
+            // Restore shulker box contents (round-trips items inside the box).
+            if (map.get("shulker-contents") instanceof List<?> sc) {
+                applyShulkerContents(built, sc);
+            }
             result[slot] = built;
         }
 
         return result;
+    }
+
+    /** Rebuilds a shulker box's inner inventory from its serialized contents. */
+    private void applyShulkerContents(ItemStack stack, List<?> serialized) {
+        if (!(stack.getItemMeta() instanceof org.bukkit.inventory.meta.BlockStateMeta bsm)) return;
+        if (!(bsm.getBlockState() instanceof org.bukkit.block.ShulkerBox shulker)) return;
+        YamlConfiguration tmp = new YamlConfiguration();
+        tmp.set("items", serialized);
+        ItemStack[] inner = buildItemsFromConfig(tmp); // 41-slot array; shulker uses 0..26
+        ItemStack[] box = new ItemStack[27];
+        for (int i = 0; i < 27 && i < inner.length; i++) box[i] = inner[i];
+        shulker.getInventory().setContents(box);
+        shulker.update(true, false);
+        bsm.setBlockState(shulker);
+        stack.setItemMeta(bsm);
     }
 
     private void applyPotionMeta(ItemStack stack, Map<?, ?> map) {

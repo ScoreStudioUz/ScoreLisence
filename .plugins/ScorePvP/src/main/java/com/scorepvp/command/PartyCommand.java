@@ -39,6 +39,18 @@ public class PartyCommand implements CommandExecutor, TabCompleter {
 
         String sub = args[0].toLowerCase();
 
+        // Creating / managing a party needs scorepvp.party. JOINING a party
+        // (accept/deny) and leaving are free — anyone can be invited and join.
+        switch (sub) {
+            case "accept", "deny", "leave" -> { /* no permission required */ }
+            default -> {
+                if (!player.hasPermission("scorepvp.party")) {
+                    player.sendMessage(plugin.getConfigManager().rawMsg("party.no-permission"));
+                    return true;
+                }
+            }
+        }
+
         switch (sub) {
             case "invite" -> {
                 if (args.length < 2) { player.sendMessage(plugin.getConfigManager()

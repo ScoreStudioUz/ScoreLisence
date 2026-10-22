@@ -12,10 +12,74 @@
 
 # Titles shown at the top of each menu. The listener matches on these strings
 # verbatim, so changing them is safe but they must remain unique.
-menu-title:           "&8Kosmetika"
+menu-title:           "&8Kosmetikalar"
+chest-menu-title:     "&8Kosmetika › Bronyalar"
 shields-menu-title:   "&8Kosmetika › Shields"
 diamond-menu-title:   "&8Kosmetika › Diamond Armors"
 netherite-menu-title: "&8Kosmetika › Netherite Armors"
+
+# ── Name-color picker (standart + gradient) ──────────────────────────────────
+namecolor:
+  standart-title: "&8Rangli Niklar"
+  premium-title:  "&8Gradient Niklar"
+  back:           "&f⏴ Orqaga"
+  reset:          "&cReset"
+  next:           "&fOldinga ⏵"
+  exit:           "&cChiqish"
+  lore-active:    "&a✔ Yoqilgan"
+  lore-available: "&7⏺ Foydalanish uchun mavjud"
+  lore-locked:    "&c🔒 Ochilmagan"
+  applied:        "&aNik rangingiz o'zgartirildi."
+  reset-done:     "&7Nik rangingiz tiklandi (oddiy oq)."
+  locked-msg:     "&cBu rang sizda ochilmagan."
+
+# ── Nishonlar (badges) ───────────────────────────────────────────────────────
+badges:
+  list-title:     "&8Nishonlar"
+  confirm-title:  "&8Nishon olish"
+  reset:          "&cReset"
+  exit:           "&cChiqish"
+  back:           "&f⏴ Orqaga"
+  next:           "&fOldinga ⏵"
+  lore-active:    "&aYoqilgan"
+  lore-owned:     "&7Mavjud"
+  lore-locked:    "&cOchilmagan"
+  lore-price:     "&7Narxi: &f{price} &7Kumush"
+  colorpick-name: "&d✎ Rang tanlagich"
+  colorpick-open: "&d✎ Rang tanlagich &7(ochiq)"
+  colorpick-locked: "&7🔒&c {needed} ta nishondan so'ng ochiladi &7({owned}/{needed})"
+  confirm-cancel: "&cBekor qilish ☒"
+  confirm-info:   "&3Nishon: {badge}"
+  confirm-price:  "&aNarxi: &f{price} &7Kumush"
+  confirm-accept: "&aTasdiqlash ☑"
+  # messages
+  selected:       "&aNishon yoqildi."
+  deselected:     "&7Nishon o'chirildi."
+  reset-done:     "&7Nishon tiklandi."
+  bought:         "&aNishon {badge} &asotib olindi!"
+  not-enough:     "&cKumush yetarli emas (kerak: &f{price}&c)."
+  colorpick-locked-msg: "&cRang tanlagich hali ochilmagan."
+
+# ── Nishon rang tanlagich (badge color picker) ───────────────────────────────
+badgecolor:
+  title:          "&8Nishon rangi"
+  back:           "&f⏴ Orqaga"
+  next:           "&fOldinga ⏵"
+  reset:          "&cAsl rang"
+  exit:           "&cChiqish"
+  lore-active:    "&aTanlangan"
+  lore-available: "&7Tanlash uchun bosing"
+  lore-locked:    "&cOchilmagan"
+  selected:       "&aNishon rangi o'zgartirildi."
+  reset-done:     "&7Nishon o'z rangiga qaytdi."
+  locked-msg:     "&cBu rang siz uchun ochiq emas."
+
+# ── Elytra + wind-charge lobby cosmetic ──────────────────────────────────────
+elytra:
+  item-name:       "&f&lElytra"
+  windcharge-name: "&f&lWind Charge"
+  enabled:         "&aElytra kosmetikasi yoqildi."
+  disabled:        "&7Elytra kosmetikasi o'chirildi."
 
 # Suffix appended to admin-only hints inside the menu.
 editor-suffix: " &7[Tahrir]"
@@ -23,6 +87,13 @@ editor-suffix: " &7[Tahrir]"
 # How "selected" state is shown next to a cosmetic item.
 selected-prefix: "&a✔ "
 selected-lore:   "&aTanlandi - o'chirish uchun bosing"
+# Suffix appended to a SELECTED shield's own name in the shields menu.
+selected-suffix: " &f- &a✔ O'rnatilgan"
+
+# Shields menu category buttons (slots 48/49/50).
+cat-plain-name:  "&f&lOddiy Qalqonlar"
+cat-banner-name: "&a&lBannerli Qalqonlar"
+cat-flag-name:   "&e&lBayroqli Qalqonlar"
 
 # Filler glass material used as the background of all menus.
 filler-material: "RED_STAINED_GLASS_PANE"
@@ -54,6 +125,47 @@ main:
     - "&7duellarda sizga beriladi."
     - ""
     - "&eOchish uchun bosing."
+  elytra-name: "&f&lElytra + Wind Charge"
+  elytra-lore:
+    - "&7Lobbyda elytra va bitmas"
+    - "&7wind charge olib uchib yuring."
+    - ""
+    - "&eYoqish/o'chirish uchun bosing."
+  # Slot 12: TierTag — spawn + Tab nikida ko'rsatiladigan daraja bezagi.
+  tiertag-name: "&a&lTierTag"
+  tiertag-lore:
+    - "&7Spawnda va Tabda nikingiz oldida"
+    - "&7ko'rsatiladigan darajani tanlang."
+    - ""
+    - "&eOchish uchun bosing."
+  # Slot 13: Hats — kumushga sotib olinadi, hammaga ochiq.
+  hats-name: "&6&lShlyapalar"
+  hats-lore:
+    - "&7Bosh kiyimlar — kumushga sotib olinadi."
+    - "&7Lobbyda kiyib yuring."
+    - ""
+    - "&eOchish uchun bosing."
+  # Slot 13 preview: qaysi hat 3D ko'rinishida turadi (hats.yml dagi id).
+  # Bo'sh bo'lsa oddiy COAL turadi.
+  hats-preview-hat: ""
+  gradient-name: "&d&lGradient Niklar"
+  gradient-lore:
+    - "&7Nikingizni gradient ranglarga"
+    - "&7bo'yang — hamma yerda ko'rinadi."
+    - ""
+    - "&eOchish uchun bosing."
+  badges-name: "&e&lNishonlar"
+  badges-lore:
+    - "&7Nik oldiga emoji nishon qo'ying."
+    - "&7Kumushga sotib olinadi."
+    - ""
+    - "&eOchish uchun bosing."
+  trim-name: "&b&lBronya Trimlari"
+  trim-lore:
+    - "&7Bronyalaringizga trim va"
+    - "&7rang qo' shing (olmos/nezerit)."
+    - ""
+    - "&eOchish uchun bosing."
   diamond-name: "&b&lOlmos Bronyalar"
   diamond-lore:
     - "&7Tanlagan olmos bronyalaringiz"
@@ -76,12 +188,37 @@ main:
     - "&7Bu kategoriya siz uchun"
     - "&7hozircha ochiq emas."
 
+# ── Bronyalar (trim) submenu ─────────────────────────────────────────────────
+chest:
+  diamond-name: "&b&lOlmos Bronyalar"
+  diamond-lore:
+    - "&7Olmos bronyalaringizga"
+    - "&7trim va rang tanlang."
+    - ""
+    - "&eOchish uchun bosing."
+  netherite-name: "&5&lNezerit Bronyalar"
+  netherite-lore:
+    - "&7Nezerit bronyalaringizga"
+    - "&7trim va rang tanlang."
+    - ""
+    - "&eOchish uchun bosing."
+
 # ── Sub-menu buttons ─────────────────────────────────────────────────────────
 sub:
-  back-name: "&c&lOrqaga"
+  back-name: "&f⏴ Orqaga"
+  exit-name: "&c&lOrqaga"
+  prev-name: "&f⏴ Oldingi sahifa"
+  next-name: "&fKeyingi sahifa ⏵"
   clear-name: "&c&lTanlaganingizni tozalash"
+  reset-name: "&c&lTanlovni bekor qilish"
   clear-lore:
     - "&7Ushbu tanlagan predmetingizni tozalash."
+
+# Shields menyusidagi sahifa strelkalari (slot 47 = oldingi, 51 = keyingi) uchun
+# custom_model_data — resource pack shu qiymatga strelka modelini bog'laydi.
+# 0 qilib qo'ysangiz CMD stamp qilinmaydi (oddiy ARROW ko'rinadi).
+shields-prev-cmd: 9001
+shields-next-cmd: 9002
 
 # ── Armor sub-menu layout ────────────────────────────────────────────────────
 # The 9×4 grid is hard-coded (slots 0..35):
@@ -99,6 +236,7 @@ messages:
   prefix:               "&x&E&F&0&C&0&C&lU&x&F&3&1&5&1&5&lz&x&F&7&1&D&1&D&lP&x&F&B&2&6&2&6&lᴠ&x&F&F&2&E&2&E&lP &f| "
   no-permission:        "&cSizda kosmetika uchun ruxsat mavjud emas."
   no-category-permission: "&cBu kategoriya siz uchun hozircha ochiq emas."
+  loading:              "&7Ma'lumotlar yuklanmoqda, bir lahzadan so'ng urinib ko'ring."
   no-admin-permission:  "&cSizda kosmetikani tahrirlash uchun ruxsat mavjud emas."
   not-holding-shield:   "&cQalqonni qolingizga oling."
   not-holding-armor:    "&cSizning qolingizda mos keluvchi predmet mavjud emas {piece}."
@@ -136,3 +274,20 @@ piece-names:
 material-names:
   diamond:   "Diamond"
   netherite: "Netherite"
+
+# ── Armor trim menyusi (har bir qism uchun shakl + rang) ─────────────────────
+armor-trim:
+  piece-helmet-name:     "&bDubulg'a"
+  piece-chestplate-name: "&bKo'krak"
+  piece-leggings-name:   "&bShim"
+  piece-boots-name:      "&bEtik"
+  current-pattern: "&7Shakl: &f{value}"
+  current-material: "&7Rang: &f{value}"
+  none: "&8yo'q"
+  lmb-pattern: "&eLKM &7— shaklni tanlash"
+  rmb-material: "&ePKM &7— rangni tanlash"
+  selected: "&aTanlangan"
+  reset-name: "&c&lTrimlarni tozalash"
+  reset-lore:
+  - "&7Hamma qism trimlarini o'chirish"
+  back-name: "&c&lOrqaga"

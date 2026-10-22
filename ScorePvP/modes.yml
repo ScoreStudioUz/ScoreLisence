@@ -1,6 +1,15 @@
 # ===============================================
 #               UzPvP - Sozlamalar
 # ===============================================
+#
+# Har bir rejim uchun ALOHIDA tier ranglari (tier-colors).
+# Ikki format qo'llab-quvvatlanadi:
+#   • Legacy rang kodi:     '&b'                          (butun tier matniga bitta rang)
+#   • MiniMessage gradient: '<gradient:#9E9E9E:#FFFFFF>'  (matn bo'ylab o'tuvchi rang)
+# Tier yorlig'i QAVSSIZ ko'rsatiladi — masalan "HT1" (avvalgidek "[HT1]" emas).
+# Agar rejimda biror tier uchun rang berilmagan bo'lsa — config.yml dagi
+# global `tiers.colors` ishlatiladi (fallback).
+# DIQQAT: bu faqat KO'RINISH. Tier nomlari (LT5..HT1) bazada o'zgarmaydi.
 
 sword:
   display-name: "&b&l🗡 Sword"
@@ -9,9 +18,20 @@ sword:
   enabled: true
   kit-type: "sword"
   allowed-arenas: [sword1, sword2, sword3, sword4, sword5]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🗡 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🗡 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🗡 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🗡 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🗡 '
+    HT3: '<gradient:#1E90FF:#005FAF>🗡 '
+    LT2: '<gradient:#FFE259:#FFA751>🗡 '
+    HT2: '<gradient:#FFA751:#E0670C>🗡 '
+    LT1: '<gradient:#FF7878:#D40000>🗡 '
+    HT1: '<gradient:#D40000:#7A0000>🗡 '
 
 axe:
   display-name: "&x&6&6&C&D&A&A&l🪓 Axe"
@@ -20,9 +40,20 @@ axe:
   enabled: true
   kit-type: "axe"
   allowed-arenas: [axe1, axe2, axe3]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🪓 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🪓 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🪓 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🪓 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🪓 '
+    HT3: '<gradient:#1E90FF:#005FAF>🪓 '
+    LT2: '<gradient:#FFE259:#FFA751>🪓 '
+    HT2: '<gradient:#FFA751:#E0670C>🪓 '
+    LT1: '<gradient:#FF7878:#D40000>🪓 '
+    HT1: '<gradient:#D40000:#7A0000>🪓 '
 
 netherite:
   display-name: "&c&l⛑ Netherite"
@@ -31,9 +62,20 @@ netherite:
   enabled: true
   kit-type: "netherite"
   allowed-arenas: [netherite1, netherite2, netherite3]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>⛑ '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>⛑ '
+    LT4: '<gradient:#7CFC00:#2E8B22>⛑ '
+    HT4: '<gradient:#2E8B22:#0B6B0B>⛑ '
+    LT3: '<gradient:#55FFFF:#1E90FF>⛑ '
+    HT3: '<gradient:#1E90FF:#005FAF>⛑ '
+    LT2: '<gradient:#FFE259:#FFA751>⛑ '
+    HT2: '<gradient:#FFA751:#E0670C>⛑ '
+    LT1: '<gradient:#FF7878:#D40000>⛑ '
+    HT1: '<gradient:#D40000:#7A0000>⛑ '
 
 op:
   display-name: "&9&l🧪 OP"
@@ -42,9 +84,20 @@ op:
   enabled: true
   kit-type: "op"
   allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🧪 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🧪 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🧪 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🧪 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🧪 '
+    HT3: '<gradient:#1E90FF:#005FAF>🧪 '
+    LT2: '<gradient:#FFE259:#FFA751>🧪 '
+    HT2: '<gradient:#FFA751:#E0670C>🧪 '
+    LT1: '<gradient:#FF7878:#D40000>🧪 '
+    HT1: '<gradient:#D40000:#7A0000>🧪 '
 
 diamondsmp:
   display-name: "&x&F&4&A&4&6&0&l🕸 DiamondSMP"
@@ -53,9 +106,20 @@ diamondsmp:
   enabled: true
   kit-type: "diamondsmp"
   allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🕸 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🕸 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🕸 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🕸 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🕸 '
+    HT3: '<gradient:#1E90FF:#005FAF>🕸 '
+    LT2: '<gradient:#FFE259:#FFA751>🕸 '
+    HT2: '<gradient:#FFA751:#E0670C>🕸 '
+    LT1: '<gradient:#FF7878:#D40000>🕸 '
+    HT1: '<gradient:#D40000:#7A0000>🕸 '
 
 smp:
   display-name: "&x&9&4&0&0&D&3&l🛡 SMP"
@@ -64,10 +128,21 @@ smp:
   enabled: true
   kit-type: "smp"
   allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
-  
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🛡 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🛡 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🛡 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🛡 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🛡 '
+    HT3: '<gradient:#1E90FF:#005FAF>🛡 '
+    LT2: '<gradient:#FFE259:#FFA751>🛡 '
+    HT2: '<gradient:#FFA751:#E0670C>🛡 '
+    LT1: '<gradient:#FF7878:#D40000>🛡 '
+    HT1: '<gradient:#D40000:#7A0000>🛡 '
+
 potion:
   display-name: "&x&F&F&1&4&9&3&l🧴 Potion"
   icon: DRAGON_BREATH
@@ -75,10 +150,21 @@ potion:
   enabled: true
   kit-type: "potion"
   allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
-  
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🧴 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🧴 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🧴 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🧴 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🧴 '
+    HT3: '<gradient:#1E90FF:#005FAF>🧴 '
+    LT2: '<gradient:#FFE259:#FFA751>🧴 '
+    HT2: '<gradient:#FFA751:#E0670C>🧴 '
+    LT1: '<gradient:#FF7878:#D40000>🧴 '
+    HT1: '<gradient:#D40000:#7A0000>🧴 '
+ 
 uhc:
   display-name: "&6&l🍎 UHC"
   icon: GOLDEN_APPLE
@@ -86,20 +172,42 @@ uhc:
   enabled: true
   kit-type: "uhc"
   allowed-arenas: [others1, others2, others3, others4, others5, others6, others7]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
-  
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>🍎 '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>🍎 '
+    LT4: '<gradient:#7CFC00:#2E8B22>🍎 '
+    HT4: '<gradient:#2E8B22:#0B6B0B>🍎 '
+    LT3: '<gradient:#55FFFF:#1E90FF>🍎 '
+    HT3: '<gradient:#1E90FF:#005FAF>🍎 '
+    LT2: '<gradient:#FFE259:#FFA751>🍎 '
+    HT2: '<gradient:#FFA751:#E0670C>🍎 '
+    LT1: '<gradient:#FF7878:#D40000>🍎 '
+    HT1: '<gradient:#D40000:#7A0000>🍎 '
+
 crystal:
   display-name: "&x&0&0&B&F&F&F&l♦ Crystal"
   icon: END_CRYSTAL
   icon-enchanted: true
   enabled: true
-  kit-type: "crystal"
+  kit-type: "vanilla"
   allowed-arenas: [crystal1, crystal2, crystal3]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>♦ '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>♦ '
+    LT4: '<gradient:#7CFC00:#2E8B22>♦ '
+    HT4: '<gradient:#2E8B22:#0B6B0B>♦ '
+    LT3: '<gradient:#55FFFF:#1E90FF>♦ '
+    HT3: '<gradient:#1E90FF:#005FAF>♦ '
+    LT2: '<gradient:#FFE259:#FFA751>♦ '
+    HT2: '<gradient:#FFA751:#E0670C>♦ '
+    LT1: '<gradient:#FF7878:#D40000>♦ '
+    HT1: '<gradient:#D40000:#7A0000>♦ '
 
 mace:
   display-name: "&x&7&F&F&F&D&4&l☼ Mace"
@@ -108,6 +216,17 @@ mace:
   enabled: true
   kit-type: "mace"
   allowed-arenas: [mace1, mace2, mace3]
-  default-rounds: 3
+  default-rounds: 1
   countdown-seconds: 3
   min-client-version: "1.8.0"
+  tier-colors:
+    LT5: '<gradient:#9E9E9E:#FFFFFF>☼ '
+    HT5: '<gradient:#FFFFFF:#C8C8C8>☼ '
+    LT4: '<gradient:#7CFC00:#2E8B22>☼ '
+    HT4: '<gradient:#2E8B22:#0B6B0B>☼ '
+    LT3: '<gradient:#55FFFF:#1E90FF>☼ '
+    HT3: '<gradient:#1E90FF:#005FAF>☼ '
+    LT2: '<gradient:#FFE259:#FFA751>☼ '
+    HT2: '<gradient:#FFA751:#E0670C>☼ '
+    LT1: '<gradient:#FF7878:#D40000>☼ '
+    HT1: '<gradient:#D40000:#7A0000>☼ '

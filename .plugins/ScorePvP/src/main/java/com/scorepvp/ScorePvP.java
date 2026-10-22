@@ -42,6 +42,15 @@ public final class ScorePvP extends JavaPlugin {
     private MenuManager          menuManager;
     private RoundStatsManager    roundStatsManager;
     private CosmeticsManager     cosmeticsManager;
+    private NameStyleManager     nameStyleManager;
+    private SilverManager        silverManager;
+    private ElytraCosmeticManager elytraCosmeticManager;
+    private VanillaKitManager    vanillaKitManager;
+    private com.scorepvp.hats.HatManager hatManager;
+    private com.scorepvp.hats.HatListener hatListener;
+    private com.scorepvp.hats.HatGUI hatGUI;
+    private DuelScoreboardManager duelScoreboardManager;
+    private ColorsManager colorsManager;
 
     // ── Custom Items ──────────────────────────────────────────────────────────
     private CustomItemRegistry customItemRegistry;
@@ -56,6 +65,15 @@ public final class ScorePvP extends JavaPlugin {
     private PartyFfaGUI   partyFfaGUI;
     private ProfileGUI    profileGUI;
     private CosmeticsGUI  cosmeticsGUI;
+    private ArmorTrimGUI  armorTrimGUI;
+    private KitMenuGUI    kitMenuGUI;
+    private KitEditorGUI  kitEditorGUI;
+    private TierTagGUI    tierTagGUI;
+    private NameColorGUI  nameColorGUI;
+    private BadgeGUI      badgeGUI;
+    private BadgeColorGUI badgeColorGUI;
+    private VanillaKitGUI vanillaKitGUI;
+    private EnderKitGUI   enderKitGUI;
 
     // ── onEnable ──────────────────────────────────────────────────────────────
     @Override
@@ -66,7 +84,12 @@ public final class ScorePvP extends JavaPlugin {
             "kits/vanilla.yml","kits/axe.yml","kits/uhc.yml",
             "kits/pot.yml","kits/nodebuff.yml",
             "item_menus/duel.yml","item_menus/party.yml","item_menus/profile.yml",
-            "item_menus/main_menu.yml","item_menus/settings.yml","item_menus/duel_rounds.yml"
+            "item_menus/main_menu.yml","item_menus/settings.yml","item_menus/duel_rounds.yml",
+            "item_menus/kit_menu.yml","item_menus/kit_editor.yml","item_menus/cosmetics_armor.yml",
+            "item_menus/ender_kit.yml",
+            "item_menus/tags_select.yml","item_menus/tags_confirm.yml",
+            "namecolors/standart.yml","namecolors/premium.yml","nametags.yml",
+            "hats.yml","scoreboard.yml","colors.yml"
         }) saveResourceIfAbsent(r);
 
         configManager        = new ConfigManager(this);
@@ -78,12 +101,14 @@ public final class ScorePvP extends JavaPlugin {
         partyManager         = new PartyManager(this);
         tierManager          = new TierManager(this);
         settingsManager      = new SettingsManager(this);
+        colorsManager        = new ColorsManager(this);
         kitManager           = new KitManager(this);
         arenaManager         = new ArenaManager(this);
         arenaRestoreManager  = new ArenaRestoreManager(this);
         arenaBlockTracker    = new ArenaBlockTracker(this);
         statsManager         = new StatsManager(this);
         matchManager         = new MatchManager(this);
+        duelScoreboardManager = new DuelScoreboardManager(this);
 
         // ── NameTag Provider (TAB / LuckPerms auto-detection) ────────────
         LuckPermsHook luckPermsHook = null;
@@ -127,6 +152,12 @@ public final class ScorePvP extends JavaPlugin {
         menuManager          = new MenuManager(this);
         roundStatsManager    = new RoundStatsManager(this);
         cosmeticsManager     = new CosmeticsManager(this);
+        nameStyleManager     = new NameStyleManager(this);
+        silverManager        = new SilverManager(this);
+        elytraCosmeticManager = new ElytraCosmeticManager(this);
+        vanillaKitManager    = new VanillaKitManager(this);
+        hatManager           = new com.scorepvp.hats.HatManager(this);
+        hatGUI               = new com.scorepvp.hats.HatGUI(this);
 
         arenaManager.loadAll();
         placeholderCache.init();
@@ -138,6 +169,15 @@ public final class ScorePvP extends JavaPlugin {
         partyFfaGUI   = new PartyFfaGUI(this);
         profileGUI    = new ProfileGUI(this);
         cosmeticsGUI  = new CosmeticsGUI(this);
+        armorTrimGUI  = new ArmorTrimGUI(this);
+        kitMenuGUI    = new KitMenuGUI(this);
+        kitEditorGUI  = new KitEditorGUI(this);
+        tierTagGUI    = new TierTagGUI(this);
+        nameColorGUI  = new NameColorGUI(this);
+        badgeGUI      = new BadgeGUI(this);
+        badgeColorGUI = new BadgeColorGUI(this);
+        vanillaKitGUI = new VanillaKitGUI(this);
+        enderKitGUI   = new EnderKitGUI(this);
 
         // ── Listeners ─────────────────────────────────────────────────────────
         var pm = getServer().getPluginManager();
@@ -146,6 +186,7 @@ public final class ScorePvP extends JavaPlugin {
         pm.registerEvents(new HotbarInteractListener(this),     this);
         pm.registerEvents(new GUIClickListener(this),           this);
         pm.registerEvents(new PartyChatListener(this),          this);
+        pm.registerEvents(new SpectatorChatListener(this),      this);
         pm.registerEvents(new VanillaRegionListener(this),      this);
         pm.registerEvents(new PlayerDeathRespawnListener(this), this);
         pm.registerEvents(new MatchListener(this),              this);
@@ -158,6 +199,15 @@ public final class ScorePvP extends JavaPlugin {
         pm.registerEvents(new CombatStatsListener(this),        this);
         // Cosmetics GUIs
         pm.registerEvents(new CosmeticsListener(this),          this);
+        pm.registerEvents(new TierTagListener(this),            this);
+        pm.registerEvents(new NameColorListener(this),          this);
+        pm.registerEvents(new BadgeListener(this),              this);
+        pm.registerEvents(new BadgeColorListener(this),         this);
+        pm.registerEvents(new ElytraCosmeticListener(this),     this);
+        pm.registerEvents(new VanillaKitListener(this),         this);
+        pm.registerEvents(new EnderKitListener(this),           this);
+        hatListener = new com.scorepvp.hats.HatListener(this);
+        pm.registerEvents(hatListener,                          this);
         pm.registerEvents(arenaBlockTracker,                    this);
         // Dynamic menu editor
         menuEditorListener = new MenuEditorListener(this);
@@ -170,6 +220,9 @@ public final class ScorePvP extends JavaPlugin {
         regCmd("tier",     new TierCommand(this));
         regCmd("friends",  new FriendsCommand(this));
         regCmd("cosmetics", new com.scorepvp.command.CosmeticsCommand(this));
+        // /tiertags and /hats are gone — both are now categories inside /cosmetics
+        // (tiertag at slot 12, hats at slot 13).
+        regCmd("kumush",    new com.scorepvp.command.SilverCommand(this));
         CommandRegistry.register(this);
 
         // ── PlaceholderAPI ────────────────────────────────────────────────────
@@ -254,6 +307,8 @@ public final class ScorePvP extends JavaPlugin {
     public ArenaRestoreManager  getArenaRestoreManager()   { return arenaRestoreManager; }
     public ArenaBlockTracker    getArenaBlockTracker()     { return arenaBlockTracker; }
     public MatchManager         getMatchManager()          { return matchManager; }
+    public DuelScoreboardManager getDuelScoreboardManager() { return duelScoreboardManager; }
+    public ColorsManager        getColorsManager()          { return colorsManager; }
     public DuelManager          getDuelManager()           { return duelManager; }
     public StatsManager         getStatsManager()          { return statsManager; }
     public MsgManager           getMsgManager()            { return msgManager; }
@@ -264,13 +319,29 @@ public final class ScorePvP extends JavaPlugin {
     public CustomItemRegistry   getCustomItemRegistry()    { return customItemRegistry; }
     public MainMenuGUI          getMainMenuGUI()           { return mainMenuGUI; }
     public SettingsGUI          getSettingsGUI()           { return settingsGUI; }
+    public KitMenuGUI           getKitMenuGUI()            { return kitMenuGUI; }
+    public KitEditorGUI         getKitEditorGUI()          { return kitEditorGUI; }
+    public TierTagGUI           getTierTagGUI()            { return tierTagGUI; }
+    public NameColorGUI         getNameColorGUI()          { return nameColorGUI; }
+    public BadgeGUI             getBadgeGUI()              { return badgeGUI; }
+    public BadgeColorGUI        getBadgeColorGUI()         { return badgeColorGUI; }
     public DuelModeGUI          getDuelModeGUI()           { return duelModeGUI; }
     public DuelRoundsGUI        getDuelRoundsGUI()         { return duelRoundsGUI; }
     public PartyFfaGUI          getPartyFfaGUI()           { return partyFfaGUI; }
     public ProfileGUI           getProfileGUI()            { return profileGUI; }
     public CosmeticsGUI         getCosmeticsGUI()          { return cosmeticsGUI; }
+    public ArmorTrimGUI         getArmorTrimGUI()          { return armorTrimGUI; }
     public MenuManager          getMenuManager()           { return menuManager; }
     public MenuEditorListener   getMenuEditorListener()    { return menuEditorListener; }
     public RoundStatsManager    getRoundStatsManager()     { return roundStatsManager; }
     public CosmeticsManager     getCosmeticsManager()      { return cosmeticsManager; }
+    public NameStyleManager     getNameStyleManager()      { return nameStyleManager; }
+    public SilverManager        getSilverManager()         { return silverManager; }
+    public ElytraCosmeticManager getElytraCosmeticManager() { return elytraCosmeticManager; }
+    public VanillaKitManager    getVanillaKitManager()     { return vanillaKitManager; }
+    public VanillaKitGUI        getVanillaKitGUI()         { return vanillaKitGUI; }
+    public EnderKitGUI          getEnderKitGUI()           { return enderKitGUI; }
+    public com.scorepvp.hats.HatManager  getHatManager()  { return hatManager; }
+    public com.scorepvp.hats.HatListener getHatListener() { return hatListener; }
+    public com.scorepvp.hats.HatGUI      getHatGUI()      { return hatGUI; }
 }

@@ -1,0 +1,59 @@
+name: ScoreHWAuction
+version: '1.0.0-1.16.5'
+main: ru.score.hwauction.ScoreHWAuction
+api-version: '1.16'
+description: Professional Auction House (HolyWorld style)
+author: Score
+website: https://github.com/score/ScoreHWAuction
+depend: [Vault, ScoreLicense]
+softdepend: [PlaceholderAPI]
+
+commands:
+  ah:
+    description: Auction House commands
+    usage: /ah [sell|search|player|sound|admin|reload|help]
+    aliases: [auction, market, auc]
+
+permissions:
+  scoreah.use:
+    description: Open auction house
+    default: true
+  scoreah.sell:
+    description: List items for sale
+    default: true
+  scoreah.sell.auction:
+    description: List items as bid auction
+    default: true
+  scoreah.sell.auto:
+    description: Auto-price sell (premium)
+    default: op
+  scoreah.search:
+    description: Search items by name (premium)
+    default: op
+  scoreah.player:
+    description: View player's listings (premium)
+    default: op
+  scoreah.sound:
+    description: Toggle sound notifications
+    default: true
+  scoreah.admin:
+    description: Admin access
+    default: op
+  scoreah.admin.removeany:
+    description: Remove any player's listing
+    default: op
+  scoreah.admin.reload:
+    description: Reload plugin config
+    default: op
+  scoreah.maxlots.*:
+    description: "Max auction slots (e.g. scoreah.maxlots.5 = 5 slots, scoreah.maxlots.10 = 10 slots)"
+    default: false
+  scoreah.bypass.limit:
+    description: Bypass listing limit
+    default: op
+  scoreah.bypass.blacklist:
+    description: List blacklisted items
+    default: op
+  scoreah.bypass.tax:
+    description: No sales tax
+    default: op

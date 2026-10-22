@@ -1,0 +1,286 @@
+# ╔═══════════════════════════════════════════════════════╗
+# ║      ScoreHWAuction  messages.yml  v1.0.0            ║
+# ╚═══════════════════════════════════════════════════════╝
+
+prefix: "&8[&bАукцион&8] &r"
+
+# ─── Time format ────────────────────────────────────────
+time:
+  hours: "ч."
+  minutes: "мин."
+  seconds: "сек."
+  hours-short: "ч"
+  minutes-short: "м"
+  seconds-short: "с"
+  zero: "0сек."
+  expired: "истёк"
+
+# ─── Tab-complete hints (подсказки в автодополнении команд) ─
+tab-complete:
+  price-hint: "[цена]"
+  step-hint:  "[шаг]"
+  time-hint:  "[время]"
+
+# ─── General ────────────────────────────────────────────
+no-permission:       "&cУ вас нет прав для этого действия."
+player-only:         "&cЭту команду может использовать только игрок."
+unknown-command:     "&cНеизвестная команда. &e/ah help &cдля справки."
+invalid-price:       "&cНеверная цена. Минимум: &e{min}&c."
+invalid-id:          "&cНеверный ID предмета."
+feature-disabled:    "&cЭта функция отключена администратором."
+
+# ─── Sell ───────────────────────────────────────────────
+item-in-hand:            "&cВозьмите предмет в руку перед продажей."
+item-blacklisted:        "&cЭтот предмет запрещено продавать на аукционе."
+sell-limit-reached:      "&cНельзя выставить больше &e{max} &cлотов одновременно."
+price-too-low:           "&cЦена ниже минимальной (&e{min}&c)."
+price-too-high:          "&cЦена выше максимальной (&e{max}&c)."
+item-listed:             "&aПредмет &e{item} &aвыставлен за &e{price}&a."
+item-listed-auction:     "&aПредмет &e{item} &aвыставлен на аукцион за &e{price} &a(таймер: &e{time}&a)."
+
+# ─── Auto-sell ──────────────────────────────────────────
+auto-sell-market-found:   "&b│ &aНайдена цена на рынке: &e{cheapest} &aза ед. Рекомендуем: &e{suggested} &aза ед. × &e{amount} &aшт. = &e{total}&a."
+auto-sell-no-market:      "&b│ &7На рынке нет аналогичных предметов. Рекомендуем: &e{suggested} &aза ед. × &e{amount} &aшт. = &e{total}&a."
+auto-sell-confirm-prompt: "&eДля подтверждения введите &6{cmd} &e(действует 30 сек)."
+auto-sell-no-pending:     "&cНет ожидающего подтверждения. Сначала введите &e/ah sell auto&c."
+
+# ─── Buy ────────────────────────────────────────────────
+bought-full:         "&aВы купили &e{item} &aза &e{price}&a."
+not-enough-money:    "&cНедостаточно средств."
+cannot-buy-own:      "&cВы не можете купить собственный лот."
+item-already-sold:   "&cЭтот предмет уже куплен или снят с продажи."
+inventory-full:      "&cВаш инвентарь заполнен. Освободите место."
+seller-sold:         "&aВаш предмет &e{item} &aкупил &e{buyer} &aза &e{price}&a."
+broadcast-purchase:  "&e{buyer} &aкупил &e{item} &aза &e{price}&a!"
+
+# ─── Bid ────────────────────────────────────────────────
+bid-placed:          "&aВы сделали ставку на &e{item} &aна сумму &e{price}&a."
+bid-outbid:          "&cВас перебили на &e{item}&c! Новая ставка: &e{price}&c."
+bid-return:          "&aВозврат &e{price} &aза &e{item}&a."
+bid-win:             "&a🎉 Вы выиграли аукцион! Предмет &e{item} &aдоставлен."
+bid-win-notify:      "&a🎉 Вы победили в аукционе! Предмет &e{item} &aнаходится в &6Просроченных товарах&a."
+bid-win-claimed:     "&a🎉 Вы забрали выигранный предмет &e{item}&a!"
+auction-no-bids:     "&7Ваш аукцион на &e{item} &7истёк без ставок. Заберите предмет в &6Просроченных товарах&7."
+market-expired:      "&7Ваш лот &e{item} &7не был куплен. Заберите предмет в &6Просроченных товарах&7."
+bid-win-offline:     "&a🎉 Вы победили в аукционе! Предмет &e{item} &aждёт вас в &6Просроченных товарах&a."
+bid-seller-win:      "&aАукцион завершён! Покупатель: &e{buyer}&a, выручка: &e{price}&a."
+cannot-bid-own:      "&cВы не можете делать ставки на свой лот."
+already-top-bidder:  "&cВы уже лидируете в ставках."
+
+# ─── Remove / Claim ─────────────────────────────────────
+item-removed:         "&aЛот успешно снят с продажи."
+expired-item-claimed: "&aПредмет &e{item} &aвозвращён в инвентарь."
+
+# ─── Sound ──────────────────────────────────────────────
+sound-enabled:  "&aЗвуковые уведомления &2включены&a."
+sound-disabled: "&aЗвуковые уведомления &cвыключены&a."
+
+# ─── Search / Filter ────────────────────────────────────
+search-usage:          "&cИспользование: &e/ah search <название> &cили возьмите предмет в руку."
+search-applied:        "&aПоиск: &e{query}&a."
+player-usage:          "&cИспользование: &e/ah player <никнейм>"
+player-filter-applied: "&aПоказаны товары &e{player}&a."
+
+# ─── Admin ──────────────────────────────────────────────
+reload-success:         "&aКонфигурация и кэш перезагружены."
+admin-usage:            "&cИспользование: &e/ah admin <remove|clear|info|add|templates|deltemplate> [...]"
+admin-removed:          "&aЛот &e#{id} &aудалён."
+admin-cleared-expired:  "&aПросроченные лоты помечены."
+admin-cleared-player:   "&aУдалено &e{count} &aлотов &e{player}&a."
+admin-info-cache:       "&bЛотов в кэше: &e{count}&b."
+
+# ─── Admin: шаблоны предметов (/ah admin add) ───────────
+template-add-usage:     "&cИспользование: &e/ah admin add <категория> [название] [режим]&c. Возьмите предмет в руку."
+template-del-usage:     "&cИспользование: &e/ah admin deltemplate <id>"
+template-no-item:       "&cВозьмите предмет в руку, чтобы сохранить его как шаблон."
+template-bad-category:  "&cКатегория &e{category} &cне найдена в config.yml."
+template-added:         "&aШаблон &e{name} &aсохранён: категория &e{category}&a, режим &e{mode}&a, id &7{id}&a."
+template-broad-warning: "&e⚠ Внимание: без зачарований/лора этот шаблон подойдёт ЛЮБОМУ предмету &6{material}&e."
+template-removed:       "&aШаблон &e{id} &aудалён."
+template-not-found:     "&cШаблон &e{id} &cне найден."
+template-list-empty:    "&7Шаблоны предметов не заданы."
+template-list-header:   "&eШаблоны предметов (&6{count}&e):"
+template-list-entry:    "&6│ &f{id} &7— &e{name} &7[&b{category}&7/&d{mode}&7]"
+
+# ─── Help (/ah help chat) ───────────────────────────────
+help-lines:
+  - "&eПомощь по системе аукциона:"
+  - "&6│ &f/ah &7— открыть меню аукциона"
+  - "&6│ &f/ah sell &e<цена> &7— выставить товар на Рынок"
+  - "&6│ &f/ah sell &e<цена> &ffull &7— выставить товар (весь лот)"
+  - "&6│ &f/ah sell &e<цена> &f<war> &e[время] &7— выставить товар (Ставки)"
+  - "&6│ &f/ah sell &e<цена> &e<шаг> &e[время] &7— выставить товар (Ставки)"
+  - "&6│ &f/ah sell auto &7— продать товар (рыночная цена)"
+  - "&6(&ePREMIUM&6)"
+  - "&6│ &f/ah search &e[название] &7— найти предметы на аукционе"
+  - "&6│ &f/ah player &e<никнейм> &7— все товары игрока"
+  - "&6│ &f/ah sound &7— переключить слышимость звуков аукциона"
+
+# ─── GUI ────────────────────────────────────────────────
+gui:
+  main-title:       "&8Аукцион"
+  my-items-title:   "&8Товары на продаже"
+  expired-title:    "&8Просроченные товары"
+  bid-view-title:   "&8Просмотр лота"
+  buy-amount-title: "&8Покупка предмета"
+
+  nav:
+    prev-page:
+      name: "&a◄ Предыдущая страница"
+      name-disabled: "&7◄ Предыдущая страница"
+    next-page:
+      name: "&aСледующая страница ►"
+      name-disabled: "&7Следующая страница ►"
+    refresh:
+      name: "&a⚡ Обновить аукцион"
+    category:
+      name: "&eКатегория"
+    sort:
+      name: "&eСортировка"
+    help:
+      name: "&eПомощь"
+    mode:
+      name: "&eАукцион"
+    my-items:
+      name: "&f□ &bТовары на продаже &f□"
+    expired:
+      name: "&f□ &cПросроченные товары &f□"
+    back:
+      name: "&7◄ Назад"
+
+  # ─── Click hints ────
+  category-click-hint: "&7ЛКМ &f— вперёд &7| ПКМ &f— назад"
+  sort-click-hint: "&7ЛКМ &f— вперёд &7| ПКМ &f— назад"
+
+  # ─── Список категорий/сортировки: префикс выбранного и невыбранного пункта ────
+  list-selected-prefix: "&e✓ &f"
+  list-unselected-prefix: "&7• &f"
+
+  # ─── Category fallbacks ────
+  category-fallback: "Разное"
+  category-default-all: "Все подряд"
+  category-default-misc: "Разное"
+
+  # ─── Item tooltip lines ────
+  item-category:   "&b│ &7Категория: &e{category}"
+  item-seller:     "&b│ &7Продавец: &e{seller}"
+  item-expires:    "&b│ &7Истекает через: &e{time}"
+  item-price:      "&b│ &7Цена: &a{price}"
+  item-price-per:  "&b│ &7Цена за 1 ед.: &a{price}"
+  item-current-bid: "&b│ &7Текущая цена: &a{price}"
+  item-start-bid:  "&b│ &7Начальная цена: &a{price}"
+  item-step-bid:   "&b│ &7Цена шага: &a{price}"
+  item-top-bidder: "&b│ &7Лидер ставки: &e{name}"
+  item-own-listing: "&cЭто ваш лот"
+  item-buy-lmb:    "&f► &aНажмите ЛКМ, чтобы купить полностью"
+  item-buy-rmb:    "&f► &aНажмите ПКМ, чтобы купить поштучно"
+  item-full-only:  "&f• &7Данный товар можно"
+  item-full-only2: "&f  &7купить &aтолько полностью&7."
+  bid-available:   "&aДоступна ставка"
+  bid-click:       "&f► &aНажмите, чтобы сделать ставку в &e{price}"
+  bid-time-ext:    "&b│ &7⏱ Каждая ставка &e+{sec}сек &7к таймеру"
+
+  # ─── Mode toggle ────
+  mode-desc:    "&7Вы выставляете свои вещи,"
+  mode-desc2:   "&7а другие игроки режима"
+  mode-desc3:   "&7покупают их у вас."
+  mode-click-to-bid:    "&f► &aНажмите, чтобы выбрать режим: &bСтавки"
+  mode-click-to-market: "&f► &aНажмите, чтобы выбрать режим: &eТорги"
+
+  # ─── Sort labels ────
+  sort-newest:          "Сначала новые"
+  sort-oldest:          "Сначала старые"
+  sort-cheapest:        "Сначала дешевые"
+  sort-expensive:       "Сначала дорогие"
+  sort-cheapest-per:    "Сначала дешевые за ед. товара"
+  sort-expensive-per:   "Сначала дорогие за ед. товара"
+
+  # ─── Help GUI button lore (paper item in nav row) ────
+  help-gui-name: "&eПомощь"
+  help-gui-lines:
+    - "&eПомощь по системе аукциона:"
+    - ""
+    - "&b│ &7Чтобы выставлять предметы на продажу,"
+    - "&b│ &7нужно просто написать команду:"
+    - "&b│ &e/ah sell <цена>"
+    - "&b│"
+    - "&b│ &7Если вы хотите выставить предметы"
+    - "&b│ &7без поштучной возможности покупки:"
+    - "&b│ &e/ah sell <цена> full"
+    - "&b│"
+    - "&b│ &7Чтобы найти нужный предмет"
+    - "&b│ &7по названию, пропишите команду:"
+    - "&b│ &e/ah search <название>"
+    - "&b│"
+    - "&b│ &7Чтобы найти все товары игрока,"
+    - "&b│ &7пропишите команду:"
+    - "&b│ &e/ah player <никнейм>"
+    - "&b│"
+    - "&b│ &7Чтобы переключить звуковые"
+    - "&b│ &7уведомления, пропишите команду:"
+    - "&b│ &e/ah sound"
+
+  # ─── My items nav ────
+  my-items-nav-desc:  "&b│ &7В этом разделе можно узнать,"
+  my-items-nav-desc2: "&b│ &7какие товары сейчас на продаже."
+  my-items-nav-count: "&eТоваров на продаже: &6{count}"
+  my-items-nav-click: "&f► &aНажмите, чтобы открыть"
+
+  # ─── Expired nav ────
+  expired-nav-desc:  "&b│ &7В этом разделе можно узнать,"
+  expired-nav-desc2: "&b│ &7какие ваши товары больше"
+  expired-nav-desc3: "&b│ &7не продаются на аукционе."
+  expired-nav-count: "&eНеактивных предметов: &6{count}"
+  expired-nav-click: "&f► &aНажмите, чтобы открыть"
+
+  # ─── My items GUI ────
+  my-item-price:   "&b│ &7Цена: &a{price}"
+  my-item-expires: "&b│ &7Истекает: &e{time}"
+  my-item-remove:  "&f► &cНажмите, чтобы снять с продажи"
+  my-items-how-remove-name:  "&eПомощь по аукциону"
+  my-items-how-remove-hdr:   "&eКак снять с продажи?"
+  my-items-how-remove-desc:  "&7Чтобы снять товар с продажи,"
+  my-items-how-remove-desc2: "&7нажмите по иконке товара."
+
+  # ─── Expired GUI ────
+  expired-item-remove:     "&f► &aНажмите, чтобы забрать предмет"
+  expired-item-deletes-in: "&b│ &cУдалится через: &e{time}"
+  expired-how-claim-name:  "&eПомощь по аукциону"
+  expired-how-claim-hdr:   "&eКак забрать предмет?"
+  expired-how-claim-desc:  "&7Чтобы забрать предмет,"
+  expired-how-claim-desc2: "&7нажмите по иконке товара."
+
+  # ─── Bid view ────
+  bid-info-header:       "&bИнформация про систему ставок"
+  bid-how-to-buy:        "&eКак купить данный предмет?"
+  bid-how-to-buy-desc:   "&7Чтобы купить предмет, Вы должны"
+  bid-how-to-buy-desc2:  "&7перебить самую большую ставку,"
+  bid-how-to-buy-desc3:  "&7установленную за данный предмет."
+  bid-when-get:          "&eКогда я получу свой предмет?"
+  bid-when-get-desc:     "&7Если вы перебили последнюю ставку,"
+  bid-when-get-desc2:    "&7то по окончанию проведения аукциона,"
+  bid-when-get-desc3:    "&7вы получите предмет в инвентарь."
+  bid-btn-name:          "&aДоступна ставка"
+  bid-btn-click:         "&f► &aНажмите, чтобы сделать ставку в &e{price}"
+  bid-pane-filled-name:  "&aЗанято"
+  bid-pane-filled-bidder: "&b│ &7Участник: &e{name}"
+  bid-pane-filled-amount: "&b│ &7Сумма: &a{price}"
+  bid-pane-locked:       "&7Просмотр"
+
+  # ─── Buy amount ────
+  buy-decrease-10: "&f► &cУменьшить на 10 единиц"
+  buy-decrease-1:  "&f► &cУменьшить на 1 единицу"
+  buy-increase-1:  "&f► &aУвеличить на 1 единицу"
+  buy-increase-10: "&f► &aУвеличить на 10 единиц"
+  buy-amount-info: "&fКоличество: &e{amount}"
+  buy-confirm:     "&f► &aКупить &e{amount} &aшт. за &e{price}"
+  buy-cancel:      "&f► &cОтмена"
+
+  # Confirmation GUI
+  buy-confirm-title:   "&8Подтверждение"
+  buy-confirm-yes:     "&aПодтвердить"
+  buy-confirm-yes-lore: "&7Купить &e{amount} &aшт. за &e{price}"
+  buy-confirm-no:      "&cОтмена"
+  buy-confirm-no-lore: "&7Вернуться назад"
+  buy-confirm-item-name: "&fВы покупаете:"
+  buy-item-click-hint:   "&f► &eНажмите, чтобы купить"

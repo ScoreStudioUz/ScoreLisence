@@ -63,6 +63,8 @@ public class ScorePvPCommand implements CommandExecutor, TabCompleter {
                 plugin.getDuelRoundsGUI().loadConfig();
                 plugin.getPartyFfaGUI().loadConfig();
                 plugin.getProfileGUI().loadConfig();
+                plugin.getDuelScoreboardManager().reload();
+                plugin.getColorsManager().reload();
                 long ms = System.currentTimeMillis() - start;
                 sender.sendMessage(plugin.getConfigManager().rawMsg("prefix")
                         + " " + plugin.getConfigManager().rawMsg("admin.reload", "{ms}", String.valueOf(ms)));

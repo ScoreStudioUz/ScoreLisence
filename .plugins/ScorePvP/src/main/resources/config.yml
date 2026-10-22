@@ -27,6 +27,20 @@ storage:
       password: shohjahon1
       pool-size: 4
       connection-timeout: 5000
+      # ── Idle-connection tuning ──────────────────────────────────────────────
+      # MySQL serveri (masalan alwaysdata) bo'sh (idle) connectionlarni o'zining
+      # wait_timeout'idan keyin yopadi. Shundан keyin plagin eski connectionni
+      # ishlatsa "No operations allowed after connection closed" xatosini beradi
+      # va tierlar ishlamay qoladi. Buni oldini olish uchun:
+      #   • max-lifetime-ms  — connection shundan oshsa yangilanadi. Server
+      #                        wait_timeout'idan KICHIK bo'lishi shart.
+      #   • keepalive-ms     — connection bo'sh turmasligi uchun vaqti-vaqti bilan
+      #                        "ping" yuboriladi (max-lifetime'dan kichik).
+      #   • idle-timeout-ms  — ortiqcha bo'sh connectionlar shundan keyin yopiladi.
+      # Agar serveringizning wait_timeout'i uzoq bo'lsa bu qiymatlarni oshiring.
+      max-lifetime-ms: 60000
+      keepalive-ms: 30000
+      idle-timeout-ms: 45000
 
 # Spawn warp — slot 9 (hotbar index 8)
 warp:
@@ -115,6 +129,15 @@ tiers:
 # ── Party settings ─────────────────────────────────────────────────────────────
 party:
   ffa-min-members: 2
+  # Partiya hajmi permission darajasiga qarab cheklanadi. O'yinchi qaysi
+  # tier permissioniga ega bo'lsa (eng yuqorisi ustun), partiyasiga
+  # shuncha kishi (o'zi bilan birga) sig'adi. Hech qanday tier permissioni
+  # bo'lmasa `default-max` ishlaydi.
+  max-size:
+    default-max: 4
+    tier1: 4    # scorepvp.party.tier1
+    tier2: 6    # scorepvp.party.tier2
+    tier3: 10   # scorepvp.party.tier3
 
 # ── Match settings ─────────────────────────────────────────────────────────────
 match:
@@ -123,6 +146,39 @@ match:
   countdown: 3
   round-end-delay-ticks: 60
   finish-delay-ticks: 60
+  # Har raund boshida o'yinchining to'yimliligi (saturation, 0..20). To'liq 20
+  # bo'lsa o'yinchi passiv ravishda juda ko'p HP tiklaydi. Hamma rejim uchun
+  # bir xil. Rejim modes.yml da `start-saturation` bilan qayta yozishi mumkin.
+  default-start-saturation: 4.0
+  # WorldGuard `feed`/`heal` flagi yoki to'q dunyo tufayli ovqat (food) har doim
+  # 20 bo'lib qoladi. Bunda saturation tugagandan keyin ham o'yinchi sekin
+  # passiv HP tiklaydi — qochib yurib jonini to'ldiradi. Buni true qilsangiz,
+  # jangdagi o'yinchilarda PASSIV (SATIATED/REGEN) HP tiklanishi BLOKLANADI:
+  # ya'ni start-saturation (4) tugagach boshqa o'z-o'zidan davolanmaydi.
+  # Golden apple / totem / zelye (MAGIC) bilan davolanish ishlayveradi.
+  block-natural-regen: true
+
+# ── Queue (iron-sword tezkor o'yin) ────────────────────────────────────────────
+queue:
+  # Navbat orqali topilgan duel necha marta yutishgacha (first-to-N). 1 = bitta
+  # raund, bitta g'olib. Har rejimda bir xil.
+  rounds: 1
+
+# ── Spectator chat (kuzatuvchilar chati) ───────────────────────────────────────
+# Duelni kuzatayotgan (spec) o'yinchilar chatga yozsa — o'sha duelning EGALARI
+# (jangchilari) bu xabarni KO'RMAYDI. Lekin boshqa kuzatuvchilar va serverdagi
+# qolgan hamma o'yinchilar ko'radi. Jangchilarning xabarlarini hamma ko'radi.
+#
+# ChatEx (yoki boshqa chat plugini) bilan ishlaydi: biz faqat xabar
+# ko'rinadigan o'yinchilar ro'yxatidan jangchilarni olib tashlaymiz, formatni
+# ChatEx o'zi qiladi.
+spectator-chat:
+  enabled: true
+  # %scorepvp_spectator_prefix% placeholderi kuzatuvchi bo'lsa shu qiymatni,
+  # bo'lmasa bo'sh ("") qaytaradi. ChatEx config formatiga qo'shasiz, masalan:
+  #   format: '%scorepvp_spectator_prefix%%player_name%: %message%'
+  # Kuzatuvchi bo'lmaganda hech narsa ko'rsatmaydi.
+  prefix: '&7[&eKuzatuvchi&7] '
 
 # ── Arena (vanilla restore via diff-tracker + watchdog) ────────────────────────
 arena:
@@ -200,6 +256,10 @@ nametag:
   lobby-enabled: true
   # Nik bilan tier orasidagi qo'shimcha (suffix). {tier} — rangli tier.
   lobby-suffix-format: ' &7| {tier}'
+  # O'yinchida tier bo'lmaganda (yoki /tags orqali tiklaganda) ko'rinadigan
+  # suffiks. {tier} — lang/ru.yml dagi `profile.unranked` qiymati ("&7Ranksiz").
+  # Bo'sh qoldirsangiz — ranksizlar uchun hech narsa ko'rsatilmaydi.
+  lobby-suffix-unranked: ' &7| {tier}'
 
 # ── HUD / Action Bar ───────────────────────────────────────────────────────────
 hud:
@@ -230,10 +290,21 @@ hud:
 custom-items:
   golden-head:
     enabled: true
-    # Base64 texture value (player head skin)
+    # Golden head endi HONEY_BOTTLE (qo'yib bo'lmaydigan item) + custom_model_data.
+    # Resurs paket (UzTiers RP) shu CMD'ni "oltin_bosh" 3D bosh modeliga bog'laydi,
+    # shuning uchun ko'rinishi golden head'day bo'ladi, lekin YERGA QO'YIB BO'LMAYDI.
+    custom-model-data: 1
+    # (Eski PLAYER_HEAD tizimidan qolgan; endi ishlatilmaydi.)
     base64-texture: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2JiNjEyZWI0OTVlZGUyYzVjYTUxNzhkMmQxZWNmMWNhNWEyNTVkMjVkZmMzYzI1NGJjNDdmNjg0ODc5MWQ4In19fQ==
     # Cooldown in seconds
     cooldown-seconds: 10
+    # Golden head yeganda action barda cooldown timer sanab turadi.
+    #   {seconds} — qolgan butun sekundlar (masalan 7)
+    #   {time}    — bir kasr aniqlikda (masalan 6.4)
+    # Bo'sh format ("") action barni o'chiradi.
+    cooldown-actionbar:
+      enabled: true
+      format: '&6Golden Head &7cooldown: &c{seconds}s'
     effects:
       regeneration:
         amplifier: 2 # III = amplifier 2
@@ -241,3 +312,51 @@ custom-items:
       absorption:
         amplifier: 0 # I = amplifier 0
         duration-seconds: 120
+
+# ── Vanilla multi-kit system ─────────────────────────────────────────────────
+# Hotbar kit-settings → Vanilla opens a 6-slot menu. Slot 0 is free; the rest
+# are handed out per rank via the listed permissions. An empty entry = free.
+vanilla-kits:
+  title: "&8Vanilla Kitlar"
+  filler-material: "GRAY_STAINED_GLASS_PANE"
+  filler-name: "&r"
+  # One permission per kit slot (6 total). Leave blank for a free slot.
+  slot-permissions:
+    - ""                       # slot 1 — free (default: true)
+    - "scorepvp.kit.slot2"
+    - "scorepvp.kit.slot3"
+    - "scorepvp.kit.slot4"
+    - "scorepvp.kit.slot5"
+    - "scorepvp.kit.slot6"
+  # Item names / lore per state.
+  locked-name: "&c&lQulflangan"
+  locked-lore:
+    - "&7Bu kit sloti ({n}) siz uchun"
+    - "&7hozircha ochiq emas."
+  create-name: "&a&lYangi kit yaratish"
+  create-lore:
+    - "&7Bu slotda yangi vanilla kit"
+    - "&7yaratish uchun bosing."
+  kit-name: "&f&l{name}"
+  kit-lore:
+    - "&7LKM &8» &ftanlash"
+    - "&7PKM &8» &fo'zgartirish"
+    - "&7Shift+LKM &8» &fnomini o'zgartirish"
+    - "&7Shift+PKM &8» &freset"
+  selected-name: "&a&l{name}"
+  selected-lore:
+    - "&a✔ Tanlangan"
+    - ""
+    - "&7PKM &8» &fo'zgartirish"
+    - "&7Shift+LKM &8» &fnomini o'zgartirish"
+    - "&7Shift+PKM &8» &freset"
+  # Messages (sent with the global prefix).
+  msg-locked: "&cBu kit sloti ({n}) siz uchun ochiq emas."
+  msg-enter-name: "&aYangi kit uchun nom kiriting (yoki 'cancel')."
+  msg-enter-rename: "&aKit uchun yangi nom kiriting (yoki 'cancel')."
+  msg-created: "&aKit '&f{name}&a' yaratildi va tanlandi."
+  msg-renamed: "&aKit nomi '&f{name}&a' ga o'zgartirildi."
+  msg-selected: "&aKit '&f{name}&a' tanlandi."
+  msg-reset: "&7Kit standart holatga qaytarildi."
+  msg-editing: "&aKit '&f{name}&a' ni tahrirlayapsiz. &7/kit save bilan saqlang."
+  msg-cancelled: "&7Bekor qilindi."

@@ -74,6 +74,26 @@ public class TierManager {
     }
 
     /**
+     * The tier this player wants displayed in the lobby/TAB. If they picked a
+     * specific mode via {@code /tags} AND still hold a tier there, that mode's
+     * tier wins (even if it's lower than another mode's). Otherwise falls back
+     * to {@link #getHighestTier}. Returns {@code [tier, modeId]} or null.
+     */
+    public String[] getDisplayTier(UUID uuid) {
+        com.scorepvp.model.PlayerSettings st = plugin.getSettingsManager().get(uuid);
+        if (st != null && st.getTierTagMode() != null) {
+            // "none" = the player explicitly reset their tag → show unranked,
+            // do NOT fall back to the highest tier.
+            if (st.getTierTagMode().equalsIgnoreCase("none")) return null;
+            String tier = getTier(uuid, st.getTierTagMode());
+            if (tier != null && !tier.isBlank()) {
+                return new String[]{tier, st.getTierTagMode()};
+            }
+        }
+        return getHighestTier(uuid);
+    }
+
+    /**
      * Resolves a player's full tier map for read-only display (e.g. /profile of
      * another player). If the tiers are already cached (online player) the
      * callback fires immediately on the calling thread; otherwise the map is
@@ -104,6 +124,26 @@ public class TierManager {
      * </ol>
      * Returns {@code null} if no match is found anywhere.
      */
+    /**
+     * Loads a player's tier map FRESH from the DB (bypassing the cache), delivers
+     * it to the callback on the main thread, and refreshes the cache for online
+     * players so later reads stay consistent. Used by {@code /tier info} so an
+     * offline target — or an online player whose join-time load failed while the
+     * DB was down — still shows the tiers the DB actually holds.
+     */
+    public void loadTiersFromDb(UUID uuid, java.util.function.Consumer<Map<String, String>> callback) {
+        CompletableFuture.supplyAsync(() -> plugin.getStorage().getTiers().loadTiers(uuid))
+                .thenAccept(tiers -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    Map<String, String> result = tiers != null ? tiers : Map.of();
+                    // Only refresh the cache if the player is online (cache is a
+                    // live-session concept — never populate it for offline UUIDs).
+                    if (!result.isEmpty() && Bukkit.getPlayer(uuid) != null) {
+                        cache.put(uuid, new ConcurrentHashMap<>(result));
+                    }
+                    callback.accept(result);
+                }));
+    }
+
     public Resolved resolveTarget(String name) {
         if (name == null || name.isBlank()) return null;
 

@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Duel/jang nik ranglari — colors.yml
+#
+#  Bu ranglar FAQAT jangda (duel/queue/FFA) o'yinchining nikiga (bosh ustidagi
+#  nomiga) qo'llanadi. O'yinchi qaysi rangning PERMISSION'iga ega bo'lsa, jangda
+#  niki o'sha rangda ko'rinadi. Hech qanday permission bo'lmasa — nik OQ turadi.
+#
+#  Muhim farq:
+#    • colors.yml ranglari  → JANGDA ishlaydi (permission bilan).
+#    • /cosmetics gradient  → FAQAT lobby/afk xonada ishlaydi, jangda EMAS.
+#
+#  Bir nechta rang permissioni bo'lsa — RO'YXATDAGI BIRINCHISI olinadi
+#  (admin tartibni ustuvorlikka qarab tuzadi: eng yuqori rang tepada).
+#
+#  Rang formati:
+#    • Oddiy legacy:  '&c'  '&b'  '&e' …
+#    • Hex:           '&#FF5555'
+#    • Gradient:      '<gradient:#FF5555:#FFAAAA>'
+#      (DIQQAT: bosh ustidagi nik faqat BITTA solid rang ko'rsata oladi — shuning
+#       uchun gradient berilsa nikning boshlang'ich rangi olinadi. To'liq gradient
+#       nik faqat lobby'da /cosmetics orqali ishlaydi.)
+#
+#  Yangi rang qo'shish: shu faylga yangi blok yozing — permission'ni plugin.yml
+#  ga qo'shish SHART EMAS. Plagin har start/reloadda bu yerdagi permissionlarni
+#  o'zi ro'yxatdan o'tkazadi (default: false), ya'ni rang faqat siz permission
+#  bergan o'yinchida ishlaydi. Permission nomini xohlagancha yozsangiz bo'ladi.
+#
+#  O'zgartirgach: /scorepvp reload
+# ─────────────────────────────────────────────────────────────────────────────
+
+colors:
+  # id:            ichki nom (ixtiyoriy, faqat log uchun)
+  #   color:       rang spec (yuqoridagi formatlar)
+  #   permission:  shu rangni beradigan permission node
+  ruby:
+    color: '&c'
+    permission: 'scorepvp.color.ruby'
+  gold:
+    color: '&6'
+    permission: 'scorepvp.color.gold'
+  emerald:
+    color: '&a'
+    permission: 'scorepvp.color.emerald'
+  aqua:
+    color: '&b'
+    permission: 'scorepvp.color.aqua'
+  pink:
+    color: '&d'
+    permission: 'scorepvp.color.pink'

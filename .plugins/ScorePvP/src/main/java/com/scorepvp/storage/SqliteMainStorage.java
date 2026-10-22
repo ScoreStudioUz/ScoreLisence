@@ -89,9 +89,28 @@ public class SqliteMainStorage implements MainStorage {
                     friend_req    INTEGER NOT NULL DEFAULT 1,
                     direct_msg    VARCHAR(16) NOT NULL DEFAULT 'ANYONE',
                     friend_join   INTEGER NOT NULL DEFAULT 1,
-                    profile_vis   VARCHAR(16) NOT NULL DEFAULT 'PUBLIC'
+                    profile_vis   VARCHAR(16) NOT NULL DEFAULT 'PUBLIC',
+                    tier_tag_mode VARCHAR(32) DEFAULT NULL,
+                    name_color    VARCHAR(32) DEFAULT NULL,
+                    name_tag      VARCHAR(32) DEFAULT NULL,
+                    elytra_cos    INTEGER NOT NULL DEFAULT 0,
+                    hat           VARCHAR(64) DEFAULT NULL,
+                    badge_color   VARCHAR(32) DEFAULT NULL
                 )
             """);
+            // Migrate older databases that predate newer columns.
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN tier_tag_mode VARCHAR(32) DEFAULT NULL"); }
+            catch (SQLException ignored) { /* column already exists */ }
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN name_color VARCHAR(32) DEFAULT NULL"); }
+            catch (SQLException ignored) { /* column already exists */ }
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN name_tag VARCHAR(32) DEFAULT NULL"); }
+            catch (SQLException ignored) { /* column already exists */ }
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN elytra_cos INTEGER NOT NULL DEFAULT 0"); }
+            catch (SQLException ignored) { /* column already exists */ }
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN hat VARCHAR(64) DEFAULT NULL"); }
+            catch (SQLException ignored) { /* column already exists */ }
+            try { s.execute("ALTER TABLE player_settings ADD COLUMN badge_color VARCHAR(32) DEFAULT NULL"); }
+            catch (SQLException ignored) { /* column already exists */ }
 
             s.execute("""
                 CREATE TABLE IF NOT EXISTS friendships (
@@ -99,6 +118,35 @@ public class SqliteMainStorage implements MainStorage {
                     receiver_uuid VARCHAR(36) NOT NULL,
                     state         VARCHAR(16) NOT NULL DEFAULT 'PENDING',
                     PRIMARY KEY (sender_uuid, receiver_uuid)
+                )
+            """);
+
+            // Silver currency (cosmetics / badge purchases). /kumush targets
+            // offline players by nick via the tiers name index.
+            s.execute("""
+                CREATE TABLE IF NOT EXISTS player_silver (
+                    uuid   VARCHAR(36) PRIMARY KEY,
+                    amount INTEGER NOT NULL DEFAULT 0
+                )
+            """);
+
+            // Owned badges (nishonlar) — one row per (uuid, badge id) purchased.
+            // The active selection lives in player_settings.name_tag.
+            s.execute("""
+                CREATE TABLE IF NOT EXISTS player_badges (
+                    uuid     VARCHAR(36) NOT NULL,
+                    badge_id VARCHAR(48) NOT NULL,
+                    PRIMARY KEY (uuid, badge_id)
+                )
+            """);
+
+            // Owned cosmetic hats — one row per (uuid, hat id) purchased. The
+            // active selection lives in player_settings.hat.
+            s.execute("""
+                CREATE TABLE IF NOT EXISTS player_hats (
+                    uuid   VARCHAR(36) NOT NULL,
+                    hat_id VARCHAR(64) NOT NULL,
+                    PRIMARY KEY (uuid, hat_id)
                 )
             """);
         } catch (SQLException e) {
@@ -286,7 +334,7 @@ public class SqliteMainStorage implements MainStorage {
         try (Connection c = ds.getConnection();
              PreparedStatement ps = c.prepareStatement(
                      "SELECT duel_requests, party_invites, show_own_tier, friend_req, " +
-                     "direct_msg, friend_join, profile_vis FROM player_settings WHERE uuid = ?")) {
+                     "direct_msg, friend_join, profile_vis, tier_tag_mode, name_color, name_tag, elytra_cos, hat, badge_color FROM player_settings WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -297,6 +345,12 @@ public class SqliteMainStorage implements MainStorage {
                     s.setDirectMessages(parseVis(rs.getString("direct_msg")));
                     s.setFriendJoinNotifier(rs.getInt("friend_join") != 0);
                     s.setProfileVisibility(parseProfileVis(rs.getString("profile_vis")));
+                    s.setTierTagMode(rs.getString("tier_tag_mode"));
+                    s.setNameColor(rs.getString("name_color"));
+                    s.setNameTag(rs.getString("name_tag"));
+                    s.setElytraCosmetic(rs.getInt("elytra_cos") != 0);
+                    s.setHat(rs.getString("hat"));
+                    s.setBadgeColor(rs.getString("badge_color"));
                 }
             }
         } catch (SQLException e) {
@@ -310,8 +364,8 @@ public class SqliteMainStorage implements MainStorage {
         try (Connection c = ds.getConnection();
              PreparedStatement ps = c.prepareStatement(
                      "INSERT INTO player_settings (uuid, duel_requests, party_invites, " +
-                     "show_own_tier, friend_req, direct_msg, friend_join, profile_vis) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+                     "show_own_tier, friend_req, direct_msg, friend_join, profile_vis, tier_tag_mode, name_color, name_tag, elytra_cos, hat, badge_color) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                      "ON CONFLICT(uuid) DO UPDATE SET " +
                      "duel_requests = excluded.duel_requests, " +
                      "party_invites = excluded.party_invites, " +
@@ -319,7 +373,13 @@ public class SqliteMainStorage implements MainStorage {
                      "friend_req    = excluded.friend_req, " +
                      "direct_msg    = excluded.direct_msg, " +
                      "friend_join   = excluded.friend_join, " +
-                     "profile_vis   = excluded.profile_vis")) {
+                     "profile_vis   = excluded.profile_vis, " +
+                     "tier_tag_mode = excluded.tier_tag_mode, " +
+                     "name_color    = excluded.name_color, " +
+                     "name_tag      = excluded.name_tag, " +
+                     "elytra_cos    = excluded.elytra_cos, " +
+                     "hat           = excluded.hat, " +
+                     "badge_color   = excluded.badge_color")) {
             ps.setString(1, s.getUuid().toString());
             ps.setString(2, s.getDuelRequests().name());
             ps.setString(3, s.getPartyInvites().name());
@@ -328,6 +388,12 @@ public class SqliteMainStorage implements MainStorage {
             ps.setString(6, s.getDirectMessages().name());
             ps.setInt(7, s.isFriendJoinNotifier() ? 1 : 0);
             ps.setString(8, s.getProfileVisibility().name());
+            ps.setString(9, s.getTierTagMode());
+            ps.setString(10, s.getNameColor());
+            ps.setString(11, s.getNameTag());
+            ps.setInt(12, s.isElytraCosmetic() ? 1 : 0);
+            ps.setString(13, s.getHat());
+            ps.setString(14, s.getBadgeColor());
             ps.executeUpdate();
         } catch (SQLException e) {
             log.warning("[ScorePvP] saveSettings(" + s.getUuid() + ") failed: " + e.getMessage());
@@ -399,6 +465,100 @@ public class SqliteMainStorage implements MainStorage {
             ps.executeUpdate();
         } catch (SQLException e) {
             log.warning("[ScorePvP] deleteFriendship failed: " + e.getMessage());
+        }
+    }
+
+    // ── Silver currency ────────────────────────────────────────────────────────
+
+    @Override
+    public int getSilver(UUID uuid) {
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT amount FROM player_silver WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("amount");
+            }
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] getSilver(" + uuid + ") failed: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    @Override
+    public void setSilver(UUID uuid, int amount) {
+        int amt = Math.max(0, amount);
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "INSERT INTO player_silver (uuid, amount) VALUES (?, ?) " +
+                     "ON CONFLICT(uuid) DO UPDATE SET amount = excluded.amount")) {
+            ps.setString(1, uuid.toString());
+            ps.setInt(2, amt);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] setSilver(" + uuid + ") failed: " + e.getMessage());
+        }
+    }
+
+    // ── Badges (owned nishonlar) ─────────────────────────────────────────────────
+
+    @Override
+    public java.util.Set<String> loadBadges(UUID uuid) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT badge_id FROM player_badges WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(rs.getString("badge_id"));
+            }
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] loadBadges(" + uuid + ") failed: " + e.getMessage());
+        }
+        return out;
+    }
+
+    @Override
+    public void addBadge(UUID uuid, String badgeId) {
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "INSERT OR IGNORE INTO player_badges (uuid, badge_id) VALUES (?, ?)")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, badgeId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] addBadge(" + uuid + "," + badgeId + ") failed: " + e.getMessage());
+        }
+    }
+
+    // ── Hats (owned cosmetic hats) ───────────────────────────────────────────────
+
+    @Override
+    public java.util.Set<String> loadHats(UUID uuid) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT hat_id FROM player_hats WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(rs.getString("hat_id"));
+            }
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] loadHats(" + uuid + ") failed: " + e.getMessage());
+        }
+        return out;
+    }
+
+    @Override
+    public void addHat(UUID uuid, String hatId) {
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                     "INSERT OR IGNORE INTO player_hats (uuid, hat_id) VALUES (?, ?)")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, hatId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.warning("[ScorePvP] addHat(" + uuid + "," + hatId + ") failed: " + e.getMessage());
         }
     }
 

@@ -45,8 +45,11 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // The menu itself is open to EVERYONE — individual buttons render as a
+        // BARRIER when the player lacks that category's permission (hats + badges
+        // are never gated, since they're bought with silver). Only `admin` is
+        // permission-guarded.
         if (args.length == 0) {
-            if (!player.hasPermission(PERM_USE)) { tell(player, "messages.no-permission"); return true; }
             plugin.getCosmeticsGUI().openMain(player);
             return true;
         }
@@ -59,7 +62,6 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
             return handleAdmin(player, args);
         }
 
-        if (!player.hasPermission(PERM_USE)) { tell(player, "messages.no-permission"); return true; }
         plugin.getCosmeticsGUI().openMain(player);
         return true;
     }
@@ -85,9 +87,12 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
                     tell(player, "messages.not-holding-shield");
                     return true;
                 }
-                int slot = mgr.addShield(held);
+                // Optional category: plain | banner | flag (defaults to plain).
+                String category = args.length >= 4 ? args[3].toLowerCase() : "plain";
+                int slot = mgr.addShield(held, category);
                 if (slot < 0) { tell(player, "messages.shield-slots-full"); return true; }
-                tellPlaceholder(player, "messages.shield-added", "{slot}", String.valueOf(slot));
+                tellPlaceholder2(player, "messages.shield-added",
+                        "{slot}", String.valueOf(slot), "{category}", category);
                 return true;
             }
             if (action.equals("remove")) {
@@ -221,6 +226,12 @@ public class CosmeticsCommand implements CommandExecutor, TabCompleter {
     private void tellPlaceholder(Player p, String key, String ph, String value) {
         String prefix = plugin.getConfigManager().cosStr("messages.prefix");
         String body   = plugin.getConfigManager().cosStr(key).replace(ph, value);
+        p.sendMessage(ColorUtil.color(prefix + body));
+    }
+
+    private void tellPlaceholder2(Player p, String key, String ph1, String v1, String ph2, String v2) {
+        String prefix = plugin.getConfigManager().cosStr("messages.prefix");
+        String body   = plugin.getConfigManager().cosStr(key).replace(ph1, v1).replace(ph2, v2);
         p.sendMessage(ColorUtil.color(prefix + body));
     }
 

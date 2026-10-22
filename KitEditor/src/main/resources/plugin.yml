@@ -1,0 +1,12 @@
+name: KitEditor
+version: '1.0'
+main: com.kiteditor.KitEditorPlugin
+api-version: '1.20'
+commands:
+  editor:
+    description: Open Kit Editor menu
+    usage: /editor
+    permission: kiteditor.use
+permissions:
+  kiteditor.use:
+    default: true
