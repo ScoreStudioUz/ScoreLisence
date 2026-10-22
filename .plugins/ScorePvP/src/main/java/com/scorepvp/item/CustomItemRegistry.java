@@ -53,28 +53,35 @@ public class CustomItemRegistry {
         };
     }
 
+    /** Base material of the golden head. HONEY_BOTTLE is NOT a placeable block,
+     *  which is the ROOT-CAUSE fix for the recurring "head places on the ground"
+     *  bug — you simply cannot place a honey bottle. The resource pack maps its
+     *  custom_model_data to the 3D "oltin_bosh" head model so it still LOOKS like
+     *  a golden head in-hand / on the ground / in F5. */
+    public static final Material GOLDEN_HEAD_MATERIAL = Material.HONEY_BOTTLE;
+
     /**
      * Builds the Golden Head item.
-     * - PLAYER_HEAD with custom Base64 texture
+     * - HONEY_BOTTLE base (non-placeable) + custom_model_data → RP head model
      * - On consume: Regeneration III (5s) + Absorption I (2min)
      * - 10-second cooldown
-     * - Eating animation (uses Food component / GOLDEN_APPLE food type)
+     * - Eating animation (uses Food + Consumable components)
      */
     private ScorePvP plugin;
 
     public void setPlugin(ScorePvP plugin) { this.plugin = plugin; }
 
     public ItemStack buildGoldenHead() {
-        // Read texture from config if available, fall back to hardcoded
-        String base64 = GOLDEN_HEAD_BASE64;
-        if (plugin != null) {
-            String cfgTexture = plugin.getConfig().getString(
-                    "custom-items.golden-head.base64-texture", "");
-            if (!cfgTexture.isBlank()) base64 = cfgTexture;
-        }
-        ItemStack skull = KitManager.buildSkullFromBase64(base64);
+        ItemStack skull = new ItemStack(GOLDEN_HEAD_MATERIAL);
         ItemMeta meta = skull.getItemMeta();
         if (meta == null) return skull;
+
+        // Resource-pack model selector: the HONEY_BOTTLE item def maps this CMD
+        // to civilization/minecraft:item/oltin_bosh (the 3D head model).
+        int cmd = plugin != null
+                ? plugin.getConfig().getInt("custom-items.golden-head.custom-model-data", 1)
+                : 1;
+        meta.setCustomModelData(cmd);
 
         // Custom display name and lore
         meta.setDisplayName(com.scorepvp.util.ColorUtil.color(
@@ -124,6 +131,11 @@ public class CustomItemRegistry {
                             .hasConsumeParticles(true)
                             .build();
             stack.setData(io.papermc.paper.datacomponent.DataComponentTypes.CONSUMABLE, consumable);
+
+            // HONEY_BOTTLE ships a vanilla USE_REMAINDER of GLASS_BOTTLE, so eating
+            // the head handed the player an empty bottle. Unset it so nothing is
+            // left behind.
+            stack.unsetData(io.papermc.paper.datacomponent.DataComponentTypes.USE_REMAINDER);
         } catch (Throwable ignored) {
             // Data-component API absent — item simply won't be edible.
         }

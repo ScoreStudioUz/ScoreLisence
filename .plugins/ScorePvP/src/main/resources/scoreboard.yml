@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Duel Scoreboard — scoreboard.yml
+#
+#  Bu scoreboard FAQAT 1v1 duel (va queue) janglarida ko'rinadi. FFA'da
+#  hech qachon chiqmaydi. TAB plugini bilan to'liq baglarsiz ishlaydi:
+#    • TAB o'rnatilgan bo'lsa — TAB'ning o'z ScoreboardManager API'si orqali
+#      ko'rsatiladi (sidebar paketlarini TAB boshqaradi, konflikt bo'lmaydi).
+#      Jang tugagach TAB'ning lobby scoreboardi avtomatik qaytariladi.
+#    • TAB bo'lmasa — oddiy Bukkit sidebar ishlatiladi.
+#
+#  O'zgartirgach: /scorepvp reload
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Scoreboardni umuman yoqish/o'chirish.
+enabled: true
+
+# Tomoshabinlar (/spec) ham scoreboardni ko'rsinmi.
+show-to-spectators: true
+
+# Necha tickda bir marta yangilanadi (20 tick = 1 soniya).
+# Ping va HP jonli ko'rinishi uchun kichikroq qiymat (masalan 10) tavsiya etiladi.
+refresh-ticks: 10
+
+# ── Tomon ranglari ───────────────────────────────────────────────────────────
+# Har DUELDA tomonlar TASODIFIY rangga bo'linadi (coin-flip): ba'zida siz qizil,
+# ba'zida ko'k bo'lasiz. Har bir o'yinchi O'ZINI %you_color% rangida, raqibini
+# %opp_color% rangida ko'radi. %p1_color%/%p2_color% esa 1/2-jangchining rangi.
+# Ochkolarni ham shu ranglar bilan bo'yang. Rang kodlari: & yoki &#RRGGBB hex.
+team-colors:
+  red:  "&c"
+  blue: "&9"
+
+# Yuqoridagi sarlavha (rang kodlari & va &#RRGGBB hex qo'llab-quvvatlanadi).
+title: "&x&F&F&2&E&2&E&lD&x&F&B&2&6&2&6&lU&x&F&7&1&D&1&D&lE&x&F&3&1&5&1&5&lL"
+
+# Scoreboard qatorlari (yuqoridan pastga). Bo'sh qator uchun "&f" yozing.
+#
+# Placeholderlar:
+#   %player_1% / %player_2%   — 1/2-jangchi ismi
+#   %score_1%  / %score_2%    — 1/2-jangchi ochkolari (raundlar)
+#   %ping_1%   / %ping_2%     — 1/2-jangchi pingi (ms)
+#   %hp_1%     / %hp_2%       — 1/2-jangchi joni (butun son)
+#   %p1_color% / %p2_color%   — 1/2-jangchining TASODIFIY tomon rangi
+#   %you%        — SIZNING ismingiz (har bir o'yinchi o'zini ko'radi)
+#   %opponent%   — raqibingiz ismi
+#   %your_score% — sizning ochkolaringiz
+#   %opp_score%  — raqibingiz ochkolari
+#   %you_color%  — SIZNING rangingiz (o'zingizni shu rangda ko'rasiz)
+#   %opp_color%  — raqibingiz rangi
+#   %round%      — hozirgi raund
+#   %rounds%     — jami raund (first-to-N)
+#   %mode%       — rejim nomi
+#   %arena%      — arena nomi
+#
+# Namuna: har viewer o'zini %you_color% da, raqibini %opp_color% da ko'radi —
+# ochkolar ham shu rangda. Tomonlar har jangda tasodifiy.
+lines:
+  - "&f"
+  - "%you_color%🏴 %you%"
+  - "&fℹ Hisob: %you_color%%your_score% &f- %opp_color%%opp_score%"
+  - "&f"
+  - "&7🏹 Round: &f%round% &7(FT%rounds%)"
+  - "&f"
+  - "&6mc.uztiers.com"

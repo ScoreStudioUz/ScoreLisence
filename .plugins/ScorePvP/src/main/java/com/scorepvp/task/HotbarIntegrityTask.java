@@ -38,6 +38,11 @@ public class HotbarIntegrityTask extends BukkitRunnable {
                 catch (Throwable ignored) {}
             }
 
+            // Skip players whose match just ended but who haven't been teleported
+            // back to spawn yet — handing them lobby items here would drop the
+            // hotbar on them mid-arena before the deferred spawn teleport (Bug 5).
+            if (plugin.getMatchManager().isPendingSpawnTeleport(uuid)) continue;
+
             // Skip players inside the vanilla region — they have a custom inventory
             if (plugin.getPlayerDataManager().isInVanillaRegion(uuid)) continue;
 

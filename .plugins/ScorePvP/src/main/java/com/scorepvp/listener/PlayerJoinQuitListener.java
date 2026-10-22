@@ -30,6 +30,10 @@ public class PlayerJoinQuitListener implements Listener {
         plugin.getTierManager().loadAsync(uuid);
         plugin.getKitManager().loadAsync(uuid);
         plugin.getFriendsManager().loadAsync(uuid);
+        plugin.getSilverManager().loadAsync(uuid);
+        plugin.getNameStyleManager().loadBadgesAsync(uuid);
+        plugin.getVanillaKitManager().loadAsync(uuid);
+        plugin.getHatManager().loadOwnedAsync(uuid);
 
         // Keep the tiers-DB name index warm so /tier set <name> can target
         // this player even after they log out, on the very first join. The
@@ -100,6 +104,11 @@ public class PlayerJoinQuitListener implements Listener {
         plugin.getStatsManager().onLogout(uuid);
         plugin.getMsgManager().clearPartner(uuid);
         plugin.getFriendsManager().unload(uuid);
+        plugin.getSilverManager().unload(uuid);
+        plugin.getNameStyleManager().unloadBadges(uuid);
+        plugin.getVanillaKitManager().unload(uuid);
+        plugin.getEnderKitGUI().clear(uuid);
+        plugin.getHatManager().unloadOwned(uuid);
         plugin.getPlayerDataManager().remove(uuid);
     }
 }

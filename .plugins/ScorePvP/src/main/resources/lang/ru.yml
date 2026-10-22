@@ -12,12 +12,14 @@ players-only: "&cFaqat o'yinchi bu buyruqdan foydalanishi mumkin."
 
 # Пати
 party:
+  no-permission: "&cGuruh ochish/boshqarish uchun huquqingiz yo'q. (Guruhga qo'shilish uchun ruxsat shart emas.)"
   already-in-party: "&cSiz allaqachon guruhdasiz."
   not-in-party: "&cSiz guruhda emassiz."
   not-leader: "&cSiz guruh rahbari emassiz."
   no-invite: "&cSiz &e{player}&c dan taklif olmadingiz."
   already-invited: "&e{player}&c allaqachon taklif qilingan."
   target-in-party: "&e{player}&c allaqachon guruhda."
+  full: "&cGuruh to'lgan. Maksimal &e{max}&c kishi sig'adi."
   cannot-invite-self: "&cSiz o'zingizni taklif qila olmaysiz."
   cannot-kick-self: "&cO'zingizni hayda olmaysiz. &e/party leave&c dan foydalaning."
   not-member: "&e{player}&c guruh a'zosi emas."
@@ -61,6 +63,11 @@ kit:
   reset-done: "&aKit ma'lumotlari qayta tiklandi."
   kit-saved-spawn: "&aKit saqlandi! Siz spawnga qaytdingiz."
   kit-reset-blocked: "&c/kit reset «Kit sozlamalari» xonasida mumkun emas. &b/kit save &cishlating&7."
+
+# Kit editor (rejim kitlarini GUI orqali tahrirlash)
+kit-editor:
+  saved: "&aKit saqlandi!"
+  reset: "&7Kit standart holatga qaytarildi."
 
 # Тиры
 tier:
@@ -447,10 +454,33 @@ spec:
   cannot-while-match: "&cSiz o'yinda bo'lganingizda boshqa o'yinchilarni kuzata olmaysiz."
   leave-queue-first: "&cKuzatish uchun navbatdan chiqing."
   cannot-spectate: "&cKuzatuv rejimida o'tish mumkun emas."
+  out-of-bounds: "&cSiz arena chegarasidan chiqdingiz — spawnga qaytarildingiz."
 
 # ── Leave ─────────────────────────────────────────────────────────────────────
 leave:
   nowhere: "&7Sizda chiqadigan joy yo‘q."
+
+# ── TierTag (/tags) ─────────────────────────────────────────────────────────────
+tags:
+  opening: ""
+  applied: "&aTieringiz &f{mode} &7({tier}&7) &aga o'zgartirildi."
+  reset: "&7TierTag tiklandi — endi darajangiz ko'rinmaydi (ranksiz)."
+  no-tier-in-mode: "&cBu rejimda sizda daraja yo'q."
+
+# ── Kumush (silver) ─────────────────────────────────────────────────────────────
+kumush:
+  players-only: "&cBu buyruq faqat o'yinchilar uchun."
+  no-permission: "&cBu buyruqdan foydalanish uchun huquqingiz yo'q."
+  balance: "&7Sizda &f{amount} &7kumush bor."
+  look: "&f{player} &7da &f{amount} &7kumush bor."
+  give-done: "&a{player} &7ga &f{amount} &7kumush berildi. Jami: &f{total}&7."
+  set-done: "&a{player} &7ning kumushi &f{amount} &7ga o'rnatildi. Jami: &f{total}&7."
+  remove-done: "&a{player} &7dan &f{amount} &7kumush olindi. Jami: &f{total}&7."
+  player-not-found: "&c{player} &ctopilmadi."
+  invalid-amount: "&cNoto'g'ri miqdor."
+  usage: "&7/kumush [give|set|remove|look <nik> [miqdor]]"
+  usage-look: "&7/kumush look <nik>"
+  usage-amount: "&7/kumush {sub} <nik> <miqdor>"
 
 # ── Arena ─────────────────────────────────────────────────────────────────────
 arena:

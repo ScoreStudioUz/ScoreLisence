@@ -1,0 +1,1329 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  ScorePvP — Hats (kosmetik shlyapalar)
+#
+#  Ported from HopliteCosmetics. Hats render via custom_model_data on a base
+#  COAL item, resolved client-side by the ScoreCosmetics resource pack. Access
+#  to each hat is a permission node (scorepvp.hat.<id>); scorepvp.hats.all
+#  unlocks every hat at once.
+#
+#  In the lobby the chosen hat is worn in the helmet slot (freely removable,
+#  restored on lobby entry). In a duel the hat's custom_model_data is stamped
+#  onto whatever helmet the kit gives, so full armor + enchants are preserved
+#  and the RP still shows the hat model — the diamond_helmet / netherite_helmet
+#  item models in the RP must carry the same overrides for this to render.
+# ─────────────────────────────────────────────────────────────────────────────
+
+resource-pack:
+  # Send the ScoreCosmetics resource pack on join. If mandatory, players who
+  # decline / fail to download are kicked.
+  enabled: true
+  mandatory: true
+  # DIQQAT: RP repo ildizidagi UzTiers.-.RP.zip. Unga oltin bosh (golden head)
+  # modeli qo'shildi: honey_bottle + custom_model_data:1 -> "oltin_bosh" 3D bosh
+  # modeli. Shu sababli zip QAYTA qadoqlandi va sha1 o'zgardi. Zipni hostingga
+  # QAYTA YUKLANG, so'ng quyidagi url'ni yangi to'g'ridan-to'g'ri havolaga
+  # almashtiring (sha1 pastda yangilangan).
+  url: "https://funmoney.alwaysdata.net/d/b5de26ca75812884ee67c5c6df6083d37e61f987334ddacfef2a193398b99e07/stream"
+  sha1: "443d0280766b3d22bb317145aca0c9f2c1902826"
+  prompt-message: "&6&l[RP] &r&7O'ynash uchun resurs paket kerak. Iltimos, qabul qiling!"
+  decline-kick-message: |
+    &c&lResurs paket majburiy!
+    &7Serverga kirish uchun resurs paketni qabul qilishingiz kerak.
+  failed-kick-message: |
+    &c&lResurs paket yuklanmadi!
+    &7Internet aloqangizni tekshirib qayta urinib ko'ring.
+  not-loaded-message: "&c/hats dan foydalanish uchun avval resurs paketni yuklang!"
+
+gui:
+  title: "&8Shlyapalar"
+  remove-hat-name: "&c&lShlyapani yechish"
+  remove-hat-lore:
+    - "&7Kiyilgan shlyapangizni yechadi."
+  filler-material: GRAY_STAINED_GLASS_PANE
+  prev-page-name: "&e&l« Oldingi sahifa"
+  next-page-name: "&e&lKeyingi sahifa »"
+  page-indicator-name: "&6&lSahifa {page}/{total}"
+  lore-equipped: "&a&l✔ Kiyilgan"
+  lore-unlocked: "&7Kiyish uchun bosing"
+  lore-locked: "&cQulflangan"
+
+messages:
+  hat-equipped: "&aSiz &6{hat}&a shlyapasini kiydingiz!"
+  hat-removed: "&7Shlyapa yechildi."
+  no-permission: "&cBu shlyapa siz uchun ochilmagan."
+  reload-success: "&aHats config qayta yuklandi."
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  DO'KON (shop) — hatlar 3 turga (category) bo'linadi. Har turning narxi va
+#  do'kon menyusidagi ikonasi shu yerda. Har bir hatning qaysi turda turishi
+#  pastdagi "hats:" bo'limida har hatning "category:" maydonida belgilanadi —
+#  uni erkin o'zgartirishingiz mumkin (uncommon / rare / legendary).
+#
+#  Sotib olish: kumushga (silver) sotiladi YOKI scorepvp.hat.<id> / scorepvp.hats.all
+#  ruxsati bo'lsa bepul ochiq. Sotib olingach hat DB'da saqlanadi (player_hats).
+# ─────────────────────────────────────────────────────────────────────────────
+shop:
+  title: "&8Shlyapalar do'koni"
+  # Do'kon menyusidagi 3 category tugmasi turadigan slotlar (mockupdagi 3,4,5).
+  filler-material: BLACK_STAINED_GLASS_PANE
+  # Pastki boshqaruv qatori
+  exit-slot: 49
+  exit-name: "&c&lChiqish"
+  prev-slot: 48
+  prev-name: "&e&l« Oldingi sahifa"
+  next-slot: 50
+  next-name: "&e&lKeyingi sahifa »"
+  # Prev/next tugmalarining custom_model_data qiymati (resurs paketdagi
+  # ARROW modellari): 9002 = chapga (oldingi), 9001 = o'ngga (keyingi).
+  # 0 qoldirsangiz oddiy vanilla ARROW ko'rinadi.
+  prev-custom-model-data: 9002
+  next-custom-model-data: 9001
+  # Hat ikonalari joylashadigan slotlar (0..44). Category tugmalari ustidagilar
+  # bundan chiqarib tashlanadi.
+  lore-equipped: "&a&l✔ O'rnatilgan"
+  lore-owned: "&7O'rnatish uchun bosing"
+  lore-locked: "&cSotib olinmagan"
+  lore-price: "&7Narxi: &f{price} &7kumush"
+  # Sotib olish tasdiq oynasi (nishondek)
+  confirm-title: "&8Sotib olishni tasdiqlang"
+  confirm-cancel: "&c&lBekor qilish"
+  confirm-info: "&e{hat}"
+  confirm-price: "&7Narxi: &f{price} &7kumush"
+  confirm-accept: "&a&lSotib olish"
+  # Xabarlar
+  bought: "&aSiz &6{hat}&a shlyapasini sotib oldingiz!"
+  not-enough: "&cKumush yetarli emas! Kerak: &f{price}&c."
+  equipped: "&aSiz &6{hat}&a shlyapasini o'rnatdingiz!"
+
+# Uch tur (category). slot = do'kon menyusidagi ikona joyi (mockup: 3,4,5).
+# price = shu turdagi HAR hatning narxi.
+# preview-hat = shu tur tugmasi qaysi shlyapa modelini ko'rsatishi (pastdagi
+#   "hats:" dan biror id). Bo'sh qoldirsangiz "icon" materiali ishlatiladi.
+# icon = preview-hat bo'sh bo'lsa ishlatiladigan zaxira material.
+categories:
+  uncommon:
+    display-name: "&f&lOddiy"
+    price: 1500
+    preview-hat: king_crown
+    icon: IRON_INGOT
+    slot: 3
+  rare:
+    display-name: "&b&lKamyob"
+    price: 2500
+    preview-hat: warden_horns
+    icon: GOLD_INGOT
+    slot: 4
+  legendary:
+    display-name: "&6&lAfsonaviy"
+    price: 5000
+    preview-hat: artemis_crown
+    icon: DIAMOND
+    slot: 5
+
+hats:
+  class_hats_farmer_hat:
+    display-name: "&fFarmer Hat"
+    custom-model-data: 1
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  class_hats_miner_helmet:
+    display-name: "&fMiner Helmet"
+    custom-model-data: 2
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  class_hats_warrior_helmet:
+    display-name: "&fWarrior Helmet"
+    custom-model-data: 3
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  king_crown:
+    display-name: "&fKing Crown"
+    custom-model-data: 4
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  chainsaw_head:
+    display-name: "&fChainsaw Head"
+    custom-model-data: 5
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  3d_glasses:
+    display-name: "&f3d Glasses"
+    custom-model-data: 6
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  cat_hat:
+    display-name: "&fCat Hat"
+    custom-model-data: 9
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  clown_hat:
+    display-name: "&fClown Hat"
+    custom-model-data: 10
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  cowboy_hat:
+    display-name: "&fCowboy Hat"
+    custom-model-data: 11
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  dragon_hat:
+    display-name: "&fDragon Hat"
+    custom-model-data: 12
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  class_hats_looter_hat:
+    display-name: "&fLooter Hat"
+    custom-model-data: 13
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  frog_bucket_hat:
+    display-name: "&fFrog Bucket Hat"
+    custom-model-data: 14
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  gamer_headphones:
+    display-name: "&fGamer Headphones"
+    custom-model-data: 15
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  glow_squid_hat:
+    display-name: "&fGlow Squid Hat"
+    custom-model-data: 16
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  spartan_helmet:
+    display-name: "&fSpartan Helmet"
+    custom-model-data: 17
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  halo:
+    display-name: "&fHalo"
+    custom-model-data: 18
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  class_hats_archer_hood:
+    display-name: "&fArcher Hood"
+    custom-model-data: 19
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  panda_hat:
+    display-name: "&fPanda Hat"
+    custom-model-data: 20
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  penguin_hat:
+    display-name: "&fPenguin Hat"
+    custom-model-data: 21
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  pharaoh_hat:
+    display-name: "&fPharaoh Hat"
+    custom-model-data: 22
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  pirate_hat:
+    display-name: "&fPirate Hat"
+    custom-model-data: 23
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  propeller_hat:
+    display-name: "&fPropeller Hat"
+    custom-model-data: 24
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  scuba_gear:
+    display-name: "&fScuba Gear"
+    custom-model-data: 25
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  default_helmet:
+    display-name: "&fDefault Helmet"
+    custom-model-data: 26
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  tiki_head:
+    display-name: "&fTiki Head"
+    custom-model-data: 27
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  wizard_hat:
+    display-name: "&fWizard Hat"
+    custom-model-data: 28
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  wolf_hat:
+    display-name: "&fWolf Hat"
+    custom-model-data: 29
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  knight_helmet:
+    display-name: "&fKnight Helmet"
+    custom-model-data: 31
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  mushroom_hat:
+    display-name: "&fMushroom Hat"
+    custom-model-data: 34
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  shark_hat:
+    display-name: "&fShark Hat"
+    custom-model-data: 35
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  samurai_helmet:
+    display-name: "&fSamurai Helmet"
+    custom-model-data: 36
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  cyberpunk_hat:
+    display-name: "&fCyberpunk Hat"
+    custom-model-data: 38
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  meme_sunglasses:
+    display-name: "&fMeme Sunglasses"
+    custom-model-data: 39
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  beta_tester_helmet:
+    display-name: "&fBeta Tester Helmet"
+    custom-model-data: 40
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  dimmadome_hat:
+    display-name: "&fDimmadome Hat"
+    custom-model-data: 41
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  throir_goggles:
+    display-name: "&fThroir Goggles"
+    custom-model-data: 42
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  astronaut_helmet:
+    display-name: "&fAstronaut Helmet"
+    custom-model-data: 43
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  burger_hat:
+    display-name: "&fBurger Hat"
+    custom-model-data: 44
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  frankenstein_head:
+    display-name: "&fFrankenstein Head"
+    custom-model-data: 45
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  chef_hat:
+    display-name: "&fChef Hat"
+    custom-model-data: 46
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  jack_o_lantern_hat:
+    display-name: "&fJack O Lantern Hat"
+    custom-model-data: 47
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  killer_mask:
+    display-name: "&fKiller Mask"
+    custom-model-data: 48
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  king_frog:
+    display-name: "&fKing Frog"
+    custom-model-data: 49
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  plague_doctor_mask:
+    display-name: "&fPlague Doctor Mask"
+    custom-model-data: 50
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  sombrero:
+    display-name: "&fSombrero"
+    custom-model-data: 51
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  trapper_hat:
+    display-name: "&fTrapper Hat"
+    custom-model-data: 52
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  gingerbread_mask:
+    display-name: "&fGingerbread Mask"
+    custom-model-data: 94
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  krampus_head:
+    display-name: "&fKrampus Head"
+    custom-model-data: 95
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  reindeer_antlers:
+    display-name: "&fReindeer Antlers"
+    custom-model-data: 97
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  santa_hat:
+    display-name: "&fSanta Hat"
+    custom-model-data: 98
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  snowman_head:
+    display-name: "&fSnowman Head"
+    custom-model-data: 99
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  jester_hat:
+    display-name: "&fJester Hat"
+    custom-model-data: 100
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  elf_hat:
+    display-name: "&fElf Hat"
+    custom-model-data: 101
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  frostbite_helmet:
+    display-name: "&fFrostbite Helmet"
+    custom-model-data: 102
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  alien_head_muncher:
+    display-name: "&fAlien Head Muncher"
+    custom-model-data: 105
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  drink_hat_number_1:
+    display-name: "&fDrink Hat Number 1"
+    custom-model-data: 107
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  taco_hat:
+    display-name: "&fTaco Hat"
+    custom-model-data: 109
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  top_hat:
+    display-name: "&fTop Hat"
+    custom-model-data: 111
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  pufferfish_hat:
+    display-name: "&fPufferfish Hat"
+    custom-model-data: 113
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  cupid_arrow_headband:
+    display-name: "&fCupid Arrow Headband"
+    custom-model-data: 114
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  flamingo_hat:
+    display-name: "&fFlamingo Hat"
+    custom-model-data: 116
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  flower_crown:
+    display-name: "&fFlower Crown"
+    custom-model-data: 118
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  heart_glasses:
+    display-name: "&fHeart Glasses"
+    custom-model-data: 120
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  heart_headband:
+    display-name: "&fHeart Headband"
+    custom-model-data: 122
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  valentines_bear_hat:
+    display-name: "&fValentines Bear Hat"
+    custom-model-data: 124
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  sunflower_hat:
+    display-name: "&fSunflower Hat"
+    custom-model-data: 127
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  cat_ears:
+    display-name: "&fCat Ears"
+    custom-model-data: 129
+    category: uncommon
+    icon-material: COAL
+    lore: []
+  valentines_knight:
+    display-name: "&fValentines Knight"
+    custom-model-data: 131
+    category: rare
+    icon-material: COAL
+    lore: []
+  valentines_warrior:
+    display-name: "&fValentines Warrior"
+    custom-model-data: 133
+    category: rare
+    icon-material: COAL
+    lore: []
+  sculk_monster_mouth:
+    display-name: "&fSculk Monster Mouth"
+    custom-model-data: 135
+    category: rare
+    icon-material: COAL
+    lore: []
+  sculk_creeper_hat:
+    display-name: "&fSculk Creeper Hat"
+    custom-model-data: 137
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_horns:
+    display-name: "&fWarden Horns"
+    custom-model-data: 139
+    category: rare
+    icon-material: COAL
+    lore: []
+  baby_warden_hat:
+    display-name: "&fBaby Warden Hat"
+    custom-model-data: 141
+    category: rare
+    icon-material: COAL
+    lore: []
+  giant_warden_head:
+    display-name: "&fGiant Warden Head"
+    custom-model-data: 143
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_bucket_hat:
+    display-name: "&fWarden Bucket Hat"
+    custom-model-data: 145
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_crown:
+    display-name: "&fWarden Crown"
+    custom-model-data: 147
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_knight_helmet:
+    display-name: "&fWarden Knight Helmet"
+    custom-model-data: 149
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_warriors_helmet:
+    display-name: "&fWarden Warriors Helmet"
+    custom-model-data: 151
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_wizard_hat:
+    display-name: "&fWarden Wizard Hat"
+    custom-model-data: 153
+    category: rare
+    icon-material: COAL
+    lore: []
+  warden_sculk_crown:
+    display-name: "&fWarden Sculk Crown"
+    custom-model-data: 155
+    category: rare
+    icon-material: COAL
+    lore: []
+  clam_crown:
+    display-name: "&fClam Crown"
+    custom-model-data: 157
+    category: rare
+    icon-material: COAL
+    lore: []
+  serpant_helmet:
+    display-name: "&fSerpant Helmet"
+    custom-model-data: 159
+    category: rare
+    icon-material: COAL
+    lore: []
+  scuba_helmet:
+    display-name: "&fScuba Helmet"
+    custom-model-data: 161
+    category: rare
+    icon-material: COAL
+    lore: []
+  octopus_hat:
+    display-name: "&fOctopus Hat"
+    custom-model-data: 163
+    category: rare
+    icon-material: COAL
+    lore: []
+  hotdog_hat:
+    display-name: "&fHotdog Hat"
+    custom-model-data: 165
+    category: rare
+    icon-material: COAL
+    lore: []
+  tv_head:
+    display-name: "&fTv Head"
+    custom-model-data: 167
+    category: rare
+    icon-material: COAL
+    lore: []
+  graduation_cap:
+    display-name: "&fGraduation Cap"
+    custom-model-data: 169
+    category: rare
+    icon-material: COAL
+    lore: []
+  kitty_headset:
+    display-name: "&fKitty Headset"
+    custom-model-data: 171
+    category: rare
+    icon-material: COAL
+    lore: []
+  plunger_hat:
+    display-name: "&fPlunger Hat"
+    custom-model-data: 173
+    category: rare
+    icon-material: COAL
+    lore: []
+  axolotl_cap:
+    display-name: "&fAxolotl Cap"
+    custom-model-data: 175
+    category: rare
+    icon-material: COAL
+    lore: []
+  box_hat:
+    display-name: "&fBox Hat"
+    custom-model-data: 177
+    category: rare
+    icon-material: COAL
+    lore: []
+  qa_wrench_hat:
+    display-name: "&fQa Wrench Hat"
+    custom-model-data: 179
+    category: rare
+    icon-material: COAL
+    lore: []
+  shark_fin:
+    display-name: "&fShark Fin"
+    custom-model-data: 181
+    category: rare
+    icon-material: COAL
+    lore: []
+  translator_globe:
+    display-name: "&fTranslator Globe"
+    custom-model-data: 183
+    category: rare
+    icon-material: COAL
+    lore: []
+  ram_horns:
+    display-name: "&fRam Horns"
+    custom-model-data: 185
+    category: rare
+    icon-material: COAL
+    lore: []
+  banana_hat:
+    display-name: "&fBanana Hat"
+    custom-model-data: 188
+    category: rare
+    icon-material: COAL
+    lore: []
+  guardian_hat:
+    display-name: "&fGuardian Hat"
+    custom-model-data: 190
+    category: rare
+    icon-material: COAL
+    lore: []
+  jellyfish_hat:
+    display-name: "&fJellyfish Hat"
+    custom-model-data: 192
+    category: rare
+    icon-material: COAL
+    lore: []
+  valkyrie_helmet:
+    display-name: "&fValkyrie Helmet"
+    custom-model-data: 194
+    category: rare
+    icon-material: COAL
+    lore: []
+  nemo:
+    display-name: "&fNemo"
+    custom-model-data: 196
+    category: rare
+    icon-material: COAL
+    lore: []
+  angler_hat:
+    display-name: "&fAngler Hat"
+    custom-model-data: 198
+    category: rare
+    icon-material: COAL
+    lore: []
+  fisherman_hat:
+    display-name: "&fFisherman Hat"
+    custom-model-data: 200
+    category: rare
+    icon-material: COAL
+    lore: []
+  piglin_hat:
+    display-name: "&fPiglin Hat"
+    custom-model-data: 202
+    category: rare
+    icon-material: COAL
+    lore: []
+  red_devil_horns:
+    display-name: "&fRed Devil Horns"
+    custom-model-data: 204
+    category: rare
+    icon-material: COAL
+    lore: []
+  flaming_spartan_helmet:
+    display-name: "&fFlaming Spartan Helmet"
+    custom-model-data: 206
+    category: rare
+    icon-material: COAL
+    lore: []
+  flaming_skull:
+    display-name: "&fFlaming Skull"
+    custom-model-data: 208
+    category: rare
+    icon-material: COAL
+    lore: []
+  lava_hound:
+    display-name: "&fLava Hound"
+    custom-model-data: 210
+    category: rare
+    icon-material: COAL
+    lore: []
+  lava_witch_hat:
+    display-name: "&fLava Witch Hat"
+    custom-model-data: 212
+    category: rare
+    icon-material: COAL
+    lore: []
+  magma_cowboy_hat:
+    display-name: "&fMagma Cowboy Hat"
+    custom-model-data: 214
+    category: rare
+    icon-material: COAL
+    lore: []
+  nether_mushroom_hat:
+    display-name: "&fNether Mushroom Hat"
+    custom-model-data: 216
+    category: rare
+    icon-material: COAL
+    lore: []
+  gerald_hat:
+    display-name: "&fGerald Hat"
+    custom-model-data: 218
+    category: rare
+    icon-material: COAL
+    lore: []
+  shulker_hat:
+    display-name: "&fShulker Hat"
+    custom-model-data: 220
+    category: rare
+    icon-material: COAL
+    lore: []
+  turkey_hat:
+    display-name: "&fTurkey Hat"
+    custom-model-data: 222
+    category: rare
+    icon-material: COAL
+    lore: []
+  brain_jar:
+    display-name: "&fBrain Jar"
+    custom-model-data: 224
+    category: rare
+    icon-material: COAL
+    lore: []
+  breather_mask:
+    display-name: "&fBreather Mask"
+    custom-model-data: 226
+    category: rare
+    icon-material: COAL
+    lore: []
+  cookie_hat:
+    display-name: "&fCookie Hat"
+    custom-model-data: 228
+    category: rare
+    icon-material: COAL
+    lore: []
+  corrupted_enderman_skull:
+    display-name: "&fCorrupted Enderman Skull"
+    custom-model-data: 230
+    category: rare
+    icon-material: COAL
+    lore: []
+  ender_miner_hat:
+    display-name: "&fEnder Miner Hat"
+    custom-model-data: 232
+    category: rare
+    icon-material: COAL
+    lore: []
+  enderman_top_hat:
+    display-name: "&fEnderman Top Hat"
+    custom-model-data: 234
+    category: rare
+    icon-material: COAL
+    lore: []
+  gas_mask:
+    display-name: "&fGas Mask"
+    custom-model-data: 236
+    category: rare
+    icon-material: COAL
+    lore: []
+  night_vision_goggles:
+    display-name: "&fNight Vision Goggles"
+    custom-model-data: 238
+    category: rare
+    icon-material: COAL
+    lore: []
+  pylon_hat:
+    display-name: "&fPylon Hat"
+    custom-model-data: 240
+    category: rare
+    icon-material: COAL
+    lore: []
+  sunflower_crown:
+    display-name: "&fSunflower Crown"
+    custom-model-data: 242
+    category: rare
+    icon-material: COAL
+    lore: []
+  toothful_hat:
+    display-name: "&fToothful Hat"
+    custom-model-data: 244
+    category: rare
+    icon-material: COAL
+    lore: []
+  unicorn_hat:
+    display-name: "&fUnicorn Hat"
+    custom-model-data: 246
+    category: rare
+    icon-material: COAL
+    lore: []
+  cyber_dragon_hat:
+    display-name: "&fCyber Dragon Hat"
+    custom-model-data: 248
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_1:
+    display-name: "&fElite Warrior Helmet 1"
+    custom-model-data: 250
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_2:
+    display-name: "&fElite Warrior Helmet 2"
+    custom-model-data: 251
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_3:
+    display-name: "&fElite Warrior Helmet 3"
+    custom-model-data: 252
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_4:
+    display-name: "&fElite Warrior Helmet 4"
+    custom-model-data: 253
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_5:
+    display-name: "&fElite Warrior Helmet 5"
+    custom-model-data: 254
+    category: rare
+    icon-material: COAL
+    lore: []
+  elite_warrior_helmet_6:
+    display-name: "&fElite Warrior Helmet 6"
+    custom-model-data: 255
+    category: rare
+    icon-material: COAL
+    lore: []
+  crocodile_hat:
+    display-name: "&fCrocodile Hat"
+    custom-model-data: 256
+    category: rare
+    icon-material: COAL
+    lore: []
+  football_helmet:
+    display-name: "&fFootball Helmet"
+    custom-model-data: 258
+    category: rare
+    icon-material: COAL
+    lore: []
+  nemean_mane:
+    display-name: "&fNemean Mane"
+    custom-model-data: 260
+    category: legendary
+    icon-material: COAL
+    lore: []
+  toque:
+    display-name: "&fToque"
+    custom-model-data: 262
+    category: legendary
+    icon-material: COAL
+    lore: []
+  artemis_crown:
+    display-name: "&fArtemis Crown"
+    custom-model-data: 264
+    category: legendary
+    icon-material: COAL
+    lore: []
+  corinthian_helm:
+    display-name: "&fCorinthian Helm"
+    custom-model-data: 266
+    category: legendary
+    icon-material: COAL
+    lore: []
+  golden_headpiece:
+    display-name: "&fGolden Headpiece"
+    custom-model-data: 268
+    category: legendary
+    icon-material: COAL
+    lore: []
+  laurel_wreath:
+    display-name: "&fLaurel Wreath"
+    custom-model-data: 270
+    category: legendary
+    icon-material: COAL
+    lore: []
+  zeus_bolt:
+    display-name: "&fZeus Bolt"
+    custom-model-data: 272
+    category: legendary
+    icon-material: COAL
+    lore: []
+  aviator_cap:
+    display-name: "&fAviator Cap"
+    custom-model-data: 274
+    category: legendary
+    icon-material: COAL
+    lore: []
+  dingle_mask:
+    display-name: "&fDingle Mask"
+    custom-model-data: 276
+    category: legendary
+    icon-material: COAL
+    lore: []
+  steampunk_hat:
+    display-name: "&fSteampunk Hat"
+    custom-model-data: 278
+    category: legendary
+    icon-material: COAL
+    lore: []
+  wolf_fur_hat:
+    display-name: "&fWolf Fur Hat"
+    custom-model-data: 280
+    category: legendary
+    icon-material: COAL
+    lore: []
+  sailor_cap:
+    display-name: "&fSailor Cap"
+    custom-model-data: 282
+    category: legendary
+    icon-material: COAL
+    lore: []
+  rainbow_earmuffs:
+    display-name: "&fRainbow Earmuffs"
+    custom-model-data: 284
+    category: legendary
+    icon-material: COAL
+    lore: []
+  viking_beard:
+    display-name: "&fViking Beard"
+    custom-model-data: 286
+    category: legendary
+    icon-material: COAL
+    lore: []
+  medusa_hat:
+    display-name: "&fMedusa Hat"
+    custom-model-data: 288
+    category: legendary
+    icon-material: COAL
+    lore: []
+  ash_hat:
+    display-name: "&fAsh Hat"
+    custom-model-data: 290
+    category: legendary
+    icon-material: COAL
+    lore: []
+  cute_bow:
+    display-name: "&fCute Bow"
+    custom-model-data: 292
+    category: legendary
+    icon-material: COAL
+    lore: []
+  twitch_cap:
+    display-name: "&fTwitch Cap"
+    custom-model-data: 294
+    category: legendary
+    icon-material: COAL
+    lore: []
+  beanie:
+    display-name: "&fBeanie"
+    custom-model-data: 295
+    category: legendary
+    icon-material: COAL
+    lore: []
+  egg_hat:
+    display-name: "&fEgg Hat"
+    custom-model-data: 297
+    category: legendary
+    icon-material: COAL
+    lore: []
+  hat_hat:
+    display-name: "&fHat Hat"
+    custom-model-data: 299
+    category: legendary
+    icon-material: COAL
+    lore: []
+  pine_cap:
+    display-name: "&fPine Cap"
+    custom-model-data: 301
+    category: legendary
+    icon-material: COAL
+    lore: []
+  pot_hat:
+    display-name: "&fPot Hat"
+    custom-model-data: 303
+    category: legendary
+    icon-material: COAL
+    lore: []
+  straw_hat:
+    display-name: "&fStraw Hat"
+    custom-model-data: 305
+    category: legendary
+    icon-material: COAL
+    lore: []
+  bat_hat:
+    display-name: "&fBat Hat"
+    custom-model-data: 307
+    category: legendary
+    icon-material: COAL
+    lore: []
+  axe_hat:
+    display-name: "&fAxe Hat"
+    custom-model-data: 309
+    category: legendary
+    icon-material: COAL
+    lore: []
+  eyeball_hat:
+    display-name: "&fEyeball Hat"
+    custom-model-data: 311
+    category: legendary
+    icon-material: COAL
+    lore: []
+  mummy_mask:
+    display-name: "&fMummy Mask"
+    custom-model-data: 313
+    category: legendary
+    icon-material: COAL
+    lore: []
+  pumpkin_headband:
+    display-name: "&fPumpkin Headband"
+    custom-model-data: 315
+    category: legendary
+    icon-material: COAL
+    lore: []
+  scream_mask:
+    display-name: "&fScream Mask"
+    custom-model-data: 317
+    category: legendary
+    icon-material: COAL
+    lore: []
+  spider_hat:
+    display-name: "&fSpider Hat"
+    custom-model-data: 319
+    category: legendary
+    icon-material: COAL
+    lore: []
+  1year_cake_hat:
+    display-name: "&f1year Cake Hat"
+    custom-model-data: 321
+    category: legendary
+    icon-material: COAL
+    lore: []
+  bat_wings_hat:
+    display-name: "&fBat Wings Hat"
+    custom-model-data: 323
+    category: legendary
+    icon-material: COAL
+    lore: []
+  camera_hat:
+    display-name: "&fCamera Hat"
+    custom-model-data: 325
+    category: legendary
+    icon-material: COAL
+    lore: []
+  vr_headset:
+    display-name: "&fVr Headset"
+    custom-model-data: 327
+    category: legendary
+    icon-material: COAL
+    lore: []
+  snowstorm_helm:
+    display-name: "&fSnowstorm Helm"
+    custom-model-data: 329
+    category: legendary
+    icon-material: COAL
+    lore: []
+  slime_control:
+    display-name: "&fSlime Control"
+    custom-model-data: 331
+    category: legendary
+    icon-material: COAL
+    lore: []
+  silly_glasses:
+    display-name: "&fSilly Glasses"
+    custom-model-data: 333
+    category: legendary
+    icon-material: COAL
+    lore: []
+  pirate_polly:
+    display-name: "&fPirate Polly"
+    custom-model-data: 335
+    category: legendary
+    icon-material: COAL
+    lore: []
+  piranha_troubles:
+    display-name: "&fPiranha Troubles"
+    custom-model-data: 337
+    category: legendary
+    icon-material: COAL
+    lore: []
+  idiot_sandwich:
+    display-name: "&fIdiot Sandwich"
+    custom-model-data: 339
+    category: legendary
+    icon-material: COAL
+    lore: []
+  ice_crown:
+    display-name: "&fIce Crown"
+    custom-model-data: 341
+    category: legendary
+    icon-material: COAL
+    lore: []
+  heart_eyes_emoji:
+    display-name: "&fHeart Eyes Emoji"
+    custom-model-data: 343
+    category: legendary
+    icon-material: COAL
+    lore: []
+  gnome_rider:
+    display-name: "&fGnome Rider"
+    custom-model-data: 345
+    category: legendary
+    icon-material: COAL
+    lore: []
+  cool_can:
+    display-name: "&fCool Can"
+    custom-model-data: 347
+    category: legendary
+    icon-material: COAL
+    lore: []
+  baby_skeleton_rider:
+    display-name: "&fBaby Skeleton Rider"
+    custom-model-data: 349
+    category: legendary
+    icon-material: COAL
+    lore: []
+  balance_act:
+    display-name: "&fBalance Act"
+    custom-model-data: 351
+    category: legendary
+    icon-material: COAL
+    lore: []
+  bee_goggles:
+    display-name: "&fBee Goggles"
+    custom-model-data: 353
+    category: legendary
+    icon-material: COAL
+    lore: []
+  brick_cap:
+    display-name: "&fBrick Cap"
+    custom-model-data: 355
+    category: legendary
+    icon-material: COAL
+    lore: []
+  booksmart_hat:
+    display-name: "&fBooksmart Hat"
+    custom-model-data: 357
+    category: legendary
+    icon-material: COAL
+    lore: []
+  cactus_cap:
+    display-name: "&fCactus Cap"
+    custom-model-data: 359
+    category: legendary
+    icon-material: COAL
+    lore: []
+  cool_glasses:
+    display-name: "&fCool Glasses"
+    custom-model-data: 361
+    category: legendary
+    icon-material: COAL
+    lore: []
+  cornucopia_hat:
+    display-name: "&fCornucopia Hat"
+    custom-model-data: 363
+    category: legendary
+    icon-material: COAL
+    lore: []
+  creeper_fossil:
+    display-name: "&fCreeper Fossil"
+    custom-model-data: 365
+    category: legendary
+    icon-material: COAL
+    lore: []
+  fishbowl:
+    display-name: "&fFishbowl"
+    custom-model-data: 367
+    category: legendary
+    icon-material: COAL
+    lore: []
+  gearhead:
+    display-name: "&fGearhead"
+    custom-model-data: 369
+    category: legendary
+    icon-material: COAL
+    lore: []
+  honeycomb_headphones:
+    display-name: "&fHoneycomb Headphones"
+    custom-model-data: 371
+    category: legendary
+    icon-material: COAL
+    lore: []
+  chill_out:
+    display-name: "&fChill Out"
+    custom-model-data: 373
+    category: legendary
+    icon-material: COAL
+    lore: []
+  immortal_snail:
+    display-name: "&fImmortal Snail"
+    custom-model-data: 375
+    category: legendary
+    icon-material: COAL
+    lore: []
+  mimic_hat:
+    display-name: "&fMimic Hat"
+    custom-model-data: 377
+    category: legendary
+    icon-material: COAL
+    lore: []
+  pincushion:
+    display-name: "&fPincushion"
+    custom-model-data: 379
+    category: legendary
+    icon-material: COAL
+    lore: []
+  w_cap:
+    display-name: "&fW Cap"
+    custom-model-data: 381
+    category: legendary
+    icon-material: COAL
+    lore: []
+  umbrella_hat:
+    display-name: "&fUmbrella Hat"
+    custom-model-data: 383
+    category: legendary
+    icon-material: COAL
+    lore: []
+  stonehead:
+    display-name: "&fStonehead"
+    custom-model-data: 385
+    category: legendary
+    icon-material: COAL
+    lore: []
+  heart_crown:
+    display-name: "&fHeart Crown"
+    custom-model-data: 409
+    category: legendary
+    icon-material: COAL
+    lore: []
+  kissy_face:
+    display-name: "&fKissy Face"
+    custom-model-data: 411
+    category: legendary
+    icon-material: COAL
+    lore: []
+  lovebird_helm:
+    display-name: "&fLovebird Helm"
+    custom-model-data: 413
+    category: legendary
+    icon-material: COAL
+    lore: []

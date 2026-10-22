@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  /tags  —  TierTag confirm (screen 2)
+#
+#  Shows your own skin head with the chosen mode's tier. Confirm saves the
+#  choice; cancel returns to the selector.
+#
+#  Placeholders:
+#    {mode}   — the chosen mode's display name
+#    {player} — your name
+#    {tier}   — your tier in that mode (colored)
+# ─────────────────────────────────────────────────────────────────────────────
+title: "&8TierTag"
+size: 27
+
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: " "
+  # Limit the background to specific slots (optional). Empty = fill everything.
+  slots: []
+
+info:
+  slot: 4
+  material: BAMBOO_HANGING_SIGN
+  name: "&7{mode} darajangiz:"
+
+head:
+  slot: 13
+  name: "&f{player} &7| {tier}"
+
+cancel:
+  slot: 11
+  material: RED_STAINED_GLASS_PANE
+  name: "&cBekor qilish ☒"
+
+accept:
+  slot: 15
+  material: LIME_STAINED_GLASS_PANE
+  name: "&aTasdiqlash ☑"

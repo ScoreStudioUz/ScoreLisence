@@ -1,0 +1,15 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Per-kit ender-chest storage (27 slots)
+#
+#  Each vanilla multi-kit carries its own 27-slot ender box. In the kit-editor
+#  room, right-click an ender chest (block or held item) to arrange it — closing
+#  the menu saves it to the kit. In a vanilla match, right-clicking the ender
+#  chest item opens a fresh copy of that saved box; items pulled out don't change
+#  the saved kit, so every round starts from the saved contents again.
+#
+#  Only the two titles are configurable (they route the listener). Keep them
+#  unique from other menus.
+# ─────────────────────────────────────────────────────────────────────────────
+
+edit-title: "&8Ender Sandiq › Tahrir"
+play-title: "&8Ender Sandiq"

@@ -40,6 +40,8 @@ import org.jetbrains.annotations.Nullable;
  *   %scorepvp_party_size%
  *   %scorepvp_party_leader%
  *   %scorepvp_friends_count%
+ *   %scorepvp_silver%                  e.g. 13500
+ *   %scorepvp_silver_formatted%        e.g. 13 500
  *
  * Top placeholders (global):
  *   %scorepvp_<mode>_top_wins_<n>%
@@ -104,14 +106,22 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         if (params.startsWith("winrate_"))       return resolveWinrate(player,  params.substring(8));
 
         return switch (params) {
-            case "playtime"       -> resolvePlaytime(player, false);
-            case "playtime_hours" -> resolvePlaytime(player, true);
-            case "status"         -> resolveStatus(player);
-            case "current_mode"   -> resolveCurrentMode(player);
-            case "party_size"     -> resolvePartySize(player);
-            case "party_leader"   -> resolvePartyLeader(player);
-            case "friends_count"  -> String.valueOf(plugin.getFriendsManager().getFriendCount(player.getUniqueId()));
-            default               -> unknown;
+            case "playtime"          -> resolvePlaytime(player, false);
+            case "playtime_hours"    -> resolvePlaytime(player, true);
+            case "status"            -> resolveStatus(player);
+            case "current_mode"      -> resolveCurrentMode(player);
+            case "party_size"        -> resolvePartySize(player);
+            case "party_leader"      -> resolvePartyLeader(player);
+            case "friends_count"     -> String.valueOf(plugin.getFriendsManager().getFriendCount(player.getUniqueId()));
+            case "spectator_prefix"  -> resolveSpectatorPrefix(player);
+            case "is_spectator"      -> plugin.getMatchManager().isSpectating(player.getUniqueId()) ? "true" : "false";
+            case "golden_head_cooldown"      -> resolveGoldenHeadCooldown(player, false);
+            case "golden_head_cooldown_secs" -> resolveGoldenHeadCooldown(player, true);
+            case "silver"            -> String.valueOf(plugin.getSilverManager().get(player.getUniqueId()));
+            case "silver_formatted"  -> resolveSilverFormatted(player);
+            case "name"              -> plugin.getNameStyleManager().styledName(player);
+            case "nametag"           -> plugin.getNameStyleManager().tagPrefix(player);
+            default                  -> unknown;
         };
     }
 
@@ -201,24 +211,18 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         return (int) Math.round((double) wins / total * 100) + "%";
     }
 
-    /** Highest tier the player holds across all modes, ranked by configured tier order. */
+    /**
+     * The tier the player wants displayed. Respects their {@code /tags} choice
+     * (a specific mode's tier, even if lower) and otherwise falls back to the
+     * highest tier across all modes.
+     */
     private String resolveHighestTier(Player p, boolean raw) {
-        var tiers = plugin.getTierManager().getAllTiers(p.getUniqueId());
-        var order = plugin.getConfigManager().getTierOrder();
-        String best = null;
-        String bestMode = null;
-        int bestIdx = -1;
-        for (var e : tiers.entrySet()) {
-            String tier = e.getValue();
-            if (tier == null || tier.isBlank()) continue;
-            int idx = order.indexOf(tier);
-            if (idx > bestIdx) { bestIdx = idx; best = tier; bestMode = e.getKey(); }
-        }
-        if (best == null) return plugin.getConfigManager().rawStr("profile.unranked");
-        if (raw) return best;
-        // Color the highest tier using the colors of the mode it came from, so
-        // the lobby/tab badge matches that mode's gradient.
-        return plugin.getConfigManager().getTierDisplay(best, bestMode);
+        String[] disp = plugin.getTierManager().getDisplayTier(p.getUniqueId());
+        if (disp == null) return plugin.getConfigManager().rawStr("profile.unranked");
+        if (raw) return disp[0];
+        // Color the tier using the colors of the mode it came from, so the
+        // lobby/tab badge matches that mode's gradient.
+        return plugin.getConfigManager().getTierDisplay(disp[0], disp[1]);
     }
 
     private String resolvePlaytime(Player p, boolean hoursOnly) {
@@ -237,6 +241,38 @@ public class ScorePvPExpansion extends PlaceholderExpansion {
         if (plugin.getMatchManager().isInMatch(uuid))   return "spectating";
         if (plugin.getDuelManager().isInQueue(uuid))    return "in-queue";
         return "online";
+    }
+
+    /**
+     * Returns the configured spectator prefix when the player is currently
+     * spectating a match, or an EMPTY string otherwise (never {@link #unknown})
+     * so a chat format like {@code %scorepvp_spectator_prefix%%player_name%}
+     * shows nothing for non-spectators.
+     */
+    private String resolveSpectatorPrefix(Player p) {
+        if (!plugin.getConfig().getBoolean("spectator-chat.enabled", true)) return "";
+        if (!plugin.getMatchManager().isSpectating(p.getUniqueId())) return "";
+        String prefix = plugin.getConfig().getString("spectator-chat.prefix", "");
+        return com.scorepvp.util.ColorUtil.color(prefix);
+    }
+
+    /**
+     * Remaining golden-head cooldown for the player. When {@code secsOnly} is
+     * true returns the whole-second count ("0" when ready); otherwise returns a
+     * one-decimal value ("0.0" when ready). Cooldown is read live off the
+     * golden head's item cooldown (its base material).
+     */
+    private String resolveGoldenHeadCooldown(Player p, boolean secsOnly) {
+        int ticks = p.getCooldown(com.scorepvp.item.CustomItemRegistry.GOLDEN_HEAD_MATERIAL);
+        double sec = Math.max(0, ticks) / 20.0;
+        if (secsOnly) return Integer.toString((int) Math.ceil(sec));
+        return String.format(java.util.Locale.ROOT, "%.1f", sec);
+    }
+
+    /** Silver balance with a thousands separator, e.g. "13 500". */
+    private String resolveSilverFormatted(Player p) {
+        int bal = plugin.getSilverManager().get(p.getUniqueId());
+        return String.format(java.util.Locale.ROOT, "%,d", bal).replace(',', ' ');
     }
 
     private String resolveCurrentMode(Player p) {

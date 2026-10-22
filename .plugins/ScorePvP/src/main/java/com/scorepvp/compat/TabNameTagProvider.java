@@ -67,6 +67,9 @@ public class TabNameTagProvider implements NameTagProvider {
     /** playerUUID → last LOBBY suffix pushed. Skips redundant setSuffix packets. */
     private final Map<UUID, String> lastLobbySuffix = new HashMap<>();
 
+    /** playerUUID → last LOBBY prefix pushed. Skips redundant setPrefix packets. */
+    private final Map<UUID, String> lastLobbyPrefix = new HashMap<>();
+
     public TabNameTagProvider(ScorePvP plugin, LuckPermsHook luckPerms) {
         this.plugin = plugin;
         this.formatter = new NameTagFormatter(plugin, luckPerms);
@@ -80,7 +83,7 @@ public class TabNameTagProvider implements NameTagProvider {
 
         // The match owns the suffix now (forced to ""), so forget any lobby
         // suffix cache for these players — it must re-apply fresh after the match.
-        for (UUID uuid : match.getAllUuids()) lastLobbySuffix.remove(uuid);
+        for (UUID uuid : match.getAllUuids()) { lastLobbySuffix.remove(uuid); lastLobbyPrefix.remove(uuid); }
 
         Map<UUID, String[]> saved = new HashMap<>();
         String modeId = match.getMode().getId();
@@ -216,8 +219,9 @@ public class TabNameTagProvider implements NameTagProvider {
             }
         }
         lastBelowByPlayer.remove(id);
-        // Re-apply the lobby tier suffix next tick (the periodic task drives it).
+        // Re-apply the lobby tier prefix+suffix next tick (periodic task drives it).
         lastLobbySuffix.remove(id);
+        lastLobbyPrefix.remove(id);
     }
 
     @Override
@@ -247,8 +251,8 @@ public class TabNameTagProvider implements NameTagProvider {
                 }
             }
         }
-        // Re-apply lobby tier suffixes after the match (periodic task drives it).
-        for (UUID uuid : match.getAllUuids()) lastLobbySuffix.remove(uuid);
+        // Re-apply lobby tier prefix+suffix after the match (periodic task drives it).
+        for (UUID uuid : match.getAllUuids()) { lastLobbySuffix.remove(uuid); lastLobbyPrefix.remove(uuid); }
     }
 
     @Override
@@ -393,9 +397,10 @@ public class TabNameTagProvider implements NameTagProvider {
         // match override), so this restores the lobby nametag cleanly.
         ntm.setPrefix(tp, ntm.getOriginalPrefix(tp));
         ntm.setSuffix(tp, ntm.getOriginalSuffix(tp));
-        // Force the lobby suffix to re-apply on the next tick (we just blew it
-        // away) instead of being skipped by the diff check.
+        // Force the lobby prefix+suffix to re-apply on the next tick (we just blew
+        // them away) instead of being skipped by the diff check.
         lastLobbySuffix.remove(id);
+        lastLobbyPrefix.remove(id);
     }
 
     @Override
@@ -410,19 +415,45 @@ public class TabNameTagProvider implements NameTagProvider {
         TabPlayer tp = TabAPI.getInstance().getPlayer(player.getUniqueId());
         if (tp == null) return;
 
-        String suffix = buildLobbySuffix(player.getUniqueId());
+        UUID id = player.getUniqueId();
+
+        // Start from TAB's own configured prefix, never our match override: a
+        // duel prefix carries a tier/nick color and would otherwise stick to the
+        // nick in the lobby if teardown raced the restore.
+        String origPrefix = ntm.getOriginalPrefix(tp);
+        if (origPrefix == null) origPrefix = "";
+        // Append the player's /cosmetics name color so the lobby nametag above
+        // their head takes that color. A nametag prefix's trailing color bleeds
+        // into the nick itself, which is exactly what we want here. In a match
+        // the colors.yml color takes over instead (see NameTagFormatter).
+        String lobbyPrefix = origPrefix + formatter.lobbyNickColor(player);
+        String prevPrefix = lastLobbyPrefix.get(id);
+        if (!lobbyPrefix.equals(prevPrefix)) {
+            lastLobbyPrefix.put(id, lobbyPrefix);
+            ntm.setPrefix(tp, lobbyPrefix);
+        }
+
+        String suffix = buildLobbySuffix(id);
         // Only push a packet when the suffix actually changed — TAB's setSuffix
         // is a network write per call.
-        String prev = lastLobbySuffix.get(player.getUniqueId());
+        String prev = lastLobbySuffix.get(id);
         if (suffix.equals(prev)) return;
-        lastLobbySuffix.put(player.getUniqueId(), suffix);
+        lastLobbySuffix.put(id, suffix);
         ntm.setSuffix(tp, suffix);
     }
 
     /** "&7| HT1" (colored) or "" when the player has no tier / lobby disabled. */
     private String buildLobbySuffix(UUID uuid) {
-        String[] hi = plugin.getTierManager().getHighestTier(uuid);
-        if (hi == null) return "";
+        // TierTag is a permission-gated cosmetic: the tier only shows next to the
+        // nick in spawn/Tab for players who own the cosmetic.
+        org.bukkit.entity.Player pp = plugin.getServer().getPlayer(uuid);
+        if (pp == null || !pp.hasPermission("duels.cosmetics.tiertag")) return "";
+        String[] hi = plugin.getTierManager().getDisplayTier(uuid);
+        if (hi == null) {
+            String fmt = plugin.getConfig().getString("nametag.lobby-suffix-unranked", " &7| {tier}");
+            if (fmt == null || fmt.isEmpty()) return "";
+            return fmt.replace("{tier}", plugin.getConfigManager().rawStr("profile.unranked"));
+        }
         String tierDisplay = plugin.getConfigManager().getTierDisplay(hi[0], hi[1]);
         String fmt = plugin.getConfig().getString("nametag.lobby-suffix-format", " &7| {tier}");
         return fmt.replace("{tier}", tierDisplay);

@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 /**
  * Represents an active match between fighters (duel / queue / FFA).
  *
- * Duel mode: Play ALL N rounds. Winner is whoever has more wins at the end.
- *   (Section 6: do NOT end early at winsNeeded — play all rounds.)
+ * Duel mode: First-to-N. The match ends the moment one fighter reaches
+ *   {@code totalRounds} wins (e.g. totalRounds=3 → first player to 3 wins).
  * FFA mode:  All fighters fight until one remains.
  */
 public class Match {
@@ -36,6 +36,24 @@ public class Match {
     /** True when match ended by forfeit (disconnect). */
     private boolean forfeit = false;
 
+    /**
+     * True when the challenger opted into custom hats for THIS duel (the
+     * post-round-count opt-in menu). When set, a fighter who owns a cosmetic hat
+     * has that hat's model stamped onto their kit helmet; everyone else keeps the
+     * plain kit helmet. Only ever true for /duel matches — queue/FFA leave it false.
+     */
+    private boolean withHats = false;
+
+    /**
+     * Random per-match team assignment for the duel scoreboard. When true,
+     * fighter1 is the RED side and fighter2 is BLUE; when false the reverse.
+     * Coin-flipped once at construction so the colors aren't always the same
+     * player — each viewer still sees THEMSELVES in one fixed color and the
+     * opponent in the other via the scoreboard's %you_color%/%opp_color%.
+     * Nametags stay white regardless (no team tint on the nick).
+     */
+    private final boolean fighter1Red;
+
     // ── Duel constructor ───────────────────────────────────────────────────────
     public Match(Arena arena, PvPMode mode, int totalRounds, MatchPlayer f1, MatchPlayer f2) {
         this.arena       = arena;
@@ -45,6 +63,7 @@ public class Match {
         this.fighter2    = f2;
         this.ffa         = false;
         this.ffaFighters = null;
+        this.fighter1Red = java.util.concurrent.ThreadLocalRandom.current().nextBoolean();
     }
 
     // ── FFA constructor ────────────────────────────────────────────────────────
@@ -56,6 +75,18 @@ public class Match {
         this.fighter2     = null;
         this.ffa          = true;
         this.ffaFighters  = new ArrayList<>(fighters);
+        this.fighter1Red  = false; // unused for FFA
+    }
+
+    // ── Duel team colors (scoreboard only) ──────────────────────────────────────
+    /** True when fighter1 is the RED side this match (random per match). */
+    public boolean isFighter1Red() { return fighter1Red; }
+
+    /** True when the given fighter is on the RED side. */
+    public boolean isRed(UUID uuid) {
+        if (fighter1 != null && fighter1.getUuid().equals(uuid)) return fighter1Red;
+        if (fighter2 != null && fighter2.getUuid().equals(uuid)) return !fighter1Red;
+        return false;
     }
 
     // ── FFA queries ────────────────────────────────────────────────────────────
@@ -86,8 +117,8 @@ public class Match {
     // ── Rounds ────────────────────────────────────────────────────────────────
 
     /**
-     * Section 6: Match is finished when ALL rounds have been played.
-     * Winner is the one with more wins (not first to winsNeeded).
+     * Duel is first-to-N: finished as soon as either fighter reaches
+     * {@code totalRounds} wins. So totalRounds=3 means "first to win 3 rounds".
      *
      * For FFA: finished when only 1 alive fighter remains.
      * For forfeit: always finished immediately.
@@ -96,8 +127,8 @@ public class Match {
         if (ffa) {
             return getAliveFfaFighters().size() <= 1;
         }
-        // Duel: finished only when all rounds are played
-        return currentRound > totalRounds;
+        if (fighter1 == null || fighter2 == null) return true;
+        return fighter1.getWins() >= totalRounds || fighter2.getWins() >= totalRounds;
     }
 
     /**
@@ -208,6 +239,11 @@ public class Match {
     public boolean isForfeit()       { return forfeit; }
     public void    setForfeit(boolean b) { this.forfeit = b; }
 
+    // ── Duel hats opt-in ────────────────────────────────────────────────────────
+    /** True when this duel was created with the "custom hats" option enabled. */
+    public boolean isWithHats()          { return withHats; }
+    public void    setWithHats(boolean b) { this.withHats = b; }
+
     // ── Getters ───────────────────────────────────────────────────────────────
     public UUID    getMatchId()      { return matchId; }
     public long    getCreatedAt()    { return createdAt; }
@@ -222,6 +258,6 @@ public class Match {
     public int     getCurrentRound() { return currentRound; }
     public void    nextRound()       { currentRound++; }
 
-    /** Alias kept for compatibility with MatchManager logic. */
-    public int winsNeeded()          { return (totalRounds / 2) + 1; }
+    /** First-to-N: the number of round wins required to win the match. */
+    public int winsNeeded()          { return totalRounds; }
 }

@@ -39,6 +39,15 @@ public class MysqlTierStorage implements TierStorage {
         String pass = cfg.getString("password", "");
         int    pool = cfg.getInt("pool-size", 4);
         int    timeout = cfg.getInt("connection-timeout", 5000);
+        // The DB server drops idle connections after its own wait_timeout
+        // (alwaysdata's is short — ~60s idle → "No operations allowed after
+        // connection closed"). maxLifetime MUST be shorter than that, and
+        // keepaliveTime pings connections so they never sit idle long enough
+        // to be reaped. Both are configurable so a host with a longer server
+        // timeout can raise them.
+        long maxLifetime  = cfg.getLong("max-lifetime-ms", 60_000L);
+        long keepalive    = cfg.getLong("keepalive-ms", 30_000L);
+        long idleTimeout  = cfg.getLong("idle-timeout-ms", 45_000L);
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + db
@@ -48,6 +57,15 @@ public class MysqlTierStorage implements TierStorage {
         hc.setMaximumPoolSize(pool);
         hc.setConnectionTimeout(timeout);
         hc.setPoolName("ScorePvP-Tiers-MySQL");
+        // Recycle connections BEFORE the server closes them for being idle.
+        hc.setMaxLifetime(maxLifetime);
+        hc.setKeepaliveTime(keepalive);
+        hc.setIdleTimeout(idleTimeout);
+        hc.setMinimumIdle(1);
+        // Validate a connection right before handing it out, so a stale one is
+        // discarded and replaced instead of throwing "connection closed".
+        hc.setConnectionTestQuery("SELECT 1");
+        hc.setValidationTimeout(Math.min(timeout, 3000));
         this.ds = new HikariDataSource(hc);
 
         // Probe the pool — fail-fast so StorageService can fall back to SQLite.

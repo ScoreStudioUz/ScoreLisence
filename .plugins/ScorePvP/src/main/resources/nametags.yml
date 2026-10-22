@@ -1,0 +1,131 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Nishonlar (NameTags / badges) — nik oldidagi emoji
+#
+#  O'yinchi nik oldiga qo'yiladigan emoji/belgi (nishon) tanlaydi. Natijada nik
+#  HAMMA YERDA "(emoji) SHOXMONEY" ko'rinishida chiqadi.
+#
+#  Nishonlar KUMUSHga sotib olinadi. Sotib olingandan keyin bepul yoqiladi.
+#
+#  Har bir yozuv:
+#    <id>:
+#      name:        menyuda ko'rinadigan nom (odatda emoji rangli)
+#      tag:         nik oldiga qo'shiladigan matn/emoji (rang kodlari bilan)
+#      price:       narxi (kumush). 0 = bepul.
+#      slot:        nishonlar menyusidagi o'rni (0..53)
+#      permission:  (ixtiyoriy) — berilsa, bu nishon PUL to'lamasdan ochiq bo'ladi
+#      icon:        (ixtiyoriy) menyu ikonkasi — berilmasa emoji NAME_TAG da chiqadi
+#
+#  Emoji ko'rinishi uchun resource-pack/clientda mos shrift bo'lishi kerak.
+# ─────────────────────────────────────────────────────────────────────────────
+# Nik bilan emoji orasidagi ajratuvchi (tag dan keyin qo'shiladi).
+separator: " "
+
+# Rang tanlagich (name-color menu) shu nechta nishon olingandan keyin ochiladi.
+namecolor-unlock-after: 21
+
+badges:
+  fire:
+    name: "&6🔥"
+    tag: "&6🔥"
+    price: 500
+    slot: 10
+  bow:
+    name: "&5🏹"
+    tag: "&5🏹"
+    price: 500
+    slot: 11
+  sword:
+    name: "&6⚔"
+    tag: "&6⚔"
+    price: 500
+    slot: 12
+  star:
+    name: "&e⭐"
+    tag: "&e⭐"
+    price: 500
+    slot: 13
+  trident:
+    name: "&3🔱"
+    tag: "&3🔱"
+    price: 500
+    slot: 14
+  warning:
+    name: "&c⚠"
+    tag: "&c⚠"
+    price: 500
+    slot: 15
+  frown:
+    name: "&e☹"
+    tag: "&e☹"
+    price: 500
+    slot: 16
+  dagger:
+    name: "&b🗡"
+    tag: "&b🗡"
+    price: 500
+    slot: 19
+  comet:
+    name: "&b☄"
+    tag: "&b☄"
+    price: 500
+    slot: 20
+  heart:
+    name: "&4❤"
+    tag: "&4❤"
+    price: 500
+    slot: 21
+  axe:
+    name: "&2🪓"
+    tag: "&2🪓"
+    price: 500
+    slot: 22
+  umbrella:
+    name: "&9☂"
+    tag: "&9☂"
+    price: 500
+    slot: 23
+  sun:
+    name: "&6☀"
+    tag: "&6☀"
+    price: 500
+    slot: 24
+  bolt:
+    name: "&e⚡"
+    tag: "&e⚡"
+    price: 500
+    slot: 25
+  anchor:
+    name: "&d⚓"
+    tag: "&d⚓"
+    price: 500
+    slot: 28
+  pick:
+    name: "&b⛏"
+    tag: "&b⛏"
+    price: 500
+    slot: 29
+  moon:
+    name: "&9☽"
+    tag: "&9☽"
+    price: 500
+    slot: 30
+  note:
+    name: "&d♫"
+    tag: "&d♫"
+    price: 500
+    slot: 31
+  skull:
+    name: "&7☠"
+    tag: "&7☠"
+    price: 500
+    slot: 32
+  smile:
+    name: "&e☻"
+    tag: "&e☻"
+    price: 500
+    slot: 33
+  yinyang:
+    name: "&7☯"
+    tag: "&7☯"
+    price: 500
+    slot: 34

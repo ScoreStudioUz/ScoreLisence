@@ -23,11 +23,26 @@ public class MatchManager {
     private final Map<UUID, Match> byId            = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> countdownTasks = new ConcurrentHashMap<>();
 
+    /**
+     * Players whose match just ended but who are still awaiting the deferred
+     * "teleport to spawn + restore lobby hotbar" pass. They're already removed
+     * from byPlayer (so the match is fully detached), but they must NOT receive
+     * lobby items yet — the HotbarIntegrityTask skips anyone in this set so the
+     * spawn kit is only handed out AFTER they actually arrive at spawn (Bug 5).
+     */
+    private final Set<UUID> pendingSpawnTp = ConcurrentHashMap.newKeySet();
+
+    public boolean isPendingSpawnTeleport(UUID uuid) { return pendingSpawnTp.contains(uuid); }
+
     public MatchManager(ScorePvP plugin) { this.plugin = plugin; }
 
     // ── Factory ───────────────────────────────────────────────────────────────
 
     public Match createMatch(Arena arena, PvPMode mode, int rounds, Player p1, Player p2) {
+        return createMatch(arena, mode, rounds, p1, p2, false);
+    }
+
+    public Match createMatch(Arena arena, PvPMode mode, int rounds, Player p1, Player p2, boolean withHats) {
         // Guard: never put a player into a second match. Without this a queued
         // arena-search race could overwrite byPlayer and orphan the old match,
         // which is what produced the repeated "opponent left" win spam.
@@ -40,10 +55,13 @@ public class MatchManager {
         MatchPlayer mp1 = new MatchPlayer(p1.getUniqueId(), p1.getName(), MatchPlayer.Role.FIGHTER);
         MatchPlayer mp2 = new MatchPlayer(p2.getUniqueId(), p2.getName(), MatchPlayer.Role.FIGHTER);
         Match match = new Match(arena, mode, rounds, mp1, mp2);
+        match.setWithHats(withHats);
         byPlayer.put(p1.getUniqueId(), match);
         byPlayer.put(p2.getUniqueId(), match);
         byId.put(match.getMatchId(), match);
         startRound(match);
+        // Duel-only sidebar scoreboard (never FFA). Conflict-free with TAB.
+        plugin.getDuelScoreboardManager().show(match);
         return match;
     }
 
@@ -81,6 +99,7 @@ public class MatchManager {
             clearInventory(p);
             plugin.getHotbarManager().removeHotbar(p);
             plugin.getKitManager().giveKitByType(p, match.getMode().getKitType());
+            applyStartSaturation(p, match);
             safeTP(p, match.getArena().getCentre());
         }
 
@@ -195,17 +214,18 @@ public class MatchManager {
         // (closes the stale-FINISHED-match re-entry window that caused the
         // forfeit/auto-win spam spiral).
         java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
-        for (UUID uuid : participants) byPlayer.remove(uuid);
+        for (UUID uuid : participants) { byPlayer.remove(uuid); pendingSpawnTp.add(uuid); }
         byId.remove(match.getMatchId());
 
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             for (UUID uuid : participants) {
                 Player p = player(uuid);
-                if (p == null) continue;
+                if (p == null) { pendingSpawnTp.remove(uuid); continue; }
                 clearInventory(p);
                 resetFighter(p);
                 if (spawn != null) p.teleport(spawn);
+                pendingSpawnTp.remove(uuid);
                 boolean inParty = plugin.getPartyManager().isInParty(uuid);
                 if (inParty) plugin.getHotbarManager().updatePartySlot(p, true);
                 else         plugin.getHotbarManager().restoreHotbar(p);
@@ -264,6 +284,7 @@ public class MatchManager {
 
         resetFighter(p1); resetFighter(p2);
         giveKit(p1, match); giveKit(p2, match);
+        applyStartSaturation(p1, match); applyStartSaturation(p2, match);
         safeTP(p1, match.getArena().getPos1());
         safeTP(p2, match.getArena().getPos2());
 
@@ -336,6 +357,12 @@ public class MatchManager {
             broadcastToMatch(match, hpMsg);
         }
 
+        // Does this kill end the whole duel (first-to-N reached)? If so we skip
+        // the per-round "round finished" block entirely — endMatch sends the
+        // single "duel finished" message instead, so the winner doesn't get a
+        // round-win AND a duel-win banner stacked on the last round (Bug 2).
+        boolean matchFinished = match.isFinished();
+
         showTitle(player(dead.getUuid()),
                 plugin.getConfigManager().rawStr("match.round-loss"),
                 "&7" + match.getScoreFor(dead.getUuid()));
@@ -345,27 +372,30 @@ public class MatchManager {
 
         // Send round-finished block message — per-player rendering so we can
         // gate the accuracy/stats lines on permissions and embed a hoverable
-        // [посмотреть] component with each viewer's own stats tooltip.
+        // [посмотреть] component with each viewer's own stats tooltip. Only when
+        // the duel is NOT over yet (the final round shows duel-finished only).
         String killerHp = killerPlayer != null ? String.format("%.2f", killerPlayer.getHealth()) : "?";
-        for (UUID uuid : match.getAllUuids()) {
-            Player p = player(uuid);
-            if (p == null) continue;
-            // The "viewer" for the stats lines is the recipient themselves.
-            com.scorepvp.util.StatsMessageBuilder.sendRoundFinished(plugin, p,
-                    match.getMatchId(), uuid,
-                    match.getCurrentRound(),
-                    killer.getName(),
-                    killerHp,
-                    killer.getWins(),
-                    dead.getWins());
+        if (!matchFinished) {
+            for (UUID uuid : match.getAllUuids()) {
+                Player p = player(uuid);
+                if (p == null) continue;
+                // The "viewer" for the stats lines is the recipient themselves.
+                com.scorepvp.util.StatsMessageBuilder.sendRoundFinished(plugin, p,
+                        match.getMatchId(), uuid,
+                        match.getCurrentRound(),
+                        killer.getName(),
+                        killerHp,
+                        killer.getWins(),
+                        dead.getWins());
+            }
         }
 
         // Snapshot the round into history so totals() can average all rounds.
         plugin.getRoundStatsManager().rolloverRound(match.getMatchId());
 
-        // Play ALL rounds — only end when currentRound > totalRounds
+        // Advance the round counter, then end if first-to-N reached.
         match.nextRound();
-        if (match.isFinished()) {
+        if (matchFinished) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> endMatch(match, false),
                     plugin.getConfig().getLong("match.finish-delay-ticks", 60));
         } else {
@@ -412,6 +442,7 @@ public class MatchManager {
         match.getArena().setFree();
 
         plugin.getNameTagProvider().clearMatchNametags(match);
+        plugin.getDuelScoreboardManager().hide(match);
         // Arena cleanup (block-restore + drop wipe + projectiles) is deferred
         // to AFTER the players are teleported back to the lobby — see the
         // runTaskLater further down. Otherwise the blocks were popping back
@@ -486,17 +517,21 @@ public class MatchManager {
         // cleanup (inventory, teleport, arena restore) stays deferred so the
         // geometry doesn't pop under their feet during the victory title.
         java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
-        for (UUID uuid : participants) byPlayer.remove(uuid);
+        for (UUID uuid : participants) { byPlayer.remove(uuid); pendingSpawnTp.add(uuid); }
         byId.remove(match.getMatchId());
 
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             for (UUID uuid : participants) {
                 Player p = player(uuid);
-                if (p == null) continue;
+                if (p == null) { pendingSpawnTp.remove(uuid); continue; }
                 clearInventory(p);
                 resetFighter(p);
                 if (spawn != null) p.teleport(spawn);
+                // Only NOW that the player is at spawn do we hand back the lobby
+                // hotbar — clearing the pending guard first so the items land
+                // on a spawn-side player, never mid-arena (Bug 5).
+                pendingSpawnTp.remove(uuid);
                 boolean inParty = plugin.getPartyManager().isInParty(uuid);
                 if (inParty) plugin.getHotbarManager().updatePartySlot(p, true);
                 else         plugin.getHotbarManager().restoreHotbar(p);
@@ -529,6 +564,7 @@ public class MatchManager {
         match.getArena().setFree();
 
         plugin.getNameTagProvider().clearMatchNametags(match);
+        plugin.getDuelScoreboardManager().hide(match);
 
         // Announce the draw to everyone in the match.
         broadcastToMatch(match, plugin.getConfigManager().rawMsg("prefix")
@@ -539,17 +575,18 @@ public class MatchManager {
 
         // Detach synchronously (same rationale as endMatch).
         java.util.List<UUID> participants = new java.util.ArrayList<>(match.getAllUuids());
-        for (UUID uuid : participants) byPlayer.remove(uuid);
+        for (UUID uuid : participants) { byPlayer.remove(uuid); pendingSpawnTp.add(uuid); }
         byId.remove(match.getMatchId());
 
         Location spawn = plugin.getConfigManager().getTpSpawnLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             for (UUID uuid : participants) {
                 Player p = player(uuid);
-                if (p == null) continue;
+                if (p == null) { pendingSpawnTp.remove(uuid); continue; }
                 clearInventory(p);
                 resetFighter(p);
                 if (spawn != null) p.teleport(spawn);
+                pendingSpawnTp.remove(uuid);
                 if (plugin.getPartyManager().isInParty(uuid))
                     plugin.getHotbarManager().updatePartySlot(p, true);
                 else
@@ -591,6 +628,8 @@ public class MatchManager {
             match.getArena().setFree();
 
             try { plugin.getNameTagProvider().clearMatchNametags(match); }
+            catch (Throwable ignored) {}
+            try { plugin.getDuelScoreboardManager().hide(match); }
             catch (Throwable ignored) {}
 
             // Restore the arena before players are moved — synchronous, 1-tick.
@@ -670,6 +709,7 @@ public class MatchManager {
         try {
             plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, spec);
         } catch (Throwable ignored) { /* fallback: provider may not implement it */ }
+        plugin.getDuelScoreboardManager().hideFor(spec.getUniqueId());
 
         // Fully reset the player so nothing leaks from the match: hp, food,
         // potion effects, fire, invulnerability, walk/fly flags. Same set as
@@ -714,6 +754,7 @@ public class MatchManager {
                     try { plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, p); }
                     catch (Throwable ignored) {}
                 }
+                plugin.getDuelScoreboardManager().hideFor(uuid);
                 match.removeSpectator(uuid);
                 byPlayer.remove(uuid);
             }
@@ -728,10 +769,11 @@ public class MatchManager {
                     + " " + plugin.getConfigManager().rawMsg("match.player-left-duel",
                     "{player}", leaver.getName()));
 
-            // Force opponent to win all remaining rounds for stat purposes
+            // First-to-N: forfeiting hands the opponent the win outright —
+            // top them up to the wins target so the match is immediately finished.
             if (opponent != null) {
-                int remaining = match.getTotalRounds() - match.getCurrentRound() + 1;
-                for (int i = 0; i < remaining; i++) opponent.addWin();
+                int need = match.getTotalRounds() - opponent.getWins();
+                for (int i = 0; i < need; i++) opponent.addWin();
             }
             if (match.getState() == Match.State.RESTORING && match.getArena().isVanilla()) {
                 plugin.getArenaRestoreManager().manualRestore(match.getArena(), null);
@@ -743,6 +785,7 @@ public class MatchManager {
                 try { plugin.getNameTagProvider().clearMatchNametagsForPlayer(match, p); }
                 catch (Throwable ignored) {}
             }
+            plugin.getDuelScoreboardManager().hideFor(uuid);
             match.removeSpectator(uuid);
             byPlayer.remove(uuid);
         }
@@ -754,6 +797,12 @@ public class MatchManager {
     public Match   getMatchById(UUID matchId) { return byId.get(matchId); }
     public boolean isInMatch(UUID uuid)  { return byPlayer.containsKey(uuid); }
     public java.util.Collection<Match> getAllMatches() { return byId.values(); }
+
+    /** True when the player is attached to a match but is NOT one of its fighters. */
+    public boolean isSpectating(UUID uuid) {
+        Match m = byPlayer.get(uuid);
+        return m != null && !m.isFighter(uuid);
+    }
     public boolean isFighter(UUID uuid) {
         Match m = byPlayer.get(uuid);
         return m != null && m.isFighter(uuid);
@@ -765,6 +814,31 @@ public class MatchManager {
         if (p == null) return;
         plugin.getHotbarManager().removeHotbar(p);
         plugin.getKitManager().giveKitByType(p, match.getMode().getKitType());
+        // Vanilla per-round reset of the ender-chest kit: drop the live PLAY box
+        // so the next open rebuilds it from the saved kit contents.
+        if ("vanilla".equals(match.getMode().getKitType()) && plugin.getEnderKitGUI() != null) {
+            plugin.getEnderKitGUI().resetPlay(p.getUniqueId());
+        }
+        // Duel hats opt-in: stamp the fighter's cosmetic hat model onto their
+        // kit helmet so it renders on the head (third-person / to others), not
+        // just in the inventory. Only when the duel enabled hats AND the player
+        // actually owns a selected hat — otherwise the plain kit helmet stays.
+        if (match.isWithHats()) {
+            plugin.getKitManager().stampDuelHatOnHelmet(p);
+        }
+    }
+
+    /**
+     * Sets the fighter's food saturation to the mode's configured start value
+     * (Bug 4). resetFighter() always tops it to 20; this caps it afterwards so
+     * e.g. sword fighters don't passively regen a big chunk of HP from a full
+     * saturation bar. Food level stays at 20 (full) — only the heal-fuel changes.
+     */
+    private void applyStartSaturation(Player p, Match match) {
+        if (p == null || match.getMode() == null) return;
+        float sat = match.getMode().getStartSaturation();
+        p.setFoodLevel(20);
+        p.setSaturation(Math.max(0f, Math.min(20f, sat)));
     }
 
     private void resetFighter(Player p) {

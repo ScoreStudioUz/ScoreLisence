@@ -1,0 +1,26 @@
+# ============================================================
+#        Cosmetics — Bronya trim menyusi (dekorativ)
+# ============================================================
+# Bu fayl faqat KO'RINISHni boshqaradi (sarlavhalar + dekorativ oynalar).
+# Trim shakllari va ranglari Minecraft registrlaridan avtomatik olinadi.
+#
+# Piece menyusi (3x9 = 27 slot):
+#   11 = dubulg'a (helmet)
+#   12 = ko'krak (chestplate)
+#   13 = shim (leggings)
+#   14 = etik (boots)
+#   17 = reset (hamma trimni o'chirish)
+#   22 = orqaga (3-qator 5-slot)
+# Qolgan hamma slotlar dekorativ oyna bilan to'ldiriladi.
+#
+# Pattern/material submenyulari (54 slot): atrofi dekorativ oyna,
+# ichki 28 slot trimlar bilan to'ladi, 49 = orqaga.
+
+diamond-title: '&8Olmos bronya — Trim'
+netherite-title: '&8Netherite bronya — Trim'
+pattern-title: '&8Trim shakli'
+material-title: '&8Trim rangi'
+
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: '&r'

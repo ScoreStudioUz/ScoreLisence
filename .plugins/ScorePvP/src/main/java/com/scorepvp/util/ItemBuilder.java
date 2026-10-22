@@ -76,7 +76,27 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * When true, {@link #build()} hides every vanilla tooltip line (attribute
+     * modifiers like "+X Attack Damage", armor values, enchant text, dye/banner
+     * lines, unbreakable, etc.) so menu icons read only their custom name + lore.
+     * Defaults to true — practically all ItemBuilder uses are GUI icons. Real
+     * given-to-player items that WANT their stats shown can opt out via
+     * {@link #showTooltip()}. Hiding is purely cosmetic; item behaviour is
+     * unchanged (attributes still apply, glint still shows).
+     */
+    private boolean hideTooltip = true;
+
+    /** Opt out of the default tooltip-hiding (e.g. show enchants on a kit item). */
+    public ItemBuilder showTooltip() {
+        this.hideTooltip = false;
+        return this;
+    }
+
     public ItemStack build() {
+        if (hideTooltip && meta != null) {
+            meta.addItemFlags(ItemFlag.values());
+        }
         item.setItemMeta(meta);
         return item;
     }

@@ -26,7 +26,9 @@ os.makedirs(lic_dir, exist_ok=True)
 os.makedirs(nolic_dir, exist_ok=True)
 
 for s_name, d_name in LICENSED.items():
-    shutil.copy(os.path.join(SRC, s_name), os.path.join(lic_dir, d_name))
+    # copyfile (not copy): the existing dist jars are root-owned, so chmod'ing
+    # them would fail with EPERM even though the content write succeeds.
+    shutil.copyfile(os.path.join(SRC, s_name), os.path.join(lic_dir, d_name))
     print(f"[license]    {d_name}  ({os.path.getsize(os.path.join(lic_dir, d_name)):,} bytes)")
 
 for s_name, d_name in NOLIC.items():
@@ -34,7 +36,7 @@ for s_name, d_name in NOLIC.items():
     if not os.path.exists(src_path):
         print(f"[no-license] {s_name}: skipped (not built)")
         continue
-    shutil.copy(src_path, os.path.join(nolic_dir, d_name))
+    shutil.copyfile(src_path, os.path.join(nolic_dir, d_name))
     print(f"[no-license] {d_name}  ({os.path.getsize(os.path.join(nolic_dir, d_name)):,} bytes)")
 
 print(f"\nDone -> {DST}")

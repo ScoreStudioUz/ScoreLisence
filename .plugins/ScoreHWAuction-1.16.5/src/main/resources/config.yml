@@ -1,0 +1,967 @@
+# ╔═══════════════════════════════════════════════════════╗
+# ║          ScoreHWAuction  config.yml  v1.0.0          ║
+# ╚═══════════════════════════════════════════════════════╝
+
+debug: false
+
+# ─── Database ───────────────────────────────────────────
+database:
+  # sqlite | mysql
+  type: sqlite
+  sqlite:
+    file: auction.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: auction
+    username: root
+    password: password
+    pool-size: 10
+    min-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# ─── Feature Toggles ────────────────────────────────────
+features:
+  # /ah search command — search by item name
+  search: true
+  # /ah player command — filter by seller name
+  player-filter: true
+  # Bid/auction mode (/ah sell war)
+  bid-auction: true
+  # /ah sell auto — auto-price from market
+  auto-sell: true
+  # Automatically hard-delete old expired listings
+  expired-cleaner: true
+  # Hours after expiry before an item is permanently deleted from expired list
+  expired-cleanup-delay-hours: 72
+
+# ─── Anti-Lag / Protection ──────────────────────────────
+protection:
+  # Minimum milliseconds between GUI clicks per player (0 = disabled)
+  click-cooldown-ms: 250
+
+# ─── Auction Core ───────────────────────────────────────
+auction:
+  # Fallback slot limit when player has no scoreah.maxlots.N permission
+  default-max-lots: 5
+  # Tax fraction deducted from seller payout (0.05 = 5%)
+  tax: 0.05
+  min-price: 1.0
+  max-price: 999999999.0
+  default-duration-hours: 48
+  # Bounds for bid-auction time
+  auction-min-time: 1
+  auction-max-time: 72
+  # Items per page (max 45)
+  items-per-page: 45
+  allow-per-unit: true
+  enable-sounds: true
+  broadcast-purchase: false
+  allow-self-buy: false
+  currency-symbol: "α"
+
+  # ── Auto-sell ──────────────────────────────────────────
+  # Markup % ABOVE the cheapest market price for auto-sell suggestion
+  # (positive = slightly more expensive than cheapest; use negative to undercut)
+  auto-sell-markup-percent: 5.0
+  # Fallback price-per-unit multiplier when no market listings exist
+  auto-price-multiplier: 1.0
+  # Seconds the /ah sell auto confirm prompt stays valid
+  auto-sell-confirm-timeout: 30
+
+  # ── Bid / Auction ──────────────────────────────────────
+  # Default bid-step as % of starting price
+  default-step-percent: 10.0
+  # Max single-click step jump (e.g. 5 = up to 5 steps in one click)
+  bid-steps-ahead: 5
+  bid-steps-ahead-cap: 10
+
+  # Time extension per bid (adds time to the auction when someone bids)
+  bid-time-extension:
+    enabled: true
+    seconds: 30
+
+  # Materials blocked from listing
+  blacklist:
+    - BEDROCK
+    - COMMAND_BLOCK
+    - CHAIN_COMMAND_BLOCK
+    - REPEATING_COMMAND_BLOCK
+    - BARRIER
+    - STRUCTURE_BLOCK
+    - STRUCTURE_VOID
+    - JIGSAW
+
+# ─── Categories ─────────────────────────────────────────
+# material entry can be:
+#   "MATERIAL_NAME"              → normal block/item
+#   "PLAYER_HEAD"                → any player skull
+#   "PLAYER_HEAD:base64prefix"  → skull whose texture starts with prefix
+categories:
+
+  all:
+    name: "Все подряд"
+    material: COMPASS
+    materials: []
+
+  tools:
+    name: "Инструменты"
+    material: DIAMOND_PICKAXE
+    materials:
+      - WOODEN_PICKAXE
+      - STONE_PICKAXE
+      - IRON_PICKAXE
+      - GOLDEN_PICKAXE
+      - DIAMOND_PICKAXE
+      - NETHERITE_PICKAXE
+      - WOODEN_AXE
+      - STONE_AXE
+      - IRON_AXE
+      - GOLDEN_AXE
+      - DIAMOND_AXE
+      - NETHERITE_AXE
+      - WOODEN_SHOVEL
+      - STONE_SHOVEL
+      - IRON_SHOVEL
+      - GOLDEN_SHOVEL
+      - DIAMOND_SHOVEL
+      - NETHERITE_SHOVEL
+      - WOODEN_HOE
+      - STONE_HOE
+      - IRON_HOE
+      - GOLDEN_HOE
+      - DIAMOND_HOE
+      - NETHERITE_HOE
+      - SHEARS
+      - FISHING_ROD
+      - FLINT_AND_STEEL
+      - COMPASS
+      - CLOCK
+      - SPYGLASS
+      - LEAD
+      - NAME_TAG
+      - CARROT_ON_A_STICK
+      - WARPED_FUNGUS_ON_A_STICK
+      - BUNDLE
+      - MACE
+      - BREEZE_ROD
+      - MAP
+      - FILLED_MAP
+
+  weapons:
+    name: "Оружие"
+    material: DIAMOND_SWORD
+    materials:
+      - WOODEN_SWORD
+      - STONE_SWORD
+      - IRON_SWORD
+      - GOLDEN_SWORD
+      - DIAMOND_SWORD
+      - NETHERITE_SWORD
+      - BOW
+      - CROSSBOW
+      - TRIDENT
+      - SHIELD
+      - ARROW
+      - SPECTRAL_ARROW
+      - TIPPED_ARROW
+      - WIND_CHARGE
+      - MACE
+
+  armor:
+    name: "Броня"
+    material: DIAMOND_CHESTPLATE
+    materials:
+      - LEATHER_HELMET
+      - LEATHER_CHESTPLATE
+      - LEATHER_LEGGINGS
+      - LEATHER_BOOTS
+      - CHAINMAIL_HELMET
+      - CHAINMAIL_CHESTPLATE
+      - CHAINMAIL_LEGGINGS
+      - CHAINMAIL_BOOTS
+      - IRON_HELMET
+      - IRON_CHESTPLATE
+      - IRON_LEGGINGS
+      - IRON_BOOTS
+      - GOLDEN_HELMET
+      - GOLDEN_CHESTPLATE
+      - GOLDEN_LEGGINGS
+      - GOLDEN_BOOTS
+      - DIAMOND_HELMET
+      - DIAMOND_CHESTPLATE
+      - DIAMOND_LEGGINGS
+      - DIAMOND_BOOTS
+      - NETHERITE_HELMET
+      - NETHERITE_CHESTPLATE
+      - NETHERITE_LEGGINGS
+      - NETHERITE_BOOTS
+      - TURTLE_HELMET
+      - ELYTRA
+      - WOLF_ARMOR
+
+  blocks:
+    name: "Блоки"
+    material: STONE
+    materials:
+      - STONE
+      - GRANITE
+      - POLISHED_GRANITE
+      - DIORITE
+      - POLISHED_DIORITE
+      - ANDESITE
+      - POLISHED_ANDESITE
+      - COBBLESTONE
+      - MOSSY_COBBLESTONE
+      - DIRT
+      - COARSE_DIRT
+      - GRASS_BLOCK
+      - PODZOL
+      - MYCELIUM
+      - ROOTED_DIRT
+      - SAND
+      - RED_SAND
+      - GRAVEL
+      - CLAY
+      - TERRACOTTA
+      - OAK_LOG
+      - SPRUCE_LOG
+      - BIRCH_LOG
+      - JUNGLE_LOG
+      - ACACIA_LOG
+      - DARK_OAK_LOG
+      - CRIMSON_STEM
+      - WARPED_STEM
+      - STRIPPED_OAK_LOG
+      - STRIPPED_SPRUCE_LOG
+      - STRIPPED_BIRCH_LOG
+      - STRIPPED_JUNGLE_LOG
+      - STRIPPED_ACACIA_LOG
+      - STRIPPED_DARK_OAK_LOG
+      - OAK_PLANKS
+      - SPRUCE_PLANKS
+      - BIRCH_PLANKS
+      - JUNGLE_PLANKS
+      - ACACIA_PLANKS
+      - DARK_OAK_PLANKS
+      - CRIMSON_PLANKS
+      - WARPED_PLANKS
+      - OAK_SLAB
+      - SPRUCE_SLAB
+      - BIRCH_SLAB
+      - JUNGLE_SLAB
+      - ACACIA_SLAB
+      - DARK_OAK_SLAB
+      - STONE_SLAB
+      - COBBLESTONE_SLAB
+      - BRICK_SLAB
+      - SANDSTONE_SLAB
+      - OAK_STAIRS
+      - SPRUCE_STAIRS
+      - COBBLESTONE_STAIRS
+      - SANDSTONE
+      - RED_SANDSTONE
+      - SMOOTH_STONE
+      - BRICKS
+      - NETHERRACK
+      - SOUL_SAND
+      - SOUL_SOIL
+      - BASALT
+      - BLACKSTONE
+      - DEEPSLATE
+      - TUFF
+      - CALCITE
+      - SNOW_BLOCK
+      - ICE
+      - PACKED_ICE
+      - BLUE_ICE
+      - OBSIDIAN
+      - CRYING_OBSIDIAN
+      - GLOWSTONE
+      - SHROOMLIGHT
+      - MAGMA_BLOCK
+      - NETHER_BRICK
+      - RED_NETHER_BRICKS
+      - PRISMARINE
+      - PRISMARINE_BRICKS
+      - DARK_PRISMARINE
+      - END_STONE
+      - END_STONE_BRICKS
+      - PURPUR_BLOCK
+      - PURPUR_PILLAR
+      - BONE_BLOCK
+      - DRIED_KELP_BLOCK
+      - HAY_BLOCK
+      - HONEYCOMB_BLOCK
+      - HONEY_BLOCK
+      - SLIME_BLOCK
+      - OAK_WOOD
+      - SPRUCE_WOOD
+      - BIRCH_WOOD
+      - JUNGLE_WOOD
+      - ACACIA_WOOD
+      - DARK_OAK_WOOD
+      - SPONGE
+      - WET_SPONGE
+      - COBWEB
+      - POINTED_DRIPSTONE
+      - DRIPSTONE_BLOCK
+      - POWDER_SNOW_BUCKET
+      - SCULK
+      - SCULK_VEIN
+      - SCULK_CATALYST
+      - SCULK_SHRIEKER
+      - SCULK_SENSOR
+      - CALIBRATED_SCULK_SENSOR
+      - MANGROVE_LOG
+      - MANGROVE_WOOD
+      - STRIPPED_MANGROVE_LOG
+      - MANGROVE_PLANKS
+      - MUD
+      - MUD_BRICKS
+      - PACKED_MUD
+      - MUDDY_MANGROVE_ROOTS
+      - BAMBOO_BLOCK
+      - BAMBOO_PLANKS
+      - BAMBOO_MOSAIC
+      - CHERRY_LOG
+      - CHERRY_WOOD
+      - CHERRY_PLANKS
+      - STRIPPED_CHERRY_LOG
+      - TUFF
+      - TUFF_BRICKS
+      - CHISELED_TUFF
+      - POLISHED_TUFF
+      - COPPER_BLOCK
+      - EXPOSED_COPPER
+      - WEATHERED_COPPER
+      - OXIDIZED_COPPER
+      - CUT_COPPER
+      - WAXED_COPPER_BLOCK
+      - WAXED_CUT_COPPER
+      - CRAFTER
+      - TRIAL_SPAWNER
+      - VAULT
+      - HEAVY_CORE
+
+      - WAXED_EXPOSED_COPPER
+      - WAXED_WEATHERED_COPPER
+      - WAXED_OXIDIZED_COPPER
+      - WAXED_EXPOSED_CUT_COPPER
+      - WAXED_WEATHERED_CUT_COPPER
+      - WAXED_OXIDIZED_CUT_COPPER
+      - COPPER_GRATE
+      - TUFF_SLAB
+      - TUFF_STAIRS
+      - TUFF_WALL
+      - PALE_OAK_LOG
+      - PALE_OAK_WOOD
+      - PALE_OAK_PLANKS
+  decorative:
+    name: "Декоративные блоки"
+    material: WHITE_WOOL
+    materials:
+      - WHITE_WOOL
+      - ORANGE_WOOL
+      - MAGENTA_WOOL
+      - LIGHT_BLUE_WOOL
+      - YELLOW_WOOL
+      - LIME_WOOL
+      - PINK_WOOL
+      - GRAY_WOOL
+      - LIGHT_GRAY_WOOL
+      - CYAN_WOOL
+      - PURPLE_WOOL
+      - BLUE_WOOL
+      - BROWN_WOOL
+      - GREEN_WOOL
+      - RED_WOOL
+      - BLACK_WOOL
+      - WHITE_CARPET
+      - ORANGE_CARPET
+      - MAGENTA_CARPET
+      - LIGHT_BLUE_CARPET
+      - YELLOW_CARPET
+      - LIME_CARPET
+      - PINK_CARPET
+      - GRAY_CARPET
+      - LIGHT_GRAY_CARPET
+      - CYAN_CARPET
+      - PURPLE_CARPET
+      - BLUE_CARPET
+      - BROWN_CARPET
+      - GREEN_CARPET
+      - RED_CARPET
+      - BLACK_CARPET
+      - WHITE_TERRACOTTA
+      - ORANGE_TERRACOTTA
+      - MAGENTA_TERRACOTTA
+      - LIGHT_BLUE_TERRACOTTA
+      - YELLOW_TERRACOTTA
+      - LIME_TERRACOTTA
+      - PINK_TERRACOTTA
+      - GRAY_TERRACOTTA
+      - LIGHT_GRAY_TERRACOTTA
+      - CYAN_TERRACOTTA
+      - PURPLE_TERRACOTTA
+      - BLUE_TERRACOTTA
+      - BROWN_TERRACOTTA
+      - GREEN_TERRACOTTA
+      - RED_TERRACOTTA
+      - BLACK_TERRACOTTA
+      - WHITE_GLAZED_TERRACOTTA
+      - ORANGE_GLAZED_TERRACOTTA
+      - MAGENTA_GLAZED_TERRACOTTA
+      - LIGHT_BLUE_GLAZED_TERRACOTTA
+      - YELLOW_GLAZED_TERRACOTTA
+      - LIME_GLAZED_TERRACOTTA
+      - PINK_GLAZED_TERRACOTTA
+      - GRAY_GLAZED_TERRACOTTA
+      - LIGHT_GRAY_GLAZED_TERRACOTTA
+      - CYAN_GLAZED_TERRACOTTA
+      - PURPLE_GLAZED_TERRACOTTA
+      - BLUE_GLAZED_TERRACOTTA
+      - BROWN_GLAZED_TERRACOTTA
+      - GREEN_GLAZED_TERRACOTTA
+      - RED_GLAZED_TERRACOTTA
+      - BLACK_GLAZED_TERRACOTTA
+      - WHITE_STAINED_GLASS
+      - ORANGE_STAINED_GLASS
+      - MAGENTA_STAINED_GLASS
+      - LIGHT_BLUE_STAINED_GLASS
+      - YELLOW_STAINED_GLASS
+      - LIME_STAINED_GLASS
+      - PINK_STAINED_GLASS
+      - GRAY_STAINED_GLASS
+      - LIGHT_GRAY_STAINED_GLASS
+      - CYAN_STAINED_GLASS
+      - BLUE_STAINED_GLASS
+      - BROWN_STAINED_GLASS
+      - GREEN_STAINED_GLASS
+      - RED_STAINED_GLASS
+      - BLACK_STAINED_GLASS
+      - GLASS
+      - WHITE_STAINED_GLASS_PANE
+      - ORANGE_STAINED_GLASS_PANE
+      - GLASS_PANE
+      - LANTERN
+      - SOUL_LANTERN
+      - SEA_LANTERN
+      - TORCH
+      - SOUL_TORCH
+      - CAMPFIRE
+      - SOUL_CAMPFIRE
+      - FLOWER_POT
+      - PAINTING
+      - ITEM_FRAME
+      - GLOW_ITEM_FRAME
+      - CANDLE
+      - WHITE_CANDLE
+      - ORANGE_CANDLE
+      - MAGENTA_CANDLE
+      - LIGHT_BLUE_CANDLE
+      - YELLOW_CANDLE
+      - LIME_CANDLE
+      - PINK_CANDLE
+      - GRAY_CANDLE
+      - LIGHT_GRAY_CANDLE
+      - CYAN_CANDLE
+      - PURPLE_CANDLE
+      - BLUE_CANDLE
+      - BROWN_CANDLE
+      - GREEN_CANDLE
+      - RED_CANDLE
+      - BLACK_CANDLE
+      - AMETHYST_CLUSTER
+      - HANGING_ROOTS
+      - BIG_DRIPLEAF
+      - SMALL_DRIPLEAF
+      - SPORE_BLOSSOM
+      - MOSS_BLOCK
+      - MOSS_CARPET
+      - BOOKSHELF
+      - CHISELED_STONE_BRICKS
+      - CRACKED_STONE_BRICKS
+      - STONE_BRICKS
+      - CHISELED_SANDSTONE
+      - CUT_SANDSTONE
+      - SMOOTH_SANDSTONE
+      - CHISELED_RED_SANDSTONE
+      - SMOOTH_QUARTZ
+      - QUARTZ_BLOCK
+      - CHISELED_QUARTZ_BLOCK
+      - QUARTZ_PILLAR
+      - PINK_PETALS
+      - DECORATED_POT
+      - FLOWER_POT
+      - FROGLIGHT
+      - OCHRE_FROGLIGHT
+      - VERDANT_FROGLIGHT
+      - PEARLESCENT_FROGLIGHT
+      - GLOW_BERRIES
+      - CHERRY_SAPLING
+      - PINK_PETALS
+      - MANGROVE_PROPAGULE
+      - TORCHFLOWER
+      - PITCHER_PLANT
+      - SHORT_GRASS
+      - PALE_OAK_LOG
+      - PALE_OAK_PLANKS
+      - PALE_OAK_WOOD
+
+  mechanisms:
+    name: "Механизмы"
+    material: PISTON
+    materials:
+      - PISTON
+      - STICKY_PISTON
+      - DISPENSER
+      - DROPPER
+      - HOPPER
+      - OBSERVER
+      - REDSTONE_LAMP
+      - LEVER
+      - OAK_BUTTON
+      - SPRUCE_BUTTON
+      - BIRCH_BUTTON
+      - JUNGLE_BUTTON
+      - ACACIA_BUTTON
+      - DARK_OAK_BUTTON
+      - STONE_BUTTON
+      - POLISHED_BLACKSTONE_BUTTON
+      - OAK_PRESSURE_PLATE
+      - SPRUCE_PRESSURE_PLATE
+      - BIRCH_PRESSURE_PLATE
+      - JUNGLE_PRESSURE_PLATE
+      - ACACIA_PRESSURE_PLATE
+      - DARK_OAK_PRESSURE_PLATE
+      - STONE_PRESSURE_PLATE
+      - HEAVY_WEIGHTED_PRESSURE_PLATE
+      - LIGHT_WEIGHTED_PRESSURE_PLATE
+      - TRIPWIRE_HOOK
+      - TNT
+      - COMPARATOR
+      - REPEATER
+      - DAYLIGHT_DETECTOR
+      - TRAPPED_CHEST
+      - TARGET
+      - LIGHTNING_ROD
+      - SCULK_SENSOR
+      - MINECART
+      - CHEST_MINECART
+      - HOPPER_MINECART
+      - TNT_MINECART
+      - FURNACE_MINECART
+      - RAIL
+      - POWERED_RAIL
+      - DETECTOR_RAIL
+      - ACTIVATOR_RAIL
+      - CHEST
+      - BARREL
+      - SHULKER_BOX
+      - WHITE_SHULKER_BOX
+      - ORANGE_SHULKER_BOX
+      - MAGENTA_SHULKER_BOX
+      - LIGHT_BLUE_SHULKER_BOX
+      - YELLOW_SHULKER_BOX
+      - LIME_SHULKER_BOX
+      - PINK_SHULKER_BOX
+      - GRAY_SHULKER_BOX
+      - LIGHT_GRAY_SHULKER_BOX
+      - CYAN_SHULKER_BOX
+      - PURPLE_SHULKER_BOX
+      - BLUE_SHULKER_BOX
+      - BROWN_SHULKER_BOX
+      - GREEN_SHULKER_BOX
+      - RED_SHULKER_BOX
+      - BLACK_SHULKER_BOX
+      - FURNACE
+      - BLAST_FURNACE
+      - SMOKER
+      - CRAFTING_TABLE
+      - STONECUTTER
+      - LOOM
+      - CARTOGRAPHY_TABLE
+      - SMITHING_TABLE
+      - FLETCHING_TABLE
+      - GRINDSTONE
+      - ANVIL
+      - CHIPPED_ANVIL
+      - DAMAGED_ANVIL
+      - ENDER_CHEST
+      - JUKEBOX
+      - NOTE_BLOCK
+      - BEE_NEST
+      - BEEHIVE
+      - REDSTONE
+      - REDSTONE_TORCH
+      - CHISELED_BOOKSHELF
+      - CALIBRATED_SCULK_SENSOR
+      - CRAFTER
+
+  alchemy:
+    name: "Алхимия"
+    material: BREWING_STAND
+    materials:
+      - BREWING_STAND
+      - CAULDRON
+      - BLAZE_POWDER
+      - NETHER_WART
+      - GLOWSTONE_DUST
+      - SPIDER_EYE
+      - FERMENTED_SPIDER_EYE
+      - GLISTERING_MELON_SLICE
+      - MAGMA_CREAM
+      - RABBIT_FOOT
+      - GHAST_TEAR
+      - PHANTOM_MEMBRANE
+      - PUFFERFISH
+      - GOLDEN_CARROT
+      - SUGAR
+      - TURTLE_SCUTE
+      - ARMADILLO_SCUTE
+      - BREEZE_ROD
+
+  food:
+    name: "Еда"
+    material: COOKED_BEEF
+    materials:
+      - ENCHANTED_GOLDEN_APPLE
+      - GOLDEN_APPLE
+      - APPLE
+      - BREAD
+      - CARROT
+      - POTATO
+      - BAKED_POTATO
+      - POISONOUS_POTATO
+      - BEETROOT
+      - MELON_SLICE
+      - PUMPKIN_PIE
+      - MUSHROOM_STEW
+      - SUSPICIOUS_STEW
+      - RABBIT_STEW
+      - BEETROOT_SOUP
+      - COOKED_BEEF
+      - BEEF
+      - COOKED_PORKCHOP
+      - PORKCHOP
+      - COOKED_CHICKEN
+      - CHICKEN
+      - COOKED_MUTTON
+      - MUTTON
+      - COOKED_RABBIT
+      - RABBIT
+      - COOKED_COD
+      - COD
+      - COOKED_SALMON
+      - SALMON
+      - TROPICAL_FISH
+      - ROTTEN_FLESH
+      - COOKIE
+      - CAKE
+      - HONEY_BOTTLE
+      - DRIED_KELP
+      - SWEET_BERRIES
+      - GLOW_BERRIES
+      - CHORUS_FRUIT
+      - MILK_BUCKET
+
+  potions:
+    name: "Зелья"
+    material: POTION
+    materials:
+      - POTION
+      - SPLASH_POTION
+      - LINGERING_POTION
+      - TIPPED_ARROW
+      - GLASS_BOTTLE
+      - OMINOUS_BOTTLE
+
+  enchantment:
+    name: "Зачарование"
+    material: ENCHANTED_BOOK
+    materials:
+      - ENCHANTING_TABLE
+      - BOOKSHELF
+      - ENCHANTED_BOOK
+      - EXPERIENCE_BOTTLE
+      - ANVIL
+      - CHIPPED_ANVIL
+      - DAMAGED_ANVIL
+      - GRINDSTONE
+
+  spheres:
+    name: "Сферы и талисманы"
+    material: NETHER_STAR
+    materials:
+      - PLAYER_HEAD
+
+  unique:
+    name: "Уникальные предметы"
+    material: NETHER_STAR
+    materials:
+      - TOTEM_OF_UNDYING
+      - NETHER_STAR
+      - HEART_OF_THE_SEA
+      - DRAGON_EGG
+      - BEACON
+      - CONDUIT
+      - LODESTONE
+      - SPYGLASS
+      - RECOVERY_COMPASS
+
+  donate:
+    name: "Донатные вещи"
+    material: NETHER_STAR
+    materials: []
+
+  xp_keeper:
+    name: "Хранитель опыта"
+    material: EXPERIENCE_BOTTLE
+    materials:
+      - EXPERIENCE_BOTTLE
+      - GLASS_BOTTLE
+      - KNOWLEDGE_BOOK
+
+  gems:
+    name: "Драгоценности"
+    material: DIAMOND
+    materials:
+      - DIAMOND
+      - DIAMOND_BLOCK
+      - DIAMOND_ORE
+      - DEEPSLATE_DIAMOND_ORE
+      - EMERALD
+      - EMERALD_BLOCK
+      - EMERALD_ORE
+      - DEEPSLATE_EMERALD_ORE
+      - GOLD_INGOT
+      - GOLD_NUGGET
+      - GOLD_BLOCK
+      - GOLD_ORE
+      - DEEPSLATE_GOLD_ORE
+      - RAW_GOLD
+      - IRON_INGOT
+      - IRON_NUGGET
+      - IRON_BLOCK
+      - IRON_ORE
+      - DEEPSLATE_IRON_ORE
+      - RAW_IRON
+      - COPPER_INGOT
+      - COPPER_BLOCK
+      - RAW_COPPER
+      - NETHERITE_INGOT
+      - NETHERITE_BLOCK
+      - NETHERITE_SCRAP
+      - ANCIENT_DEBRIS
+      - LAPIS_LAZULI
+      - LAPIS_BLOCK
+      - LAPIS_ORE
+      - DEEPSLATE_LAPIS_ORE
+      - REDSTONE
+      - REDSTONE_BLOCK
+      - QUARTZ
+      - QUARTZ_BLOCK
+      - AMETHYST_SHARD
+      - AMETHYST_BLOCK
+      - COAL
+      - COAL_BLOCK
+      - COAL_ORE
+      - DEEPSLATE_COAL_ORE
+      - CHARCOAL
+      - ENCHANTED_GOLDEN_APPLE
+      - GOLDEN_APPLE
+      - COPPER_ORE
+      - DEEPSLATE_COPPER_ORE
+      - NETHER_QUARTZ_ORE
+
+  plants:
+    name: "Растительность"
+    material: OAK_SAPLING
+    materials:
+      - OAK_SAPLING
+      - SPRUCE_SAPLING
+      - BIRCH_SAPLING
+      - JUNGLE_SAPLING
+      - ACACIA_SAPLING
+      - DARK_OAK_SAPLING
+      - AZALEA
+      - FLOWERING_AZALEA
+      - WHEAT_SEEDS
+      - MELON_SEEDS
+      - PUMPKIN_SEEDS
+      - BEETROOT_SEEDS
+      - NETHER_WART
+      - SWEET_BERRIES
+      - GLOW_BERRIES
+      - BAMBOO
+      - SUGAR_CANE
+      - CACTUS
+      - KELP
+      - SEAGRASS
+      - LILY_PAD
+      - VINE
+      - DANDELION
+      - POPPY
+      - BLUE_ORCHID
+      - ALLIUM
+      - AZURE_BLUET
+      - RED_TULIP
+      - ORANGE_TULIP
+      - WHITE_TULIP
+      - PINK_TULIP
+      - OXEYE_DAISY
+      - CORNFLOWER
+      - LILY_OF_THE_VALLEY
+      - WITHER_ROSE
+      - SUNFLOWER
+      - LILAC
+      - ROSE_BUSH
+      - PEONY
+      - TALL_GRASS
+      - LARGE_FERN
+      - FERN
+      - DEAD_BUSH
+      - SPORE_BLOSSOM
+      - MOSS_BLOCK
+      - MOSS_CARPET
+      - WHEAT
+      - PUMPKIN
+      - MELON
+      - CHORUS_PLANT
+      - MUSHROOM_STEW
+      - BROWN_MUSHROOM
+      - RED_MUSHROOM
+      - CRIMSON_FUNGUS
+      - WARPED_FUNGUS
+      - CRIMSON_ROOTS
+      - WARPED_ROOTS
+      - NETHER_SPROUTS
+      - WEEPING_VINES
+      - TWISTING_VINES
+      - MANGROVE_PROPAGULE
+      - MANGROVE_ROOTS
+      - CHERRY_SAPLING
+      - TORCHFLOWER_SEEDS
+      - PITCHER_POD
+      - TORCHFLOWER
+      - PITCHER_PLANT
+      - PALE_OAK_SAPLING
+
+  mob_loot:
+    name: "Лут с мобов"
+    material: BONE
+    materials:
+      - BONE
+      - BONE_MEAL
+      - STRING
+      - SLIME_BALL
+      - GUNPOWDER
+      - FEATHER
+      - LEATHER
+      - INK_SAC
+      - GLOW_INK_SAC
+      - BLAZE_ROD
+      - GHAST_TEAR
+      - RABBIT_FOOT
+      - RABBIT_HIDE
+      - PHANTOM_MEMBRANE
+      - PRISMARINE_SHARD
+      - PRISMARINE_CRYSTALS
+      - HONEYCOMB
+      - WITHER_SKELETON_SKULL
+      - ZOMBIE_HEAD
+      - CREEPER_HEAD
+      - SKELETON_SKULL
+      - SPIDER_EYE
+      - FERMENTED_SPIDER_EYE
+      - MAGMA_CREAM
+      - ENDER_PEARL
+      - ENDER_EYE
+      - SHULKER_SHELL
+      - CHORUS_FRUIT
+      - DRAGON_BREATH
+      - PUFFERFISH
+      - NETHER_STAR
+      - WITHER_ROSE
+      - TOTEM_OF_UNDYING
+
+      - ECHO_SHARD
+      - DISC_FRAGMENT_5
+      - SNIFFER_EGG
+      - GOAT_HORN
+      - TRIAL_KEY
+      - OMINOUS_TRIAL_KEY
+      - ARMADILLO_SCUTE
+  misc:
+    name: "Разное"
+    material: PAPER
+    materials:
+      - PAPER
+      - BOOK
+      - WRITABLE_BOOK
+      - WRITTEN_BOOK
+      - KNOWLEDGE_BOOK
+      - FLINT
+      - BRICK
+      - NETHER_BRICK
+      - CLAY_BALL
+      - BOWL
+      - STICK
+      - STRING
+      - FEATHER
+      - GUNPOWDER
+      - SNOWBALL
+      - EGG
+      - SADDLE
+      - HORSE_ARMOR_LEATHER
+      - HORSE_ARMOR_IRON
+      - HORSE_ARMOR_GOLD
+      - HORSE_ARMOR_DIAMOND
+      - WATER_BUCKET
+      - LAVA_BUCKET
+      - BUCKET
+      - MILK_BUCKET
+      - POWDER_SNOW_BUCKET
+      - AXOLOTL_BUCKET
+      - COD_BUCKET
+      - SALMON_BUCKET
+      - PUFFERFISH_BUCKET
+      - TROPICAL_FISH_BUCKET
+      - SPAWNER
+      - FIREWORK_ROCKET
+      - FIREWORK_STAR
+      - MUSIC_DISC_13
+      - MUSIC_DISC_CAT
+      - MUSIC_DISC_BLOCKS
+      - MUSIC_DISC_CHIRP
+      - MUSIC_DISC_FAR
+      - MUSIC_DISC_MALL
+      - MUSIC_DISC_MELLOHI
+      - MUSIC_DISC_STAL
+      - MUSIC_DISC_STRAD
+      - MUSIC_DISC_WARD
+      - MUSIC_DISC_11
+      - MUSIC_DISC_WAIT
+      - MUSIC_DISC_OTHERSIDE
+      - DRAGON_EGG
+      - NETHER_QUARTZ_ORE
+      - SOUL_SAND
+      - SAND
+      - GRAVEL
+      - FLINT_AND_STEEL
+
+      - LEATHER_HORSE_ARMOR
+      - IRON_HORSE_ARMOR
+      - GOLDEN_HORSE_ARMOR
+      - DIAMOND_HORSE_ARMOR
+      - TRIAL_KEY
+      - OMINOUS_TRIAL_KEY
+      - OMINOUS_BOTTLE
+      - MUSIC_DISC_5
+      - MUSIC_DISC_PIGSTEP
+      - MUSIC_DISC_RELIC
+      - MUSIC_DISC_PRECIPICE
+      - RECOVERY_COMPASS

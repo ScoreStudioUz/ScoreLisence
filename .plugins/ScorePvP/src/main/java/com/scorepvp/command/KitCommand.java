@@ -46,7 +46,21 @@ public class KitCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage(plugin.getConfigManager().msg("kit.not-in-region"));
                     return true;
                 }
-                plugin.getKitManager().savePersonalKit(player);
+                // /kit save writes to the vanilla multi-kit: the slot being
+                // edited (if the player entered via RMB-edit), else the currently
+                // SELECTED slot. Only when the player owns no vanilla kit at all
+                // does it fall back to the legacy personal-kit store.
+                java.util.UUID uid = player.getUniqueId();
+                Integer editIdx = plugin.getVanillaKitManager().getEditing(uid);
+                int targetIdx = editIdx != null ? editIdx : plugin.getVanillaKitManager().getSelected(uid);
+                if (targetIdx >= 0 && plugin.getVanillaKitManager().hasKit(uid, targetIdx)) {
+                    org.bukkit.inventory.ItemStack[] snap =
+                            plugin.getKitManager().snapshotInventoryPublic(player);
+                    plugin.getVanillaKitManager().saveKit(uid, targetIdx, snap);
+                    plugin.getVanillaKitManager().clearEditing(uid);
+                } else {
+                    plugin.getKitManager().savePersonalKit(player);
+                }
                 player.sendMessage(plugin.getConfigManager().msg("kit.saved"));
 
                 // Mark as leaving region before teleport

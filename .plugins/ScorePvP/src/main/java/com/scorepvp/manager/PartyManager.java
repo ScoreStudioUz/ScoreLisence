@@ -28,6 +28,36 @@ public class PartyManager {
         return p != null && p.isLeader(uuid);
     }
 
+    // ── Party size cap (permission tiers) ──────────────────────────────────────
+
+    /**
+     * The maximum party size (members incl. the leader) for a leader, based on
+     * their highest {@code scorepvp.party.tierN} permission. Falls back to
+     * {@code party.max-size.default-max} when no tier is held.
+     */
+    public int maxSizeFor(Player leader) {
+        var cfg = plugin.getConfig();
+        int def = cfg.getInt("party.max-size.default-max", 4);
+        if (leader.hasPermission("scorepvp.party.tier3")) return cfg.getInt("party.max-size.tier3", 10);
+        if (leader.hasPermission("scorepvp.party.tier2")) return cfg.getInt("party.max-size.tier2", 6);
+        if (leader.hasPermission("scorepvp.party.tier1")) return cfg.getInt("party.max-size.tier1", 4);
+        return def;
+    }
+
+    /** Convenience overload resolving the leader by their online player, else default. */
+    public int maxSizeFor(UUID leaderUuid) {
+        Player leader = Bukkit.getPlayer(leaderUuid);
+        if (leader != null) return maxSizeFor(leader);
+        return plugin.getConfig().getInt("party.max-size.default-max", 4);
+    }
+
+    /** Number of outstanding invites sent by this leader (pendingInvites: target → leader). */
+    private int pendingInvitesTo(UUID leaderUuid) {
+        int n = 0;
+        for (UUID inviter : pendingInvites.values()) if (leaderUuid.equals(inviter)) n++;
+        return n;
+    }
+
     // ── Active match guard ────────────────────────────────────────────────────
 
     /** Returns true if the player is currently in an active FFA match. */
@@ -91,6 +121,16 @@ public class PartyManager {
             leader.sendMessage(cfg.msg("party.target-in-party", "{player}", target.getName()));
             return;
         }
+        // Party size cap (leader's permission tier). Count current members plus
+        // outstanding invites so a leader can't blow past the cap by inviting
+        // many players at once before any of them accept.
+        int max = maxSizeFor(leader);
+        Party lp = getParty(leader.getUniqueId());
+        int projected = (lp != null ? lp.size() : 1) + pendingInvitesTo(leader.getUniqueId());
+        if (projected >= max) {
+            leader.sendMessage(cfg.msg("party.full", "{max}", String.valueOf(max)));
+            return;
+        }
         if (pendingInvites.containsKey(target.getUniqueId())) {
             leader.sendMessage(cfg.msg("party.already-invited", "{player}", target.getName()));
             return;
@@ -139,15 +179,30 @@ public class PartyManager {
 
         pendingInvites.remove(joiner.getUniqueId());
 
-        if (!isInParty(leaderUUID)) {
-            Party fresh = new Party(leaderUUID);
-            parties.put(leaderUUID, fresh);
-            if (leader.isOnline()) plugin.getHotbarManager().givePartyLeaderHotbar(leader);
-        }
-
+        // The inviter must still be the leader of a live party. If they
+        // disbanded (or someone else now leads), the invite is stale — refuse
+        // instead of silently spawning a brand-new party around them.
         Party party = getParty(leaderUUID);
         if (party == null) {
+            if (!isInParty(leaderUUID)) {
+                Party fresh = new Party(leaderUUID);
+                parties.put(leaderUUID, fresh);
+                if (leader.isOnline()) plugin.getHotbarManager().givePartyLeaderHotbar(leader);
+                party = fresh;
+            } else {
+                party = getParty(leaderUUID);
+            }
+        }
+        if (party == null || !party.isLeader(leaderUUID)) {
             joiner.sendMessage(cfg.msg("party.no-invite", "{player}", leaderName));
+            return;
+        }
+
+        // Re-check the cap at accept time — the party may have filled up while
+        // this invite was outstanding.
+        int max = maxSizeFor(leaderUUID);
+        if (party.size() >= max) {
+            joiner.sendMessage(cfg.msg("party.full", "{max}", String.valueOf(max)));
             return;
         }
 
@@ -276,6 +331,12 @@ public class PartyManager {
     }
 
     private void disbandInternal(Party party, String message) {
+        // Cancel any outstanding invites from this leader — otherwise an invited
+        // player could still accept after the party is gone and silently spawn a
+        // brand-new party (the "disband then accept" bug).
+        UUID leaderId = party.getLeader();
+        if (leaderId != null) pendingInvites.values().removeIf(leaderId::equals);
+
         for (UUID uuid : party.getMembers()) {
             parties.remove(uuid);
             Player p = Bukkit.getPlayer(uuid);

@@ -28,8 +28,7 @@ public class DuelModeGUI {
     private int guiSize;
     private Material fillerMaterial;
     private String fillerName;
-    private int modeSlotStart;
-    private int modeSlotEnd;
+    private int[] fillerSlots; // null → fill whole menu as background
     private int[] modeSlots;
     private Material unavailableMaterial;
     private String unavailableNameSuffix;
@@ -71,20 +70,41 @@ public class DuelModeGUI {
         try { fillerMaterial = Material.valueOf(cfg.getString("filler.material", "BLUE_STAINED_GLASS_PANE")); }
         catch (IllegalArgumentException e) { fillerMaterial = Material.BLUE_STAINED_GLASS_PANE; }
         fillerName = cfg.getString("filler.name", "&r");
-        modeSlotStart = cfg.getInt("mode-slots.start", 10);
-        modeSlotEnd = cfg.getInt("mode-slots.end", 25);
-        // Build mode slots array (skip edge columns 0,8,9,17,18,26)
-        List<Integer> slots = new java.util.ArrayList<>();
-        for (int i = modeSlotStart; i <= modeSlotEnd; i++) {
-            int col = i % 9;
-            if (col == 0 || col == 8) continue; // skip edges
-            slots.add(i);
-        }
-        modeSlots = slots.stream().mapToInt(Integer::intValue).toArray();
+        fillerSlots = readSlotList(cfg, "filler.slots");
+        modeSlots = readModeSlots(cfg);
         try { unavailableMaterial = Material.valueOf(cfg.getString("unavailable.material", "RED_STAINED_GLASS_PANE")); }
         catch (IllegalArgumentException e) { unavailableMaterial = Material.RED_STAINED_GLASS_PANE; }
         unavailableNameSuffix = cfg.getString("unavailable.name-suffix", " &8[&cНедоступно]");
         unavailableLore = cfg.getStringList("unavailable.lore");
+    }
+
+    /**
+     * Reads {@code mode-slots} either as a direct list ({@code [10,11,12]}) or as
+     * the legacy {@code {start, end}} range (edge columns 0/8 skipped). The list
+     * form lets admins place mode icons in any slot they like.
+     */
+    private int[] readModeSlots(YamlConfiguration cfg) {
+        if (cfg.isList("mode-slots")) {
+            List<Integer> l = cfg.getIntegerList("mode-slots");
+            if (!l.isEmpty()) return l.stream().mapToInt(Integer::intValue).toArray();
+        }
+        int start = cfg.getInt("mode-slots.start", 10);
+        int end   = cfg.getInt("mode-slots.end", 25);
+        List<Integer> slots = new java.util.ArrayList<>();
+        for (int i = start; i <= end; i++) {
+            int col = i % 9;
+            if (col == 0 || col == 8) continue; // skip edges
+            slots.add(i);
+        }
+        return slots.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    /** Reads an int-list config key, or null if absent/empty. */
+    private int[] readSlotList(YamlConfiguration cfg, String path) {
+        if (!cfg.isList(path)) return null;
+        List<Integer> l = cfg.getIntegerList(path);
+        if (l.isEmpty()) return null;
+        return l.stream().mapToInt(Integer::intValue).toArray();
     }
 
     public String getTitlePrefix() { return titlePrefix; }
@@ -98,9 +118,14 @@ public class DuelModeGUI {
                 titlePrefix + target.getName());
 
         ItemStack glass = new ItemBuilder(fillerMaterial).name(fillerName).build();
-        for (int i = 0; i < guiSize; i++) inv.setItem(i, glass);
-        // Clear mode slots
-        for (int slot : modeSlots) inv.setItem(slot, null);
+        if (fillerSlots != null) {
+            // Explicit filler slots — only these get glass, everything else stays empty.
+            for (int slot : fillerSlots) if (slot >= 0 && slot < guiSize) inv.setItem(slot, glass);
+        } else {
+            // No explicit list — fill the whole menu as background, then clear mode slots.
+            for (int i = 0; i < guiSize; i++) inv.setItem(i, glass);
+            for (int slot : modeSlots) if (slot >= 0 && slot < guiSize) inv.setItem(slot, null);
+        }
 
         List<PvPMode> modes = plugin.getConfigManager().getModes();
         int idx = 0;

@@ -1,0 +1,38 @@
+# ============================================================
+#  Kit Selection GUI — item_menus/kit_menu.yml
+#  "Kit sozlamalari" (slot 8) o'ng tugma bosilganda ochiladi.
+#  Har rejim o'z material/iconida ko'rinadi; bosilganda o'sha
+#  rejimning shaxsiy kit muharriri ochiladi. "vanilla" sloti
+#  esa eski Vanilla xonasiga teleport qiladi.
+# ============================================================
+
+title: "&6Kit tanlash"
+size: 45
+
+# fill-empty: false bo'lsa bo'sh slotlar shisha bilan to'ldirilmaydi —
+# chinakam bo'sh qoladi. true bo'lsa filler shishasi qo'yiladi.
+fill-empty: false
+
+# To'ldiruvchi shisha (faqat fill-empty: true bo'lsa ishlatiladi)
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: "&r"
+
+# Rejim itemlari joylashadigan slotlar.
+#   • list: [..] berilsa — aynan shu slotlar ishlatiladi.
+#   • aks holda start..end oralig'i (chekka ustunlar o'tkaziladi).
+mode-slots:
+  list: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
+
+# Rejim itemining lore matni
+mode-lore:
+  - "&7Kitni tahrirlash uchun bosing"
+
+# Vanilla sloti — pastda, ajralib turadi. Eski Vanilla xonasiga teleport.
+vanilla:
+  slot: 40
+  material: DIAMOND
+  name: "&b&lVanilla"
+  lore:
+    - "&7Vanilla xonasiga o'tish"
+    - "&7va kitni qo'lda sozlash"

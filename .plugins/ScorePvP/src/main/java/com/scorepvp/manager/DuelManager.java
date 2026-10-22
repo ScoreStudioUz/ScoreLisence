@@ -32,6 +32,10 @@ public class DuelManager {
     // ── Duel Request ──────────────────────────────────────────────────────────
 
     public void sendDuel(Player sender, Player target, String modeName, int rounds) {
+        sendDuel(sender, target, modeName, rounds, false);
+    }
+
+    public void sendDuel(Player sender, Player target, String modeName, int rounds, boolean withHats) {
         ConfigManager cfg = plugin.getConfigManager();
 
         // FIX (sections 3+8): block duel while in match or party
@@ -92,7 +96,7 @@ public class DuelManager {
             return;
         }
 
-        DuelRequest req = new DuelRequest(sender.getUniqueId(), target.getUniqueId(), modeName, rounds);
+        DuelRequest req = new DuelRequest(sender.getUniqueId(), target.getUniqueId(), modeName, rounds, withHats);
         pending.put(target.getUniqueId(), req);
 
         PvPMode mode = cfg.getMode(modeName);
@@ -163,7 +167,7 @@ public class DuelManager {
         }
         // Section 8: cancel all other pending duel requests targeting the same acceptor
         pending.entrySet().removeIf(e -> e.getValue().getTarget().equals(acceptor.getUniqueId()));
-        startDuel(sender, acceptor, req.getModeName(), req.getRounds());
+        startDuel(sender, acceptor, req.getModeName(), req.getRounds(), req.isWithHats());
         return true;
     }
 
@@ -202,14 +206,14 @@ public class DuelManager {
             }
             // Section 8: cancel all other pending duel requests for acceptor
             pending.entrySet().removeIf(e -> e.getValue().getTarget().equals(acceptor.getUniqueId()));
-            startDuel(sender, acceptor, req.getModeName(), req.getRounds());
+            startDuel(sender, acceptor, req.getModeName(), req.getRounds(), req.isWithHats());
             return true;
         }
         acceptor.sendMessage(plugin.getConfigManager().msg("duel.no-request"));
         return false;
     }
 
-    private void startDuel(Player p1, Player p2, String modeName, int rounds) {
+    private void startDuel(Player p1, Player p2, String modeName, int rounds, boolean withHats) {
         PvPMode mode = plugin.getConfigManager().getMode(modeName);
         String modeDisplay = mode != null ? mode.getDisplayName() : modeName;
         // Многострочное сообщение о принятии дуэли обоим игрокам
@@ -217,10 +221,10 @@ public class DuelManager {
                 "{player}", p2.getName(), "{mode}", modeDisplay, "{rounds}", String.valueOf(rounds));
         plugin.getConfigManager().sendBlockMessage(p2, "duel-accepted-block",
                 "{player}", p1.getName(), "{mode}", modeDisplay, "{rounds}", String.valueOf(rounds));
-        startDuelWithTimeout(p1, p2, modeName, rounds, 0);
+        startDuelWithTimeout(p1, p2, modeName, rounds, withHats, 0);
     }
 
-    private void startDuelWithTimeout(Player p1, Player p2, String modeName, int rounds, int attemptNo) {
+    private void startDuelWithTimeout(Player p1, Player p2, String modeName, int rounds, boolean withHats, int attemptNo) {
         UUID u1 = p1.getUniqueId(), u2 = p2.getUniqueId();
 
         // On the first attempt, commit both players to THIS pending match so they
@@ -269,7 +273,7 @@ public class DuelManager {
             }
             int next = attemptNo + 1;
             Bukkit.getScheduler().runTaskLater(plugin,
-                    () -> startDuelWithTimeout(p1, p2, modeName, rounds, next), retryTicks);
+                    () -> startDuelWithTimeout(p1, p2, modeName, rounds, withHats, next), retryTicks);
             return;
         }
 
@@ -277,7 +281,7 @@ public class DuelManager {
         // createMatch returns null if either player is somehow already in byPlayer
         // (the duplicate-match guard) or the arena couldn't host the match. Either
         // way, tell both players instead of silently dropping the duel.
-        if (plugin.getMatchManager().createMatch(opt.get(), mode, rounds, p1, p2) == null) {
+        if (plugin.getMatchManager().createMatch(opt.get(), mode, rounds, p1, p2, withHats) == null) {
             String msg = plugin.getConfigManager().msg("duel.arena-not-found-timeout");
             if (p1.isOnline()) p1.sendMessage(msg);
             if (p2.isOnline()) p2.sendMessage(msg);
@@ -345,8 +349,11 @@ public class DuelManager {
         plugin.getHotbarManager().showNormalMode(p1);
         plugin.getHotbarManager().showNormalMode(p2);
 
-        int rounds = 3;
-        startDuelWithTimeout(p1, p2, modeName, rounds, 0);
+        // Queue (iron-sword fast-match) is always first-to-1: a single round in
+        // every mode. Configurable via queue.rounds (default 1).
+        int rounds = Math.max(1, plugin.getConfig().getInt("queue.rounds", 1));
+        // Queue matches never use custom duel hats (opt-in is a /duel-only flow).
+        startDuelWithTimeout(p1, p2, modeName, rounds, false, 0);
     }
 
     /**

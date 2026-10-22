@@ -31,14 +31,13 @@ public class HotbarInteractListener implements Listener {
         Player player = e.getPlayer();
         int slot = player.getInventory().getHeldItemSlot();
 
-        // FIX (hotbar residual functions): in vanilla region, cancel ALL
-        // slot-based lobby-item interactions so no residual functions fire.
+        // In the vanilla editor room the inventory is fully wiped on entry and
+        // replaced with the vanilla kit, so no residual lobby items exist. We
+        // must NOT cancel interactions on slots 0/1/7/8 here — those hold real
+        // kit items (sword, pearls, etc.) the player needs to use and arrange.
+        // We only guard against menus/warps re-opening (handled by returning
+        // before the lobby switch below).
         if (plugin.getPlayerDataManager().isInVanillaRegion(player.getUniqueId())) {
-            // Only cancel if it's a protected slot (lobby item slot); let
-            // vanilla kit item usage proceed normally.
-            if (com.scorepvp.manager.ConfigManager.PROTECTED_SET.contains(slot)) {
-                e.setCancelled(true);
-            }
             return; // Never open menus or trigger warps while in region
         }
 
@@ -114,6 +113,11 @@ public class HotbarInteractListener implements Listener {
 
     private void handlePartyCreate(Player player, PlayerInteractEvent e) {
         e.setCancelled(true);
+        // Party creation is permission-gated (mirrors /party create).
+        if (!player.hasPermission("scorepvp.party")) {
+            player.sendMessage(plugin.getConfigManager().rawMsg("party.no-permission"));
+            return;
+        }
         // FIX (section 3): block party creation during match
         if (plugin.getMatchManager().isInMatch(player.getUniqueId())) {
             player.sendMessage(plugin.getConfigManager().rawMsg("prefix")
@@ -134,12 +138,35 @@ public class HotbarInteractListener implements Listener {
         plugin.getSettingsGUI().open(player);
     }
 
-    // ── Slot 8 — Vanilla Warp ─────────────────────────────────────────────────
+    // ── Slot 8 — Kit menu (mode picker → per-mode kit editor) ─────────────────
+    // Right-clicking now opens the kit selection menu. Picking a mode opens that
+    // mode's personal kit editor; picking "vanilla" runs the legacy editor-room
+    // teleport (driven by GUIClickListener → teleportToVanilla).
 
     private void handleWarp(Player player, PlayerInteractEvent e) {
         e.setCancelled(true);
-        // Already guarded at top — if we reach here, player is NOT in region
-        teleportToVanilla(player);
+        // Already guarded at top — if we reach here, player is NOT in region.
+        if (plugin.getMatchManager().isInMatch(player.getUniqueId())) return;
+        plugin.getKitMenuGUI().open(player);
+    }
+
+    /** Public entry so the kit menu's "vanilla" slot can run the legacy flow. */
+    public static void teleportToVanillaRoom(ScorePvP plugin, Player player) {
+        Location warpLoc = plugin.getConfigManager().getWarpLocation();
+        if (warpLoc == null) {
+            player.sendMessage(plugin.getConfigManager().msg("kit.not-in-region"));
+            return;
+        }
+        player.getInventory().clear();
+        player.getInventory().setArmorContents(new org.bukkit.inventory.ItemStack[4]);
+        player.getInventory().setItemInOffHand(null);
+        plugin.getPlayerDataManager().setInVanillaRegion(player.getUniqueId(), true);
+        player.teleport(warpLoc);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+            plugin.getKitManager().giveVanillaKit(player);
+            player.sendMessage(plugin.getConfigManager().msg("kit.given", "{kit}", "Vanilla"));
+        }, 2L);
     }
 
     // ── Slot 4 — Queue cancel ──────────────────────────────────────────────────

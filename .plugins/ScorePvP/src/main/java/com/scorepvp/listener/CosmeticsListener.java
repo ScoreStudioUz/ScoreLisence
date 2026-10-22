@@ -58,8 +58,11 @@ public class CosmeticsListener implements Listener {
         switch (kind) {
             case 0 -> handleMain(p, slot);
             case 1 -> handleShields(p, slot, shiftClick, rightClick);
-            case 2 -> handleArmor(p, slot, ArmorMaterial.DIAMOND, rightClick);
-            case 3 -> handleArmor(p, slot, ArmorMaterial.NETHERITE, rightClick);
+            case 2 -> handleArmorPieces(p, slot, rightClick, ArmorMaterial.DIAMOND);
+            case 5 -> handleArmorPieces(p, slot, rightClick, ArmorMaterial.NETHERITE);
+            case 3 -> handlePatternMenu(p, slot);
+            case 4 -> handleMaterialMenu(p, slot);
+            case 6 -> handleChest(p, slot);
         }
     }
 
@@ -72,34 +75,70 @@ public class CosmeticsListener implements Listener {
         e.setCancelled(true);
     }
 
-    /** -1 = not a cosmetics menu, 0 main, 1 shields, 2 diamond, 3 netherite. */
+    /**
+     * -1 = not a cosmetics menu, 0 main, 1 shields, 2 diamond-piece menu,
+     * 3 trim-pattern sub-menu, 4 trim-material sub-menu, 5 netherite-piece menu.
+     */
     private int which(CosmeticsGUI gui, String title) {
-        if (title.equals(gui.mainTitle()))      return 0;
-        if (title.equals(gui.shieldsTitle()))   return 1;
-        if (title.equals(gui.diamondTitle()))   return 2;
-        if (title.equals(gui.netheriteTitle())) return 3;
+        if (title.equals(gui.mainTitle()))    return 0;
+        if (title.equals(gui.chestTitle()))   return 6;
+        if (title.equals(gui.shieldsTitle())) return 1;
+        com.scorepvp.gui.ArmorTrimGUI atg = plugin.getArmorTrimGUI();
+        if (title.equals(atg.diamondTitle()))   return 2;
+        if (title.equals(atg.netheriteTitle())) return 5;
+        if (title.equals(atg.patternTitle()))   return 3;
+        if (title.equals(atg.materialTitle()))  return 4;
         return -1;
     }
 
     // ── Main menu ────────────────────────────────────────────────────────────
 
     private void handleMain(Player p, int slot) {
-        CosmeticsManager mgr = plugin.getCosmeticsManager();
         if (slot == CosmeticsGUI.MAIN_SHIELDS_SLOT) {
             if (!p.hasPermission(CosmeticsCommand.PERM_SHIELDS)) { tell(p, "messages.no-category-permission"); return; }
             plugin.getCosmeticsGUI().openShields(p);
-        } else if (slot == CosmeticsGUI.MAIN_DIAMOND_SLOT) {
-            if (!p.hasPermission(CosmeticsCommand.PERM_DIAMOND)) { tell(p, "messages.no-category-permission"); return; }
-            plugin.getCosmeticsGUI().openArmor(p, ArmorMaterial.DIAMOND);
-        } else if (slot == CosmeticsGUI.MAIN_NETHERITE_SLOT) {
-            if (!p.hasPermission(CosmeticsCommand.PERM_NETHERITE)) { tell(p, "messages.no-category-permission"); return; }
-            plugin.getCosmeticsGUI().openArmor(p, ArmorMaterial.NETHERITE);
-        } else if (slot == CosmeticsGUI.MAIN_CLEAR_SLOT) {
-            mgr.clearShield(p.getUniqueId());
-            mgr.clearArmor(p.getUniqueId(), ArmorMaterial.DIAMOND);
-            mgr.clearArmor(p.getUniqueId(), ArmorMaterial.NETHERITE);
-            tell(p, "messages.cleared-all");
+        } else if (slot == CosmeticsGUI.MAIN_ELYTRA_SLOT) {
+            if (!p.hasPermission(CosmeticsGUI.PERM_ELYTRA)) { tell(p, "messages.no-category-permission"); return; }
+            boolean now = plugin.getElytraCosmeticManager().toggle(p);
+            tell(p, now ? "elytra.enabled" : "elytra.disabled");
             plugin.getCosmeticsGUI().openMain(p);
+        } else if (slot == CosmeticsGUI.MAIN_TIERTAG_SLOT) {
+            if (!p.hasPermission(CosmeticsGUI.PERM_TIERTAG)) { tell(p, "messages.no-category-permission"); return; }
+            plugin.getTierTagGUI().openSelect(p);
+        } else if (slot == CosmeticsGUI.MAIN_HATS_SLOT) {
+            // Hats are open to everyone (bought with silver) — no permission gate.
+            // Don't open until owned-hats loaded, so a just-relogged player isn't
+            // charged again for a hat they own; re-trigger the load if it stalled.
+            if (!plugin.getHatManager().isOwnedLoaded(p.getUniqueId())) {
+                plugin.getHatManager().loadOwnedAsync(p.getUniqueId());
+                tell(p, "messages.loading");
+                return;
+            }
+            plugin.getHatGUI().open(p);
+        } else if (slot == CosmeticsGUI.MAIN_GRADIENT_SLOT) {
+            if (!p.hasPermission(CosmeticsGUI.PERM_GRADIENT)) { tell(p, "messages.no-category-permission"); return; }
+            plugin.getNameColorGUI().open(p, true, 0);
+        } else if (slot == CosmeticsGUI.MAIN_BADGES_SLOT) {
+            // Badges are open to everyone (bought with silver) — no permission gate.
+            plugin.getBadgeGUI().openList(p, 0);
+        } else if (slot == CosmeticsGUI.MAIN_TRIM_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_DIAMOND)
+                    && !p.hasPermission(CosmeticsCommand.PERM_NETHERITE)) {
+                tell(p, "messages.no-category-permission"); return;
+            }
+            plugin.getCosmeticsGUI().openChest(p);
+        }
+    }
+
+    // ── Armor "Chest" submenu ──────────────────────────────────────────────────
+
+    private void handleChest(Player p, int slot) {
+        if (slot == CosmeticsGUI.CHEST_DIAMOND_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_DIAMOND)) { tell(p, "messages.no-category-permission"); return; }
+            plugin.getArmorTrimGUI().openArmor(p, ArmorMaterial.DIAMOND);
+        } else if (slot == CosmeticsGUI.CHEST_NETHERITE_SLOT) {
+            if (!p.hasPermission(CosmeticsCommand.PERM_NETHERITE)) { tell(p, "messages.no-category-permission"); return; }
+            plugin.getArmorTrimGUI().openArmor(p, ArmorMaterial.NETHERITE);
         }
     }
 
@@ -107,87 +146,118 @@ public class CosmeticsListener implements Listener {
 
     private void handleShields(Player p, int slot, boolean shift, boolean right) {
         CosmeticsManager mgr = plugin.getCosmeticsManager();
+        CosmeticsGUI gui = plugin.getCosmeticsGUI();
 
-        if (slot >= 0 && slot < 36) {
-            boolean exists = mgr.getShields().containsKey(slot);
+        // Content area (0..44) → a stored shield of the active category+page.
+        if (slot >= 0 && slot < CosmeticsGUI.SHIELDS_PER_CATEGORY) {
+            int storeIndex = gui.shieldStoreIndexAt(p.getUniqueId(), slot);
+            if (storeIndex < 0) return; // empty slot
 
             // Admin shift-click — remove this shield entirely.
-            if (shift && p.hasPermission(CosmeticsCommand.PERM_ADMIN) && exists) {
-                mgr.removeShield(slot);
-                tellPlaceholder(p, "messages.shield-removed", "{slot}", String.valueOf(slot));
-                plugin.getCosmeticsGUI().openShields(p);
+            if (shift && p.hasPermission(CosmeticsCommand.PERM_ADMIN)) {
+                mgr.removeShield(storeIndex);
+                tellPlaceholder(p, "messages.shield-removed", "{slot}", String.valueOf(storeIndex));
+                gui.openShields(p); // keep current category + page
                 return;
             }
 
             // Right-click — deselect if currently selected.
             int currentlySelected = mgr.getSelection(p.getUniqueId()).shieldSlot;
-            if (right && currentlySelected == slot) {
+            if (right && currentlySelected == storeIndex) {
                 mgr.clearShield(p.getUniqueId());
                 tell(p, "messages.cleared-shield");
-                plugin.getCosmeticsGUI().openShields(p);
+                gui.openShields(p);
                 return;
             }
 
-            if (!exists) return; // empty slot, nothing to do
-            mgr.selectShield(p.getUniqueId(), slot);
-            tellPlaceholder(p, "messages.selected-shield", "{slot}", String.valueOf(slot));
-            plugin.getCosmeticsGUI().openShields(p);
+            mgr.selectShield(p.getUniqueId(), storeIndex);
+            tellPlaceholder(p, "messages.selected-shield", "{slot}", String.valueOf(storeIndex));
+            gui.openShields(p);
             return;
         }
-        if (slot == CosmeticsGUI.SHIELDS_BACK_SLOT) {
-            plugin.getCosmeticsGUI().openMain(p);
-        } else if (slot == CosmeticsGUI.SHIELDS_CLEAR_SLOT) {
-            mgr.clearShield(p.getUniqueId());
-            tell(p, "messages.cleared-shield");
-            plugin.getCosmeticsGUI().openShields(p);
+
+        int page = gui.shieldsPage(p.getUniqueId());
+        String category = gui.shieldsCategory(p.getUniqueId());
+        switch (slot) {
+            case CosmeticsGUI.SHIELDS_RESET_SLOT -> {
+                mgr.clearShield(p.getUniqueId());
+                tell(p, "messages.cleared-shield");
+                gui.openShields(p);
+            }
+            case CosmeticsGUI.SHIELDS_PREV_SLOT -> {
+                if (page > 0) gui.openShields(p, category, page - 1);
+            }
+            case CosmeticsGUI.SHIELDS_NEXT_SLOT -> {
+                if (page < gui.shieldsPageCount(category) - 1) gui.openShields(p, category, page + 1);
+            }
+            case CosmeticsGUI.SHIELDS_CAT1_SLOT -> gui.openShields(p, "plain");
+            case CosmeticsGUI.SHIELDS_CAT2_SLOT -> gui.openShields(p, "banner");
+            case CosmeticsGUI.SHIELDS_CAT3_SLOT -> gui.openShields(p, "flag");
+            case CosmeticsGUI.SHIELDS_BACK_SLOT -> gui.openMain(p);
         }
     }
 
-    // ── Armor menu ───────────────────────────────────────────────────────────
+    // ── Armor trim: piece menu (3×9) ───────────────────────────────────────────
 
-    private void handleArmor(Player p, int slot, ArmorMaterial mat, boolean right) {
+    private void handleArmorPieces(Player p, int slot, boolean right, ArmorMaterial mat) {
+        com.scorepvp.gui.ArmorTrimGUI gui = plugin.getArmorTrimGUI();
         CosmeticsManager mgr = plugin.getCosmeticsManager();
-        CosmeticsGUI gui = plugin.getCosmeticsGUI();
 
-        if (CosmeticsGUI.isArmorGridSlot(slot)) {
-            int[] coords = CosmeticsGUI.armorSetForSlot(slot);
-            if (coords == null) return;
-            int row = coords[0];
-            int setIdx = coords[1];
-            ArmorPiece piece = ArmorPiece.values()[row];
-
-            // Slot must actually have an item stored — empty slots are no-ops.
-            org.bukkit.inventory.ItemStack stored = mgr.getArmorPiece(mat, setIdx, piece);
-            if (stored == null) return;
-
-            String materialLabel = materialLabel(mat);
-            String itemName      = stripColour(gui.displayNameOf(stored));
-
-            // Right-click on the currently selected set → deselect.
-            if (right) {
-                if (mgr.isSetSelected(p.getUniqueId(), mat, setIdx)) {
-                    mgr.clearArmor(p.getUniqueId(), mat);
-                    tellPlaceholder2(p, "messages.deselected-armor",
-                            "{name}", itemName, "{material}", materialLabel);
-                    gui.openArmor(p, mat);
-                }
-                return;
-            }
-
-            // Left-click → select THIS whole set for the player.
-            mgr.selectArmorSet(p.getUniqueId(), mat, setIdx);
-            tellPlaceholder2(p, "messages.selected-armor",
-                    "{name}", itemName, "{material}", materialLabel);
-            gui.openArmor(p, mat);
+        ArmorPiece piece = pieceForSlot(slot);
+        if (piece != null) {
+            if (right) gui.openMaterial(p, mat, piece);
+            else       gui.openPattern(p, mat, piece);
             return;
         }
-        if (slot == gui.armorBackSlot()) {
-            plugin.getCosmeticsGUI().openMain(p);
-        } else if (slot == gui.armorClearSlot()) {
-            mgr.clearArmor(p.getUniqueId(), mat);
-            tellPlaceholder(p, "messages.cleared-armor", "{material}", materialLabel(mat));
-            plugin.getCosmeticsGUI().openArmor(p, mat);
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.RESET_SLOT) {
+            for (ArmorPiece pc : ArmorPiece.values()) mgr.resetTrim(p.getUniqueId(), mat, pc);
+            tell(p, "messages.cleared-all");
+            gui.openArmor(p, mat);
+        } else if (slot == com.scorepvp.gui.ArmorTrimGUI.BACK_SLOT) {
+            plugin.getCosmeticsGUI().openChest(p);
         }
+    }
+
+    private ArmorPiece pieceForSlot(int slot) {
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.HELMET_SLOT)     return ArmorPiece.HELMET;
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.CHESTPLATE_SLOT) return ArmorPiece.CHESTPLATE;
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.LEGGINGS_SLOT)   return ArmorPiece.LEGGINGS;
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.BOOTS_SLOT)      return ArmorPiece.BOOTS;
+        return null;
+    }
+
+    // ── Armor trim: pattern sub-menu (54) ───────────────────────────────────────
+
+    private void handlePatternMenu(Player p, int slot) {
+        com.scorepvp.gui.ArmorTrimGUI gui = plugin.getArmorTrimGUI();
+        com.scorepvp.gui.ArmorTrimGUI.EditState st = gui.getEditing(p.getUniqueId());
+        if (st == null) { plugin.getCosmeticsGUI().openMain(p); return; }
+
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.SUB_BACK_SLOT) {
+            gui.openArmor(p, st.material());
+            return;
+        }
+        String key = gui.patternKeyAt(slot);
+        if (key == null) return;
+        plugin.getCosmeticsManager().setTrimPattern(p.getUniqueId(), st.material(), st.piece(), key);
+        gui.openPattern(p, st.material(), st.piece());
+    }
+
+    // ── Armor trim: material sub-menu (54) ──────────────────────────────────────
+
+    private void handleMaterialMenu(Player p, int slot) {
+        com.scorepvp.gui.ArmorTrimGUI gui = plugin.getArmorTrimGUI();
+        com.scorepvp.gui.ArmorTrimGUI.EditState st = gui.getEditing(p.getUniqueId());
+        if (st == null) { plugin.getCosmeticsGUI().openMain(p); return; }
+
+        if (slot == com.scorepvp.gui.ArmorTrimGUI.SUB_BACK_SLOT) {
+            gui.openArmor(p, st.material());
+            return;
+        }
+        String key = gui.materialKeyAt(slot);
+        if (key == null) return;
+        plugin.getCosmeticsManager().setTrimMaterial(p.getUniqueId(), st.material(), st.piece(), key);
+        gui.openMaterial(p, st.material(), st.piece());
     }
 
     /** Strips &amp;/§ legacy colour codes for clean chat insertion of item names. */

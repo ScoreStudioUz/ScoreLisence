@@ -38,28 +38,74 @@ public class NameTagFormatter {
     /**
      * Builds the prefix string for a player in a match.
      *
+     * <p>In combat the nick is NOT tinted by a team color and the LuckPerms
+     * "donat" prefix is NOT shown — the nick is plain WHITE by default. If the
+     * player holds a {@code colors.yml} permission color, the nick is painted
+     * that color instead (resolved into the {@code %nick_color%} token). The
+     * {@code teamColorCode} argument is kept for API compatibility but ignored.
+     *
      * @param uuid          player UUID
      * @param modeId        game mode id (for tier lookup)
-     * @param teamColorCode legacy color code for team color (e.g. "&9", "&c"), ignored in FFA
+     * @param teamColorCode legacy color code (IGNORED — nick is white / combat-color)
      * @param ffa           true if FFA match
      * @return formatted prefix string with legacy color codes
      */
     public String buildPrefix(UUID uuid, String modeId, String teamColorCode, boolean ffa) {
-        String lpPrefix = getLpPrefix(uuid);
+        // No donat prefix and no team tint in combat.
+        String lpPrefix = "";
         String tier = plugin.getTierManager().getTier(uuid, modeId);
+        String nickColor = combatNickColor(uuid);
 
         if (tier == null || tier.isBlank()) {
             String template = ffa ? noTierFfaFormat : noTierDuelFormat;
-            return applyPlaceholders(template, lpPrefix, "", "", teamColorCode);
+            return applyPlaceholders(template, lpPrefix, "", "", nickColor);
         }
 
         String tierColor = plugin.getConfigManager().getTierColorSpec(tier, modeId);
         String template = ffa ? ffaFormat : duelFormat;
-        return applyPlaceholders(template, lpPrefix, tierColor, tier, teamColorCode);
+        return applyPlaceholders(template, lpPrefix, tierColor, tier, nickColor);
+    }
+
+    /**
+     * The nick color a player is entitled to IN COMBAT: their {@code colors.yml}
+     * permission color, or WHITE (&f) if they hold none. A gradient spec is
+     * collapsed to a single solid leading color because a vanilla nametag can
+     * only show one color (full gradients live in the lobby via /cosmetics).
+     */
+    private String combatNickColor(UUID uuid) {
+        Player p = plugin.getServer().getPlayer(uuid);
+        if (p == null) return "&f";
+        String spec = plugin.getColorsManager().colorSpecFor(p);
+        if (spec == null || spec.isBlank()) return "&f";
+        // Render the spec against an empty string so a gradient/hex collapses to
+        // its leading legacy color sequence; a plain "&x" spec passes through.
+        String rendered = com.scorepvp.util.ColorUtil.applyColorSpec(spec, "");
+        return rendered.isBlank() ? "&f" : rendered;
+    }
+
+    /**
+     * The nick color a player carries IN THE LOBBY: their {@code /cosmetics}
+     * name-color choice, or {@code ""} (TAB's own color) when they have none.
+     * Counterpart to {@link #combatNickColor} — cosmetics colors are a lobby-only
+     * cosmetic, while colors.yml owns the nick during a match.
+     *
+     * <p>Collapsed to a single leading color because a nametag can only render
+     * one color; the full gradient still shows in chat/Tab via
+     * {@code %scorepvp_name%}.
+     */
+    public String lobbyNickColor(Player p) {
+        if (p == null) return "";
+        var st = plugin.getSettingsManager().get(p.getUniqueId());
+        if (st == null) return "";
+        var entry = plugin.getNameStyleManager().getColor(st.getNameColor());
+        if (entry == null || entry.colorSpec().isBlank()) return "";
+        if (!plugin.getNameStyleManager().canUse(p, entry)) return "";
+        String rendered = com.scorepvp.util.ColorUtil.applyColorSpec(entry.colorSpec(), "");
+        return rendered.isBlank() ? "" : rendered;
     }
 
     private String applyPlaceholders(String template, String lpPrefix,
-                                     String tierColor, String tier, String teamColor) {
+                                     String tierColor, String tier, String nickColor) {
         // For a MiniMessage gradient spec the color must wrap the whole tier
         // label, not sit in front of it — so collapse the common
         // "%tier_color%%tier%" segment into a single pre-rendered gradient run.
@@ -70,15 +116,19 @@ public class NameTagFormatter {
                     .replace("%tier_color%%tier%", rendered)
                     .replace("%tier_color%", "")          // any stray color tokens
                     .replace("%tier%", rendered);
+            // %nick_color% is the new name; %team_color% kept as an alias so old
+            // configs keep working — both now carry the WHITE/combat nick color.
             return template
                     .replace("%lp_prefix%", lpPrefix)
-                    .replace("%team_color%", teamColor);
+                    .replace("%nick_color%", nickColor)
+                    .replace("%team_color%", nickColor);
         }
         return template
                 .replace("%lp_prefix%", lpPrefix)
                 .replace("%tier_color%", tierColor)
                 .replace("%tier%", tier)
-                .replace("%team_color%", teamColor);
+                .replace("%nick_color%", nickColor)
+                .replace("%team_color%", nickColor);
     }
 
     private String getLpPrefix(UUID uuid) {

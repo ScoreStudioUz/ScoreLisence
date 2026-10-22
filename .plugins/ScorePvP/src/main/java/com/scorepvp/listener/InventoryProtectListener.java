@@ -38,11 +38,36 @@ public class InventoryProtectListener implements Listener {
         }
     }
 
+    /** Bukkit player-inventory raw slot for the worn helmet / chestplate. */
+    private static final int HELMET_SLOT = 39;
+    private static final int CHESTPLATE_SLOT = 38;
+
     // ── Inventory Click ───────────────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player player)) return;
+
+        // Cosmetic hat lock: a hat worn in the helmet slot can't be taken off by
+        // hand — it "stays stuck on the head" and is only removed via /hats
+        // (RMB-unset). This applies everywhere EXCEPT when a real kit helmet is
+        // in play (vanilla region / match / kit editor), so armor still works.
+        if (!isInVanilla(player) && !isInMatch(player) && !isKitEditor(player)
+                && isCosmeticHatClick(e, player)) {
+            e.setCancelled(true);
+            player.updateInventory();
+            return;
+        }
+
+        // Lobby elytra lock: the cosmetic elytra worn in the chestplate slot
+        // can't be taken off by hand — it's removed only via the cosmetics toggle.
+        if (!isInVanilla(player) && !isInMatch(player) && !isKitEditor(player)
+                && isCosmeticElytraClick(e, player)) {
+            e.setCancelled(true);
+            player.updateInventory();
+            return;
+        }
+
         if (isInVanilla(player)) return;   // Bug #9: free in vanilla region
         if (isInMatch(player)) return;      // Allow inventory movement during PvP/Duel
         if (isKitEditor(player)) return;    // Free slots in kit editor mode
@@ -131,6 +156,62 @@ public class InventoryProtectListener implements Listener {
         if (isProtected(slot)) return true;
         if (slot == 4 && plugin.getPartyManager().isInParty(player.getUniqueId())) return true;
         if (slot == 4 && plugin.getDuelManager().isInQueue(player.getUniqueId())) return true;
+        return false;
+    }
+
+    /**
+     * True if this click would move/remove/swap a cosmetic hat worn in the
+     * helmet slot (so we can cancel it — the hat is locked on the head). Covers:
+     * a direct click on the helmet slot, a number-key or offhand swap while the
+     * helmet holds a hat, and a shift-click of a helmet-type item from the
+     * bottom inventory (which would auto-equip and displace the hat).
+     */
+    private boolean isCosmeticHatClick(InventoryClickEvent e, Player player) {
+        if (plugin.getHatManager() == null) return false;
+        boolean wearingHat = plugin.getHatManager().hatIdOf(
+                player.getInventory().getHelmet()) != null;
+        if (!wearingHat) return false;
+
+        Inventory clicked = e.getClickedInventory();
+        Inventory bottom  = e.getView().getBottomInventory();
+
+        // Direct interaction with the helmet slot in the player's own inventory.
+        if (clicked == bottom && e.getSlot() == HELMET_SLOT) return true;
+        // Number-key swap targeting the helmet slot.
+        if (e.getClick() == ClickType.NUMBER_KEY && clicked == bottom
+                && e.getSlot() == HELMET_SLOT) return true;
+        // Shift-clicking another helmet from anywhere would swap into the slot.
+        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+            var moved = e.getCurrentItem();
+            if (moved != null && moved.getType().name().endsWith("_HELMET")) return true;
+        }
+        return false;
+    }
+
+    /**
+     * True if this click would move/remove/swap the lobby cosmetic elytra worn
+     * in the chestplate slot. Covers a direct click on the chestplate slot, a
+     * number-key swap targeting it, and a shift-click of a chestplate/elytra
+     * from the bottom inventory (which would auto-equip and displace it).
+     */
+    private boolean isCosmeticElytraClick(InventoryClickEvent e, Player player) {
+        if (plugin.getElytraCosmeticManager() == null) return false;
+        var chest = player.getInventory().getChestplate();
+        boolean wearingElytra = chest != null && chest.getType() == org.bukkit.Material.ELYTRA
+                && plugin.getElytraCosmeticManager().isEnabled(player);
+        if (!wearingElytra) return false;
+
+        Inventory clicked = e.getClickedInventory();
+        Inventory bottom  = e.getView().getBottomInventory();
+
+        if (clicked == bottom && e.getSlot() == CHESTPLATE_SLOT) return true;
+        if (e.getClick() == ClickType.NUMBER_KEY && clicked == bottom
+                && e.getSlot() == CHESTPLATE_SLOT) return true;
+        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+            var moved = e.getCurrentItem();
+            if (moved != null && (moved.getType() == org.bukkit.Material.ELYTRA
+                    || moved.getType().name().endsWith("_CHESTPLATE"))) return true;
+        }
         return false;
     }
 

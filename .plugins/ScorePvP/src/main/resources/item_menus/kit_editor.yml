@@ -1,0 +1,79 @@
+# ============================================================
+#  Kit Editor GUI — item_menus/kit_editor.yml
+#  Rejim tanlangach ochiladi. 54 slotli sandbox: o'yinchi
+#  saqlangan (yoki standart) kitini qayta joylashtiradi va
+#  saqlaydi. Creative kerak emas — itemlar faqat tahrirlanadigan
+#  slotlar orasida ko'chiriladi (F, raqam, shift, drop bloklangan).
+#
+#  STANDART JOYLASHUV (hotbar pastda, haqiqiy inventar kabi):
+#    GUI  0      ← BEKOR tugma (RED_DYE)
+#    GUI  1, 7   ← burchak bezak oynalari
+#    GUI  2..5   ← bronya: dubulg'a / ko'krak / shim / etik
+#    GUI  6      ← offhand (qalqon)
+#    GUI  8      ← SAQLASH tugma (LIME_DYE)
+#    GUI  9..35  ← asosiy inventar (kit 9..35)
+#    GUI 36..44  ← ajratuvchi qator "↑ Inventar / ↓ Hotbar"
+#    GUI 45..53  ← hotbar (kit 0..8)
+#
+#  {mode} — rejim nomi bilan almashtiriladi.
+# ============================================================
+
+title: "&6Kit: {mode}"
+
+# Tepa boshqaruv qatoridagi bo'sh joylar shishasi (0..8)
+filler:
+  material: BLACK_STAINED_GLASS_PANE
+  name: "&r"
+
+# Tepa qator burchak bezagi (item3 kabi ajralib turadi)
+corner:
+  material: RED_STAINED_GLASS_PANE
+  name: "&r"
+  slots: [1, 7]
+
+# Inventar/hotbar ajratuvchi qatori (item4 kabi)
+divider:
+  material: RED_STAINED_GLASS_PANE
+  name: "&7↑ Inventar"
+  lore:
+    - "&7↓ Hotbar"
+  slots: [36, 37, 38, 39, 40, 41, 42, 43, 44]
+
+# Bronya va offhand slotlari (tepa qator)
+armor:
+  helmet-slot: 2
+  chestplate-slot: 3
+  leggings-slot: 4
+  boots-slot: 5
+offhand-slot: 6
+
+# Offhand bo'sh bo'lganda ko'rsatiladigan placeholder. Item qo'ysangiz —
+# o'sha slotga tushadi; itemni olib tashlasangiz placeholder qaytadi.
+# Placehol(ITEM_FRAME) hech qachon kit sifatida saqlanmaydi.
+offhand-placeholder:
+  material: ITEM_FRAME
+  name: "&eOffhand"
+  lore:
+    - "&7Bu yerga offhand narsa"
+    - "&7joylashtira olasiz"
+
+# Boshqaruv tugmalari. reset slot -1 = o'chirilgan (faqat bekor + saqlash).
+buttons:
+  back:
+    slot: 0
+    material: RED_DYE
+    name: "&c&lBekor"
+    lore:
+      - "&7Saqlamasdan chiqish"
+  reset:
+    slot: -1
+    material: GRAY_DYE
+    name: "&7Tiklash"
+    lore:
+      - "&7Kitni standart holatga qaytarish"
+  save:
+    slot: 8
+    material: LIME_DYE
+    name: "&a&lSaqlash"
+    lore:
+      - "&7O'zgarishlarni saqlash"

@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  /tags  —  TierTag selector (screen 1)
+#
+#  Lists the game modes you can show a tier-tag for. Click a mode you HOLD a
+#  tier in to open the confirm screen. Click a mode with no tier and the menu
+#  closes with a "villager unhappy" sound + a message.
+#
+#  size  : inventory size (multiple of 9, max 54)
+#  filler: background glass pane
+#  info  : decorative info item
+#  reset : clears your chosen tag (falls back to highest tier)
+#  modes : the clickable mode icons (icon/name come from modes.yml)
+# ─────────────────────────────────────────────────────────────────────────────
+title: "&8TierTag"
+size: 27
+
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  name: " "
+
+info:
+  slot: 4
+  material: PINK_CANDLE
+  name: "&eTierTag &e♠"
+  lore:
+    - "&7Spawnda va Tabda qaysi rejimdagi"
+    - "&7darajangiz ko'rinishini tanlang."
+
+reset:
+  slot: 26
+  material: RED_DYE
+  name: "&fTiklash"
+  lore:
+    - "&7Eng yuqori darajaga qaytarish uchun bosing."
+
+# Extra lore appended to every mode icon (optional)
+mode-lore:
+  - ""
+  - "&7Tanlash uchun bosing."
+
+modes:
+  sword:     { mode: sword,     slot: 10 }
+  smp:       { mode: smp,       slot: 11 }
+  netherite: { mode: netherite, slot: 12 }
+  vanilla:   { mode: vanilla,   slot: 13 }
+  uhc:       { mode: uhc,       slot: 14 }
+  mace:      { mode: mace,      slot: 15 }
+  axe:       { mode: axe,       slot: 16 }

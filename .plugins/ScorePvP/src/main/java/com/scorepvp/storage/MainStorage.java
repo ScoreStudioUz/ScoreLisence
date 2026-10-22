@@ -69,6 +69,24 @@ public interface MainStorage {
 
     void deleteFriendship(UUID a, UUID b);
 
+    // ── Silver currency ────────────────────────────────────────────────────────
+
+    int getSilver(UUID uuid);
+
+    void setSilver(UUID uuid, int amount);
+
+    // ── Badges (owned nishonlar) ─────────────────────────────────────────────────
+
+    java.util.Set<String> loadBadges(UUID uuid);
+
+    void addBadge(UUID uuid, String badgeId);
+
+    // ── Hats (owned cosmetic hats) ───────────────────────────────────────────────
+
+    java.util.Set<String> loadHats(UUID uuid);
+
+    void addHat(UUID uuid, String hatId);
+
     /** Closes underlying connection pool. Safe to call multiple times. */
     void close();
 }

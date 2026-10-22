@@ -1,0 +1,42 @@
+# Default Pot (Potion) kit
+name: "pot"
+items:
+  - slot: 0
+    material: DIAMOND_SWORD
+    name: "&fМеч"
+    enchantments:
+      sharpness: 4
+      unbreaking: 3
+  - slot: 1
+    material: SPLASH_POTION
+    name: "&fПоушн здоровья"
+    amount: 16
+  - slot: 2
+    material: SPLASH_POTION
+    name: "&fПоушн здоровья"
+    amount: 16
+  - slot: 3
+    material: GOLDEN_APPLE
+    name: "&fЗолотое яблоко"
+    amount: 2
+  - slot: 36
+    material: DIAMOND_BOOTS
+    enchantments:
+      protection: 4
+      unbreaking: 3
+      feather_falling: 4
+  - slot: 37
+    material: DIAMOND_LEGGINGS
+    enchantments:
+      protection: 4
+      unbreaking: 3
+  - slot: 38
+    material: DIAMOND_CHESTPLATE
+    enchantments:
+      protection: 4
+      unbreaking: 3
+  - slot: 39
+    material: DIAMOND_HELMET
+    enchantments:
+      protection: 4
+      unbreaking: 3

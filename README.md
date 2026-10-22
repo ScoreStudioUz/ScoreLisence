@@ -18,11 +18,11 @@
 
 license-guard/     Guard wrapper (cross-jar SHA-256 + HMAC challenge)
   src2/com/score/license/guard/    Сорцы LicenseGate + IntegrityChecker
-  wrapper_template_v2.java         Шаблон wrapper'а для зависимых плагинов
+  wrapper_template_v2.java         Шаблон wrapper'а для зависимых плагинов    
 
 libs/              Provided jar'ы (paper-api 1.21.11, HikariCP и т.д.)
 scripts/           Pipeline (Python)
-skidfuscator.jar   Обфускатор (нет в Maven Central)
+skidfuscator.jar   Обфускатор (нет в Maven Central)   
 
 dist/              Готовые jar'ы
   licensed/        6 jar'ов с лицензионной защитой

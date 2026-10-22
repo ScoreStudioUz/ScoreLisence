@@ -59,17 +59,39 @@ public final class ColorUtil {
      */
     public static String applyColorSpec(String spec, String content) {
         if (spec == null || spec.isBlank()) return content;
+        // Bare hex color ("#RRGGBB" or "&#RRGGBB") — translateAlternateColorCodes
+        // does NOT understand this form, so it would leak the literal "#RRGGBB"
+        // in front of the text. Convert it to the "&x&R&R&G&G&B&B" sequence so it
+        // renders as a real color in both the item-name and nametag paths.
+        String hex = spec.startsWith("&#") ? spec.substring(1) : spec;
+        if (hex.matches("#[0-9a-fA-F]{6}")) {
+            try {
+                return HEX_SERIALIZER.serialize(MINI.deserialize("<" + hex + ">" + content));
+            } catch (Exception ex) {
+                return content;
+            }
+        }
         if (isMiniMessage(spec)) {
             // MiniMessage treats '[' / ']' as plain text, so this is safe.
             // A malformed spec (bad hex, unknown tag) throws ParsingException —
             // never let that abort a GUI build or nametag render. Fall back to
             // the plain bracketed text so the tier is still readable.
             try {
+                // A spec may carry a leading LEGACY segment before the first
+                // MiniMessage tag, e.g. "&b🗡 <gradient:#9E9E9E:#FFFFFF>". That
+                // lets admins put a differently-coloured icon in front of a
+                // gradient-coloured tier. MiniMessage can't parse the "&b" part,
+                // so split it off: the legacy head is kept verbatim (still in '&'
+                // form) and only the "<...>" tail + content go through MiniMessage.
+                int lt = spec.indexOf('<');
+                String legacyHead = spec.substring(0, lt);
+                String miniTail   = spec.substring(lt);
                 // Output is "&x&R&R&G&G&B&B…" — kept in '&' form (NOT translated
                 // to '§') because the legacyAmpersand deserializer used by the
                 // nametag path only reads '&', while the item-name path runs its
                 // own translateAlternateColorCodes('&', …). Both handle this.
-                return HEX_SERIALIZER.serialize(MINI.deserialize(spec + content));
+                String rendered = HEX_SERIALIZER.serialize(MINI.deserialize(miniTail + content));
+                return legacyHead + rendered;
             } catch (Exception ex) {
                 return content;
             }

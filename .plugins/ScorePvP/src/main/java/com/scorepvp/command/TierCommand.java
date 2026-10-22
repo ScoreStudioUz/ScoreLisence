@@ -95,18 +95,24 @@ public class TierCommand implements CommandExecutor, TabCompleter {
             }
 
             case "info" -> {
-                Map<String, String> tiers = tm.getAllTiers(uuid);
+                // Always read FRESH from the DB, bypassing the in-memory cache.
+                // The cache is empty for offline targets, and can also be stale
+                // (an empty map) for an online player whose join-time load failed
+                // while MySQL was briefly down — both previously showed "no tiers"
+                // even though the DB held them.
                 sender.sendMessage(plugin.getConfigManager()
                         .msg("tier.info", "{player}", realName));
-                if (tiers.isEmpty()) {
-                    sender.sendMessage(plugin.getConfigManager().rawMsg("tier.no-tiers"));
-                } else {
-                    tiers.forEach((mode, tier) ->
-                            sender.sendMessage(plugin.getConfigManager()
-                                    .rawMsg("tier.info-line")
-                                    .replace("{mode}", mode)
-                                    .replace("{tier}", tier)));
-                }
+                tm.loadTiersFromDb(uuid, tiers -> {
+                    if (tiers.isEmpty()) {
+                        sender.sendMessage(plugin.getConfigManager().rawMsg("tier.no-tiers"));
+                    } else {
+                        tiers.forEach((mode, tier) ->
+                                sender.sendMessage(plugin.getConfigManager()
+                                        .rawMsg("tier.info-line")
+                                        .replace("{mode}", mode)
+                                        .replace("{tier}", tier)));
+                    }
+                });
             }
 
             default -> sendHelp(sender);

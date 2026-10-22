@@ -64,6 +64,10 @@ commands:
     description: Open cosmetics menu
     usage: /cosmetics [admin shield|armor ...]
     permission: duels.cosmetics
+  kumush:
+    description: Silver currency — balance / admin give-set-remove-look
+    usage: /kumush [give|set|remove|look <nick> [amount]]
+    permission: scorepvp.use
   stopduel:
     description: Force-end a player's duel as a draw (admin)
     usage: /stopduel <ник>
@@ -79,28 +83,85 @@ permissions:
     default: op
   scorepvp.use:
     description: Use ScorePvP features
-    default: true
+    default: op
+  scorepvp.party:
+    description: Create and manage a party (invite/kick/promote/disband/chat/ffa). Joining a party does NOT need this.
+    default: op
+  scorepvp.party.tier1:
+    description: Party size cap tier 1 (default 4 members).
+    default: op
+  scorepvp.party.tier2:
+    description: Party size cap tier 2 (default 6 members).
+    default: op
+  scorepvp.party.tier3:
+    description: Party size cap tier 3 (default 10 members).
+    default: op
+  scorepvp.kumush.admin:
+    description: Give / set / remove / look up silver for any player (works offline)
+    default: op
   duels.cosmetics:
     description: Use the /cosmetics menu and have selections applied at duel start
-    default: true
+    default: op
   duels.cosmetics.admin:
     description: Manage cosmetic shields and armor pieces
     default: op
   duels.cosmetics.shields:
     description: Access the shields cosmetics category
-    default: true
+    default: op
   duels.cosmetics.diamond:
     description: Access the diamond armor cosmetics category
-    default: true
+    default: op
   duels.cosmetics.netherite:
     description: Access the netherite armor cosmetics category
-    default: true
+    default: op
+  duels.cosmetics.elytra:
+    description: Access the lobby elytra + wind-charge cosmetic
+    default: op
+  duels.cosmetics.namecolor:
+    description: Access the simple name-color category
+    default: op
+  duels.cosmetics.gradient:
+    description: Access the gradient name-color category
+    default: op
+  duels.cosmetics.tiertag:
+    description: Access the TierTag cosmetic (spawn/tab nick prefix)
+    default: op
+  duels.cosmetics.badges:
+    description: Access the badges (nishonlar) category
+    default: op
+  # NOTE: colors.yml nick-color permissions are NOT listed here — ColorsManager
+  # registers each one at runtime (default:false), so admins can add colors to
+  # colors.yml without touching this file.
+  scorepvp.kit.slot2:
+    description: Unlock vanilla kit slot 2
+    default: op
+  scorepvp.kit.slot3:
+    description: Unlock vanilla kit slot 3
+    default: op
+  scorepvp.kit.slot4:
+    description: Unlock vanilla kit slot 4
+    default: op
+  scorepvp.kit.slot5:
+    description: Unlock vanilla kit slot 5
+    default: op
+  scorepvp.kit.slot6:
+    description: Unlock vanilla kit slot 6
+    default: op
+  scorepvp.hats.use:
+    description: Open the /hats cosmetic hats menu
+    default: op
+  scorepvp.hats.all:
+    description: Unlock every cosmetic hat at once
+    default: op
+  scorepvp.hats.admin:
+    description: Reload the hats config (/hats reload)
+    default: op
   duels.actionbar:
     description: Receive the combat action-bar HUD on every hit
-    default: true
+    default: op
   duels.stats.accuracy:
     description: Show the accuracy line after each round
-    default: true
+    default: op
   duels.stats.view:
     description: Show the [посмотреть] hoverable stats line after rounds and duels
-    default: true
+    default: op

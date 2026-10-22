@@ -69,6 +69,25 @@ public class MatchListener implements Listener {
                 }
             }
         }
+
+        // Bug 8: a spectator (/spec) who flies out past the arena bounds
+        // (corner1..corner2) is pulled out of the match and sent to spawn, so
+        // they can't roam the live map. Only spectators — fighters are bounded
+        // by the kill-on-void / smooth-death logic, not this check.
+        if (!match.isFighter(e.getPlayer().getUniqueId())
+                && e.getTo() != null
+                && !isInsideArenaBounds(match.getArena(), e.getTo())) {
+            Player spec = e.getPlayer();
+            // Defer the removal one tick — calling removeSpectator (which
+            // teleports) from inside a move event is unsafe.
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Match m = plugin.getMatchManager().getMatch(spec.getUniqueId());
+                if (m == null || m.isFighter(spec.getUniqueId())) return;
+                plugin.getMatchManager().removeSpectator(spec);
+                spec.sendMessage(plugin.getConfigManager().rawMsg("prefix")
+                        + " " + plugin.getConfigManager().rawMsg("spec.out-of-bounds"));
+            });
+        }
     }
 
     // ── Projectile lock during countdown ──────────────────────────────────────
@@ -175,6 +194,26 @@ public class MatchListener implements Listener {
     /**
      * Ensures health BELOW_NAME objective stays intact after damage.
      */
+    /**
+     * Block passive (food-driven) health regen for fighters once their
+     * saturation is gone. WorldGuard's feed/heal flag (or a peaceful-ish world)
+     * pins food at 20, so a player could run away and slowly heal back up for
+     * free. We let the initial start-saturation (e.g. 4) heal a little, then
+     * cancel any further SATIATED/REGEN regen while saturation is at 0.
+     * Golden-apple / potion / totem heals use MAGIC* reasons and are untouched.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onRegen(org.bukkit.event.entity.EntityRegainHealthEvent e) {
+        if (!(e.getEntity() instanceof Player p)) return;
+        if (!plugin.getConfig().getBoolean("match.block-natural-regen", true)) return;
+        Match match = plugin.getMatchManager().getMatch(p.getUniqueId());
+        if (match == null || !match.isFighter(p.getUniqueId())) return;
+        var reason = e.getRegainReason();
+        boolean passive = reason == org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.SATIATED
+                || reason == org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.REGEN;
+        if (passive && p.getSaturation() <= 0f) e.setCancelled(true);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamageMonitor(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player victim)) return;

@@ -1,0 +1,24 @@
+items:
+- slot: 0
+  material: DIAMOND_SWORD
+  amount: 1
+- slot: 36
+  material: DIAMOND_BOOTS
+  amount: 1
+  enchantments:
+    protection: 3
+- slot: 37
+  material: DIAMOND_LEGGINGS
+  amount: 1
+  enchantments:
+    protection: 3
+- slot: 38
+  material: DIAMOND_CHESTPLATE
+  amount: 1
+  enchantments:
+    protection: 3
+- slot: 39
+  material: DIAMOND_HELMET
+  amount: 1
+  enchantments:
+    protection: 3
